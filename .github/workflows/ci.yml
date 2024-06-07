@@ -25,8 +25,7 @@ jobs:
 
       - name: Install Erlang and Elixir
         run: |
-          brew install autoconf coreutils curl git openssl wxwidgets asdf ffmpeg
-          brew link ffmpeg
+          brew install autoconf coreutils curl git openssl wxwidgets asdf
           asdf plugin add erlang https://github.com/asdf-vm/asdf-erlang.git
           asdf plugin-add elixir https://github.com/asdf-vm/asdf-elixir.git
           export KERL_CONFIGURE_OPTIONS="--disable-debug --without-javac"
