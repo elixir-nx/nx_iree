@@ -58,7 +58,9 @@ jobs:
 
       - name: Get IREE version
         id: get-iree-version
-        run: echo "iree_version=$(mix iree.version)" >> $GITHUB_ENV
+        run: |
+          source $(brew --prefix asdf)/libexec/asdf.sh
+          echo "iree_version=$(mix iree.version)" >> $GITHUB_ENV
 
       - name: Cache IREE source code
         id: cache-iree
