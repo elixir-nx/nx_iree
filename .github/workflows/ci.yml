@@ -55,7 +55,7 @@ jobs:
       - name: Download IREE source code
         if: steps.cache-iree.outputs.cache-hit != 'true'
         run: |
-          bash scripts/clone_iree.sh ${{ env.BUILD_CACHE }} ${{ mix iree.version }} '${{ env.BUILD_CACHE }}/iree'
+          bash scripts/clone_iree.sh ${{ env.BUILD_CACHE }} ${{ env.iree_version }} '${{ env.BUILD_CACHE }}/iree'
 
   build_artifacts:
     runs-on: macos-14
