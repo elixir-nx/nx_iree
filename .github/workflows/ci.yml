@@ -96,6 +96,10 @@ jobs:
           mix local.hex --force
           mix local.rebar --force
 
+      - name: Install build dependencies
+        run: |
+          brew install cmake ninja
+
       - name: Cache mix packages
         id: cache-mix-deps
         uses: actions/cache/restore@v4
@@ -108,7 +112,7 @@ jobs:
         id: get-iree-version
         run: echo "iree_version=$(mix iree.version)" >> $GITHUB_ENV
 
-      - name: Cache IREE source code
+      - name: Restore IREE source code
         id: cache-iree
         uses: actions/cache/restore@v4
         with:
