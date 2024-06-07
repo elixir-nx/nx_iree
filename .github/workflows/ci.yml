@@ -19,6 +19,10 @@ env:
 jobs:
   download_iree:
     runs-on: macos-14
+    strategy:
+      matrix:
+        - OTP_VERSION: 27.0
+        - ELIXIR_VERSION: 1.15.4
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,10 +33,10 @@ jobs:
           asdf plugin add erlang https://github.com/asdf-vm/asdf-erlang.git
           asdf plugin-add elixir https://github.com/asdf-vm/asdf-elixir.git
           export KERL_CONFIGURE_OPTIONS="--disable-debug --without-javac"
-          asdf install erlang ${{ matrix.pair.OTP_VERSION }}
-          asdf install elixir ${{ matrix.pair.ELIXIR_VERSION }}
-          asdf global erlang ${{ matrix.pair.OTP_VERSION }}
-          asdf global elixir ${{ matrix.pair.ELIXIR_VERSION }}
+          asdf install erlang ${{ matrix.OTP_VERSION }}
+          asdf install elixir ${{ matrix.ELIXIR_VERSION }}
+          asdf global erlang ${{ matrix.OTP_VERSION }}
+          asdf global elixir ${{ matrix.ELIXIR_VERSION }}
           source $(brew --prefix asdf)/libexec/asdf.sh
           mix local.hex --force
           mix local.rebar --force
