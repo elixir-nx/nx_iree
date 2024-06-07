@@ -1,11 +1,10 @@
 name: release-artifacts
 
 on:
+  # push:
+  #   tags:
+  #     - "v*"
   push:
-    tags:
-      - "v*"
-    branches:
-      - "*"
   workflow_dispatch:
 
 concurrency:
@@ -25,7 +24,19 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Erlang and Elixir
-        uses: erlef/setup-beam@v1
+        run: |
+          brew install autoconf coreutils curl git openssl wxwidgets asdf ffmpeg
+          brew link ffmpeg
+          asdf plugin add erlang https://github.com/asdf-vm/asdf-erlang.git
+          asdf plugin-add elixir https://github.com/asdf-vm/asdf-elixir.git
+          export KERL_CONFIGURE_OPTIONS="--disable-debug --without-javac"
+          asdf install erlang ${{ matrix.pair.OTP_VERSION }}
+          asdf install elixir ${{ matrix.pair.ELIXIR_VERSION }}
+          asdf global erlang ${{ matrix.pair.OTP_VERSION }}
+          asdf global elixir ${{ matrix.pair.ELIXIR_VERSION }}
+          source $(brew --prefix asdf)/libexec/asdf.sh
+          mix local.hex --force
+          mix local.rebar --force
 
       - name: Cache mix packages
         id: cache-mix-deps
@@ -38,6 +49,7 @@ jobs:
       - name: Get mix deps
         if: steps.cache-mix-deps.outputs.cache-hit != 'true'
         run: |
+          source $(brew --prefix asdf)/libexec/asdf.sh
           mix deps.get
 
       - name: Get IREE version
@@ -65,7 +77,19 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Erlang and Elixir
-        uses: erlef/setup-beam@v1
+        run: |
+          brew install autoconf coreutils curl git openssl wxwidgets asdf ffmpeg
+          brew link ffmpeg
+          asdf plugin add erlang https://github.com/asdf-vm/asdf-erlang.git
+          asdf plugin-add elixir https://github.com/asdf-vm/asdf-elixir.git
+          export KERL_CONFIGURE_OPTIONS="--disable-debug --without-javac"
+          asdf install erlang ${{ matrix.pair.OTP_VERSION }}
+          asdf install elixir ${{ matrix.pair.ELIXIR_VERSION }}
+          asdf global erlang ${{ matrix.pair.OTP_VERSION }}
+          asdf global elixir ${{ matrix.pair.ELIXIR_VERSION }}
+          source $(brew --prefix asdf)/libexec/asdf.sh
+          mix local.hex --force
+          mix local.rebar --force
 
       - name: Cache mix packages
         id: cache-mix-deps
@@ -77,7 +101,9 @@ jobs:
 
       - name: Get IREE version
         id: get-iree-version
-        run: echo "iree_version=$(mix iree.version)" >> $GITHUB_ENV
+        run: |
+          source $(brew --prefix asdf)/libexec/asdf.sh
+          echo "iree_version=$(mix iree.version)" >> $GITHUB_ENV
 
       - name: Cache IREE source code
         id: cache-iree
@@ -90,8 +116,3 @@ jobs:
       - name: Build IREE
         run: |
           IREE_DIR=${{ env.BUILD_CACHE }}/iree make compile
-
-      - name: Build artifacts
-        run: |
-          mix compile
-          mix release
