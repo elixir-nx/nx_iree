@@ -6,6 +6,11 @@ BUILD_CACHE=$1
 IREE_GIT_REV=$2
 IREE_DIR=$3
 
+echo "Args:"
+echo "  BUILD_CACHE: ${BUILD_CACHE}"
+echo "  IREE_GIT_REV: ${IREE_GIT_REV}"
+echo "  IREE_DIR: ${IREE_DIR}"
+
 mkdir -p ${BUILD_CACHE}
 
 IREE_REPO=https://github.com/iree-org/iree
