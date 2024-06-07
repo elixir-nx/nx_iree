@@ -28,12 +28,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install asdf & tools
+        uses: asdf-vm/actions/install@v3
+
       - name: Install Erlang and Elixir
         run: |
-          brew install autoconf coreutils curl git openssl wxwidgets asdf
-          asdf plugin add erlang https://github.com/asdf-vm/asdf-erlang.git
-          asdf plugin-add elixir https://github.com/asdf-vm/asdf-elixir.git
-          export KERL_CONFIGURE_OPTIONS="--disable-debug --without-javac"
           asdf install erlang ${{ matrix.OTP_VERSION }}
           asdf install elixir ${{ matrix.ELIXIR_VERSION }}
           asdf global erlang ${{ matrix.OTP_VERSION }}
@@ -52,15 +51,11 @@ jobs:
 
       - name: Get mix deps
         if: steps.cache-mix-deps.outputs.cache-hit != 'true'
-        run: |
-          source $(brew --prefix asdf)/libexec/asdf.sh
-          mix deps.get
+        run: mix deps.get
 
       - name: Get IREE version
         id: get-iree-version
-        run: |
-          source $(brew --prefix asdf)/libexec/asdf.sh
-          echo "iree_version=$(mix iree.version)" >> $GITHUB_ENV
+        run: echo "iree_version=$(mix iree.version)" >> $GITHUB_ENV
 
       - name: Cache IREE source code
         id: cache-iree
@@ -82,12 +77,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install asdf & tools
+        uses: asdf-vm/actions/install@v3
+
       - name: Install Erlang and Elixir
         run: |
-          brew install autoconf coreutils curl git openssl wxwidgets asdf
-          asdf plugin add erlang https://github.com/asdf-vm/asdf-erlang.git
-          asdf plugin-add elixir https://github.com/asdf-vm/asdf-elixir.git
-          export KERL_CONFIGURE_OPTIONS="--disable-debug --without-javac"
           asdf install erlang ${{ matrix.OTP_VERSION }}
           asdf install elixir ${{ matrix.ELIXIR_VERSION }}
           asdf global erlang ${{ matrix.OTP_VERSION }}
@@ -106,9 +100,7 @@ jobs:
 
       - name: Get IREE version
         id: get-iree-version
-        run: |
-          source $(brew --prefix asdf)/libexec/asdf.sh
-          echo "iree_version=$(mix iree.version)" >> $GITHUB_ENV
+        run: echo "iree_version=$(mix iree.version)" >> $GITHUB_ENV
 
       - name: Cache IREE source code
         id: cache-iree
