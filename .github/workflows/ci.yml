@@ -15,6 +15,7 @@ env:
   MIX_ENV: prod
   NX_IREE_PREFER_PRECOMPILED: "false"
   BUILD_CACHE: ${{ github.workspace }}/build_cache
+  IREE_DIR: ${{ env.BUILD_CACHE }}/iree
 
 jobs:
   download_iree:
@@ -65,12 +66,12 @@ jobs:
         with:
           key: iree-${{ env.iree_version }}
           path: |
-            ${{ env.BUILD_CACHE }}/iree
+            ${{ env.IREE_DIR }}
 
       - name: Download IREE source code
         if: steps.cache-iree.outputs.cache-hit != 'true'
         run: |
-          ./scripts/clone_iree.sh ${{ env.BUILD_CACHE }} ${{ env.iree_version }} '${{ env.BUILD_CACHE }}/iree'
+          ./scripts/clone_iree.sh ${{ env.BUILD_CACHE }} ${{ env.iree_version }} ${{ env.IREE_DIR }}
 
   build_artifacts:
     runs-on: macos-14
