@@ -33,11 +33,12 @@ jobs:
 
       - name: Install Erlang and Elixir
         run: |
+          asdf plugin add erlang
+          asdf plugin add elixir
           asdf install erlang ${{ matrix.OTP_VERSION }}
           asdf install elixir ${{ matrix.ELIXIR_VERSION }}
           asdf global erlang ${{ matrix.OTP_VERSION }}
           asdf global elixir ${{ matrix.ELIXIR_VERSION }}
-          source $(brew --prefix asdf)/libexec/asdf.sh
           mix local.hex --force
           mix local.rebar --force
 
@@ -82,11 +83,12 @@ jobs:
 
       - name: Install Erlang and Elixir
         run: |
+          asdf plugin add erlang
+          asdf plugin add elixir
           asdf install erlang ${{ matrix.OTP_VERSION }}
           asdf install elixir ${{ matrix.ELIXIR_VERSION }}
           asdf global erlang ${{ matrix.OTP_VERSION }}
           asdf global elixir ${{ matrix.ELIXIR_VERSION }}
-          source $(brew --prefix asdf)/libexec/asdf.sh
           mix local.hex --force
           mix local.rebar --force
 
