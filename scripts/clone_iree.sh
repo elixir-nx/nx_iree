@@ -12,10 +12,10 @@ IREE_REPO=https://github.com/iree-org/iree
 
 if [ -d ${IREE_DIR} ]; then
   echo "IREE directory already exists. Skipping clone."
+  ls ${IREE_DIR}
 else
   git clone --branch ${IREE_GIT_REV} --depth 1 ${IREE_REPO} ${IREE_DIR}
 fi
-
 
 cd ${IREE_DIR}
 
