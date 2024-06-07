@@ -15,7 +15,7 @@ env:
   MIX_ENV: prod
   NX_IREE_PREFER_PRECOMPILED: "false"
   BUILD_CACHE: ${{ github.workspace }}/build_cache
-  IREE_DIR: ${{ env.BUILD_CACHE }}/iree
+  IREE_DIR: ${{ github.workspace }}/build_cache/iree
 
 jobs:
   download_iree:
