@@ -1,4 +1,4 @@
-name: apple-release-artifacts
+name: release-artifacts
 
 on:
   push:
@@ -38,11 +38,15 @@ jobs:
         run: |
           mix deps.get
 
+      - name: Get IREE version
+        id: get-iree-version
+        run: echo "iree_version=$(mix iree.version)" >> $GITHUB_ENV
+
       - name: Cache IREE source code
         id: cache-iree
         uses: actions/cache@v4
         with:
-          key: iree-${{ mix iree.version }}
+          key: iree-${{ env.iree_version }}
           path: |
             ${{ env.BUILD_CACHE }}/iree
 
@@ -69,11 +73,15 @@ jobs:
           path: |
             ./deps
 
+      - name: Get IREE version
+        id: get-iree-version
+        run: echo "iree_version=$(mix iree.version)" >> $GITHUB_ENV
+
       - name: Cache IREE source code
         id: cache-iree
         uses: actions/cache/restore@v4
         with:
-          key: iree-${{ mix iree.version }}
+          key: iree-${{ env.iree_version }}
           path: |
             ${{ env.BUILD_CACHE }}/iree
 
