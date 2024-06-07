@@ -1,6 +1,7 @@
 # Environment variables passed via elixir_make
 # IREE_GIT_REV
 # IREE_DIR
+# IREE_BUILD_TARGET
 
 # System vars
 TEMP ?= $(HOME)/.cache
@@ -21,9 +22,61 @@ $(IREE_DIR):
 IREE_CMAKE_BUILD_DIR ?= $(abspath iree-runtime/iree-build)
 IREE_RUNTIME_INCLUDE_PATH := $(abspath $(IREE_DIR)/runtime/src/iree)
 IREE_RUNTIME_BUILD_DIR ?= $(abspath iree-runtime/build)
-IREE_RUNTIME_INSTALL_DIR ?= $(abspath iree-runtime/install)
 
 IREE_CMAKE_CONFIG ?= Release
+
+IREE_BUILD_TARGET ?= cpu
+
+BUILD_TARGET_FLAGS = ""
+
+ifeq ($(IREE_BUILD_TARGET), cpu)
+else ifeq ($(IREE_BUILD_TARGET), ios)
+	BUILD_TARGET_FLAGS = \
+		-DCMAKE_SYSTEM_NAME=iOS\
+		-DCMAKE_OSX_DEPLOYMENT_TARGET=17.5\
+		-DCMAKE_OSX_ARCHITECTURES=arm64\
+		-DCMAKE_SYSTEM_PROCESSOR=arm64\
+		-DCMAKE_IOS_INSTALL_COMBINED=YES\
+		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk iphone Path)
+else ifeq ($(IREE_BUILD_TARGET), ios_simulator)
+	BUILD_TARGET_FLAGS = \
+		-DCMAKE_SYSTEM_NAME=iOS\
+		-DCMAKE_OSX_DEPLOYMENT_TARGET=17.5\
+		-DCMAKE_OSX_ARCHITECTURES=arm64\
+		-DCMAKE_SYSTEM_PROCESSOR=arm64\
+		-DCMAKE_IOS_INSTALL_COMBINED=YES\
+		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk iphonesimulator Path)
+else ifeq ($(IREE_BUILD_TARGET), visionos)
+	BUILD_TARGET_FLAGS = \
+		-DCMAKE_SYSTEM_NAME=visionOS\
+		-DCMAKE_OSX_DEPLOYMENT_TARGET=1.2\
+		-DCMAKE_OSX_ARCHITECTURES=arm64\
+		-DCMAKE_SYSTEM_PROCESSOR=arm64\
+		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk xros Path)
+else ifeq ($(IREE_BUILD_TARGET), visionos_simulator)
+	BUILD_TARGET_FLAGS = \
+		-DCMAKE_SYSTEM_NAME=visionOS\
+		-DCMAKE_OSX_DEPLOYMENT_TARGET=1.2\
+		-DCMAKE_OSX_ARCHITECTURES=arm64\
+		-DCMAKE_SYSTEM_PROCESSOR=arm64\
+		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk xrsimulator Path)
+else ifeq ($(IREE_BUILD_TARGET), watchos)
+	BUILD_TARGET_FLAGS = \
+		-DCMAKE_SYSTEM_NAME=watchOS\
+		-DCMAKE_OSX_DEPLOYMENT_TARGET=10.5\
+		-DCMAKE_OSX_ARCHITECTURES=arm64\
+		-DCMAKE_SYSTEM_PROCESSOR=arm64\
+		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk watchos Path)
+else ifeq ($(IREE_BUILD_TARGET), watchos_simulator)
+	BUILD_TARGET_FLAGS = \
+		-DCMAKE_SYSTEM_NAME=watchOS\
+		-DCMAKE_OSX_DEPLOYMENT_TARGET=10.5\
+		-DCMAKE_OSX_ARCHITECTURES=arm64\
+		-DCMAKE_SYSTEM_PROCESSOR=arm64\
+		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk watchsimulator Path)
+else
+	BUILD_TARGET_FLAGS = ""
+endif
 
 $(IREE_RUNTIME_BUILD_DIR): $(IREE_DIR)
 	cmake -G Ninja -S $(IREE_DIR) -B $(IREE_RUNTIME_BUILD_DIR) \
@@ -44,9 +97,10 @@ $(IREE_INSTALL_DIR): $(IREE_DIR) $(IREE_RUNTIME_BUILD_DIR)
 		-DIREE_BUILD_COMPILER=OFF\
 		-DIREE_RUNTIME_BUILD_DIR=$(IREE_RUNTIME_BUILD_DIR)\
 		-DIREE_RUNTIME_INCLUDE_PATH=$(IREE_RUNTIME_INCLUDE_PATH)\
-		-DIREE_DIR=$(IREE_DIR)
+		-DIREE_DIR=$(IREE_DIR) \
+		$(BUILD_TARGET_FLAGS)
 	cmake --build $(IREE_CMAKE_BUILD_DIR) --config $(IREE_CMAKE_CONFIG)
-	cmake --install $(IREE_CMAKE_BUILD_DIR) --config $(IREE_CMAKE_CONFIG) --prefix $(IREE_RUNTIME_INSTALL_DIR)
+	cmake --install $(IREE_CMAKE_BUILD_DIR) --config $(IREE_CMAKE_CONFIG) --prefix $(IREE_INSTALL_DIR)
 
 # Print IREE Dir
 PTD:
