@@ -1,26 +1,22 @@
 # Environment variables passed via elixir_make
 # IREE_GIT_REV
-# IREE_SOURCE_DIR
+# IREE_DIR
 
 # System vars
 TEMP ?= $(HOME)/.cache
 BUILD_CACHE ?= $(TEMP)/nx_iree
+IREE_DIR ?= $(BUILD_CACHE)/$(IREE_NS)
 
 IREE_REPO ?= https://github.com/iree-org/iree
 
 IREE_NS = iree-$(IREE_GIT_REV)
-IREE_DIR = $(BUILD_CACHE)/$(IREE_NS)
 
-IREE_INSTALL_DIR ?= $(IREE_SOURCE_DIR)/install
+IREE_INSTALL_DIR ?= $(IREE_DIR)/install
 
 compile: $(IREE_INSTALL_DIR)
 
 $(IREE_DIR):
-	mkdir -p $(BUILD_CACHE) && \
-	git clone $(IREE_REPO) $(IREE_DIR) && \
-	cd $(IREE_DIR) && \
-	git checkout $(IREE_GIT_REV) && \
-	git submodule update --init --recursive --depth 1
+	./scripts/clone_iree.sh $(BUILD_CACHE) $(IREE_GIT_REV) $(IREE_DIR)
 
 IREE_CMAKE_BUILD_DIR ?= $(abspath iree-runtime/iree-build)
 IREE_RUNTIME_INCLUDE_PATH := $(abspath $(IREE_DIR)/runtime/src/iree)

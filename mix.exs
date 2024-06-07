@@ -12,7 +12,8 @@ defmodule NxIree.MixProject do
       deps: deps(),
       compilers: [:nx_iree, :elixir_make] ++ Mix.compilers(),
       aliases: [
-        "compile.nx_iree": &compile/1
+        "compile.nx_iree": &compile/1,
+        "iree.version": &version/1
       ],
       make_env: fn ->
         priv_path = Path.join(Mix.Project.app_path(), "priv")
@@ -43,12 +44,18 @@ defmodule NxIree.MixProject do
     ]
   end
 
+  defp version(_args) do
+    IO.puts(nx_iree_config().tag)
+  end
+
   defp compile(args) do
     download_and_unzip(args)
   end
 
   defp nx_iree_config() do
     version = System.get_env("NX_IREE_VERSION", "20240604.914")
+    tag = System.get_env("NX_IREE_GIT_REV", "candidate-20240604.914")
+
     env_dir = System.get_env("NX_IREE_COMPILER_DIR")
     source_env_dir = System.get_env("NX_IREE_SOURCE_DIR")
 
@@ -57,7 +64,7 @@ defmodule NxIree.MixProject do
 
     %{
       version: version,
-      tag: "candidate-#{version}",
+      tag: tag,
       base: "iree",
       env_dir: env_dir,
       dir: dir,
