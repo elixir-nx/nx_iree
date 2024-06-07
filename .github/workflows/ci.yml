@@ -84,15 +84,15 @@ jobs:
 
       - name: Install Erlang and Elixir
         run: |
-          brew install autoconf coreutils curl git openssl wxwidgets asdf ffmpeg
+          brew install autoconf coreutils curl git openssl wxwidgets asdf
           brew link ffmpeg
           asdf plugin add erlang https://github.com/asdf-vm/asdf-erlang.git
           asdf plugin-add elixir https://github.com/asdf-vm/asdf-elixir.git
           export KERL_CONFIGURE_OPTIONS="--disable-debug --without-javac"
-          asdf install erlang ${{ matrix.pair.OTP_VERSION }}
-          asdf install elixir ${{ matrix.pair.ELIXIR_VERSION }}
-          asdf global erlang ${{ matrix.pair.OTP_VERSION }}
-          asdf global elixir ${{ matrix.pair.ELIXIR_VERSION }}
+          asdf install erlang ${{ matrix.OTP_VERSION }}
+          asdf install elixir ${{ matrix.ELIXIR_VERSION }}
+          asdf global erlang ${{ matrix.OTP_VERSION }}
+          asdf global elixir ${{ matrix.ELIXIR_VERSION }}
           source $(brew --prefix asdf)/libexec/asdf.sh
           mix local.hex --force
           mix local.rebar --force
@@ -117,8 +117,9 @@ jobs:
         with:
           key: iree-${{ env.iree_version }}
           path: |
-            ${{ env.BUILD_CACHE }}/iree
+            ${{ env.IREE_DIR }}
 
       - name: Build IREE
         run: |
-          IREE_DIR=${{ env.BUILD_CACHE }}/iree make compile
+          make compile IREE_DIR=${{ env.IREE_DIR }}
+          ls ${{ env.IREE_DIR }}/install
