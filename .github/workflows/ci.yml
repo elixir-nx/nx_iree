@@ -72,7 +72,7 @@ jobs:
           ./scripts/clone_iree.sh ${{ env.BUILD_CACHE }} ${{ env.iree_version }} ${{ env.IREE_DIR }}
 
   build_artifacts:
-    name: "Build artifacts ({{matrix.build_target}} / Elixir {{ matrix.ELIXIR_VERSION }} / OTP {{ matrix.OTP_VERSION }})"
+    name: "Build artifacts (${{matrix.build_target}} / Elixir ${{ matrix.ELIXIR_VERSION }} / OTP ${{ matrix.OTP_VERSION }})"
     runs-on: macos-14
     strategy:
       matrix:
@@ -80,14 +80,14 @@ jobs:
         ELIXIR_VERSION: ["1.15.4"]
         build_target:
           - "cpu"
-          - "ios"
-          - "ios_simulator"
-          - "visionos"
-          - "visionos_simulator"
-          - "watchos"
-          - "watchos_simulator"
-          - "tvos"
-          - "tvos_simulator"
+          # - "ios"
+          # - "ios_simulator"
+          # - "visionos"
+          # - "visionos_simulator"
+          # - "watchos"
+          # - "watchos_simulator"
+          # - "tvos"
+          # - "tvos_simulator"
     needs: download_iree
     steps:
       - name: Checkout
