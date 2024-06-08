@@ -6,15 +6,16 @@
 # System vars
 TEMP ?= $(HOME)/.cache
 BUILD_CACHE ?= $(TEMP)/nx_iree
-IREE_DIR ?= $(BUILD_CACHE)/$(IREE_NS)
 
 IREE_REPO ?= https://github.com/iree-org/iree
 
 IREE_NS = iree-$(IREE_GIT_REV)
+IREE_DIR ?= $(BUILD_CACHE)/$(IREE_NS)
 
-IREE_INSTALL_DIR ?= $(IREE_DIR)/install
 
-compile: build_runtime install_runtime
+# default rule
+# compile: build_runtime install_runtime
+compile: install_runtime
 
 $(IREE_DIR):
 	./scripts/clone_iree.sh $(BUILD_CACHE) $(IREE_GIT_REV) $(IREE_DIR)
@@ -22,15 +23,16 @@ $(IREE_DIR):
 IREE_CMAKE_BUILD_DIR ?= $(abspath iree-runtime/iree-build)
 IREE_RUNTIME_INCLUDE_PATH := $(abspath $(IREE_DIR)/runtime/src/iree)
 IREE_RUNTIME_BUILD_DIR ?= $(abspath iree-runtime/build)
+IREE_INSTALL_DIR ?= $(abspath iree-runtime/install)
 
 IREE_CMAKE_CONFIG ?= Release
 
-IREE_BUILD_TARGET ?= cpu
+IREE_BUILD_TARGET ?= host
 
 BUILD_TARGET_FLAGS = ""
 
 # flags for xcode 15.4
-ifeq ($(IREE_BUILD_TARGET), cpu)
+ifeq ($(IREE_BUILD_TARGET), host)
 else ifeq ($(IREE_BUILD_TARGET), ios)
 	BUILD_TARGET_FLAGS = \
 		-DCMAKE_SYSTEM_NAME=iOS\
@@ -61,46 +63,31 @@ else ifeq ($(IREE_BUILD_TARGET), visionos_simulator)
 		-DCMAKE_OSX_ARCHITECTURES=arm64\
 		-DCMAKE_SYSTEM_PROCESSOR=arm64\
 		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk xrsimulator Path)
-else ifeq ($(IREE_BUILD_TARGET), watchos)
-	BUILD_TARGET_FLAGS = \
-		-DCMAKE_SYSTEM_NAME=watchOS\
-		-DCMAKE_OSX_DEPLOYMENT_TARGET=10.5\
-		-DCMAKE_OSX_ARCHITECTURES=arm64\
-		-DCMAKE_SYSTEM_PROCESSOR=arm64\
-		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk watchos Path)
-else ifeq ($(IREE_BUILD_TARGET), watchos_simulator)
-	BUILD_TARGET_FLAGS = \
-		-DCMAKE_SYSTEM_NAME=watchOS\
-		-DCMAKE_OSX_DEPLOYMENT_TARGET=10.5\
-		-DCMAKE_OSX_ARCHITECTURES=arm64\
-		-DCMAKE_SYSTEM_PROCESSOR=arm64\
-		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk watchsimulator Path)
 else
 	BUILD_TARGET_FLAGS = ""
 endif
 
-$(IREE_RUNTIME_BUILD_DIR): build_runtime
+# $(IREE_RUNTIME_BUILD_DIR): build_runtime
 
-build_runtime: $(IREE_DIR)
-	cmake -G Ninja -S $(IREE_DIR) -B $(IREE_RUNTIME_BUILD_DIR) \
-		-DCMAKE_INSTALL_PREFIX=$(IREE_RUNTIME_BUILD_DIR)/install \
-		-DIREE_BUILD_TESTS=OFF \
-		-DIREE_BUILD_SAMPLES=OFF \
-		-DIREE_ENABLE_ASSERTIONS=ON \
-		-DIREE_BUILD_COMPILER=OFF \
-		-DCMAKE_BUILD_TYPE=$(IREE_CMAKE_CONFIG) \
-		-DCMAKE_CXX_FLAGS="-fvisibility=hidden"
-	cmake --build $(IREE_RUNTIME_BUILD_DIR)
-	cmake --build $(IREE_RUNTIME_BUILD_DIR) --target install
+# build_runtime: $(IREE_DIR)
+# 	cmake -G Ninja -S $(IREE_DIR) -B $(IREE_RUNTIME_BUILD_DIR) \
+# 		-DCMAKE_INSTALL_PREFIX=$(IREE_RUNTIME_BUILD_DIR)/install \
+# 		-DIREE_BUILD_TESTS=OFF \
+# 		-DIREE_BUILD_SAMPLES=OFF \
+# 		-DIREE_ENABLE_ASSERTIONS=ON \
+# 		-DIREE_BUILD_COMPILER=OFF \
+# 		-DCMAKE_BUILD_TYPE=$(IREE_CMAKE_CONFIG) \
+# 		-DCMAKE_CXX_FLAGS="-fvisibility=hidden"
+# 	cmake --build $(IREE_RUNTIME_BUILD_DIR)
+# 	cmake --build $(IREE_RUNTIME_BUILD_DIR) --target install
 
-$(IREE_INSTALL_DIR): install_runtime
-
-install_runtime: $(IREE_DIR) $(IREE_RUNTIME_BUILD_DIR)
+install_runtime: $(IREE_DIR)
 	cmake -S cmake -B $(IREE_CMAKE_BUILD_DIR) \
 		-DCMAKE_BUILD_TYPE=$(IREE_CMAKE_CONFIG)\
 		-DIREE_BUILD_COMPILER=OFF\
 		-DIREE_RUNTIME_BUILD_DIR=$(IREE_RUNTIME_BUILD_DIR)\
 		-DIREE_RUNTIME_INCLUDE_PATH=$(IREE_RUNTIME_INCLUDE_PATH)\
+		-DIREE_BUILD_TARGET=$(IREE_BUILD_TARGET)\
 		-DIREE_DIR=$(IREE_DIR) \
 		$(BUILD_TARGET_FLAGS)
 	cmake --build $(IREE_CMAKE_BUILD_DIR) --config $(IREE_CMAKE_CONFIG)

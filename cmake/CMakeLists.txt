@@ -36,13 +36,9 @@ install(
 )
 
 if(APPLE)
-  if(NOT DEFINED CMAKE_SYSTEM_NAME)
-    set_target_properties(${_NAME} PROPERTIES SUFFIX ".dylib")
-  else()
-    set_target_properties(${_NAME} PROPERTIES SUFFIX "-${CMAKE_SYSTEM_NAME}-${CMAKE_OSX_DEPLOYMENT_TARGET}.dylib")
-  endif()
+  set_target_properties(${_NAME} PROPERTIES SUFFIX "-${IREE_BUILD_TARGET}.dylib")
 else()
-  set_target_properties(${_NAME} PROPERTIES SUFFIX ".so")
+  set_target_properties(${_NAME} PROPERTIES SUFFIX "-${IREE_BUILD_TARGET}.so")
 endif()
 
 set_target_properties(${_NAME} PROPERTIES
