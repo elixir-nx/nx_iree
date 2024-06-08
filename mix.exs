@@ -69,7 +69,8 @@ defmodule NxIree.MixProject do
       env_dir: env_dir,
       dir: dir,
       source_dir: source_dir,
-      compiler_path: Path.join([dir, "compiler/_mlir_libs/iree-compile"])
+      compiler_path: Path.join([dir, "compiler/_mlir_libs/iree-compile"]),
+      lld_path: Path.join([dir, "compiler/_mlir_libs/iree-lld"])
     }
   end
 
@@ -128,6 +129,9 @@ defmodule NxIree.MixProject do
         end
 
       download!(url, nx_iree_zip)
+
+      File.chmod!(nx_iree_config.compiler_path, 0o755)
+      File.chmod!(nx_iree_config.lld_path, 0o755)
     end
 
     :ok
