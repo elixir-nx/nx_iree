@@ -19,7 +19,7 @@ env:
 
 jobs:
   download_iree:
-    runs-on: self-hosted
+    runs-on: ARM64
     strategy:
       matrix:
         OTP_VERSION: ["27.0"]
@@ -73,7 +73,7 @@ jobs:
 
   build_artifacts:
     name: "Build artifacts (${{matrix.build_target}} / Elixir ${{ matrix.ELIXIR_VERSION }} / OTP ${{ matrix.OTP_VERSION }})"
-    runs-on: self-hosted
+    runs-on: ARM64
     strategy:
       matrix:
         OTP_VERSION: ["27.0"]
