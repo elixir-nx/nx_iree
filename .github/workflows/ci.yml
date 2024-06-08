@@ -96,6 +96,12 @@ jobs:
       - name: Install asdf
         uses: asdf-vm/actions/setup@v3
 
+      - name: Show current version of Xcode
+        run: xcodebuild -version
+
+      - name: List available Xcode versions
+        run: ls /Applications | grep Xcode
+
       - name: Install Erlang and Elixir
         run: |
           asdf plugin add erlang
