@@ -28,6 +28,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup XCode
+        run: |
+          sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
+          xcodebuild -version -sdk
+
       - name: Install asdf
         uses: asdf-vm/actions/setup@v3
 
@@ -98,7 +103,7 @@ jobs:
 
       - name: Setup XCode
         run: |
-          xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
+          sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
           xcodebuild -version -sdk
 
       - name: Install Erlang and Elixir
