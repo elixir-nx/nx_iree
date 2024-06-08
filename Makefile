@@ -14,7 +14,7 @@ IREE_NS = iree-$(IREE_GIT_REV)
 
 IREE_INSTALL_DIR ?= $(IREE_DIR)/install
 
-compile: $(IREE_INSTALL_DIR)
+compile: build_runtime install_runtime
 
 $(IREE_DIR):
 	./scripts/clone_iree.sh $(BUILD_CACHE) $(IREE_GIT_REV) $(IREE_DIR)
@@ -79,7 +79,9 @@ else
 	BUILD_TARGET_FLAGS = ""
 endif
 
-$(IREE_RUNTIME_BUILD_DIR): $(IREE_DIR)
+$(IREE_RUNTIME_BUILD_DIR): build_runtime
+
+build_runtime: $(IREE_DIR)
 	cmake -G Ninja -S $(IREE_DIR) -B $(IREE_RUNTIME_BUILD_DIR) \
 		-DCMAKE_INSTALL_PREFIX=$(IREE_RUNTIME_BUILD_DIR)/install \
 		-DIREE_BUILD_TESTS=OFF \
@@ -91,9 +93,10 @@ $(IREE_RUNTIME_BUILD_DIR): $(IREE_DIR)
 	cmake --build $(IREE_RUNTIME_BUILD_DIR)
 	cmake --build $(IREE_RUNTIME_BUILD_DIR) --target install
 
-$(IREE_INSTALL_DIR): $(IREE_DIR) $(IREE_RUNTIME_BUILD_DIR)
+$(IREE_INSTALL_DIR): install_runtime
+
+install_runtime: $(IREE_DIR) $(IREE_RUNTIME_BUILD_DIR)
 	cmake -S cmake -B $(IREE_CMAKE_BUILD_DIR) \
-		-DIREE_RUNTIME_INCLUDE_PATH=$(IREE_RUNTIME_INCLUDE_PATH) \
 		-DCMAKE_BUILD_TYPE=$(IREE_CMAKE_CONFIG)\
 		-DIREE_BUILD_COMPILER=OFF\
 		-DIREE_RUNTIME_BUILD_DIR=$(IREE_RUNTIME_BUILD_DIR)\
