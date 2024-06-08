@@ -29,6 +29,7 @@ IREE_BUILD_TARGET ?= cpu
 
 BUILD_TARGET_FLAGS = ""
 
+# flags for xcode 15.4
 ifeq ($(IREE_BUILD_TARGET), cpu)
 else ifeq ($(IREE_BUILD_TARGET), ios)
 	BUILD_TARGET_FLAGS = \
