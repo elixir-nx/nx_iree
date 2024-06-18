@@ -91,8 +91,8 @@ call(iree_vm_instance_t *instance, iree_hal_device_t *device, unsigned char *byt
           device, iree_hal_device_allocator(device), input->dims.size(), input->dims.data(),
           input->type, IREE_HAL_ENCODING_TYPE_DENSE_ROW_MAJOR,
           (iree_hal_buffer_params_t){
-              .type = IREE_HAL_MEMORY_TYPE_DEVICE_LOCAL,
               .usage = IREE_HAL_BUFFER_USAGE_DEFAULT,
+              .type = IREE_HAL_MEMORY_TYPE_DEVICE_LOCAL,
           },
           input->data_byte_span(), &arg_buffer_view));
 

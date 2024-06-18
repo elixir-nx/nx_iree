@@ -95,16 +95,18 @@ endif
 # 	cmake --build $(IREE_RUNTIME_BUILD_DIR)
 # 	cmake --build $(IREE_RUNTIME_BUILD_DIR) --target install
 
+BUILD_TARGET_FLAGS += -S cmake
+
 install_runtime: $(IREE_DIR)
-	+cmake -G Ninja -S cmake -B $(IREE_CMAKE_BUILD_DIR) \
+	cmake -G Ninja -B $(IREE_CMAKE_BUILD_DIR) \
 		-DCMAKE_BUILD_TYPE=$(IREE_CMAKE_CONFIG)\
 		-DIREE_BUILD_COMPILER=OFF\
 		-DIREE_RUNTIME_BUILD_DIR=$(IREE_RUNTIME_BUILD_DIR)\
 		-DIREE_RUNTIME_INCLUDE_PATH=$(IREE_RUNTIME_INCLUDE_PATH)\
 		-DIREE_DIR=$(IREE_DIR) \
 		$(BUILD_TARGET_FLAGS)
-	+cmake --build $(IREE_CMAKE_BUILD_DIR) --config $(IREE_CMAKE_CONFIG)
-	+cmake --install $(IREE_CMAKE_BUILD_DIR) --config $(IREE_CMAKE_CONFIG) --prefix $(IREE_INSTALL_DIR)
+	cmake --build $(IREE_CMAKE_BUILD_DIR) --config $(IREE_CMAKE_CONFIG)
+	cmake --install $(IREE_CMAKE_BUILD_DIR) --config $(IREE_CMAKE_CONFIG) --prefix $(IREE_INSTALL_DIR)
 
 # Print IREE Dir
 PTD:

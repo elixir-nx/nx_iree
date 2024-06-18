@@ -143,8 +143,8 @@ defmodule NxIree.MixProject do
 
     # Remove stray files
 
-    File.rm_rf!(Path.join(parent_iree_dir, "iree_compiler.egg-info"))
-    File.rm_rf!(Path.join(parent_iree_dir, "iree_compiler-#{nx_iree_config.version}.dist-info"))
+    File.rm_rf(Path.join(parent_iree_dir, "iree_compiler.egg-info"))
+    File.rm_rf(Path.join(parent_iree_dir, "iree_compiler-#{nx_iree_config.version}.dist-info"))
 
     iree_compile_path =
       Path.join([parent_iree_dir, "iree", "compiler", "_mlir_libs", "iree-compile"])
@@ -160,7 +160,7 @@ defmodule NxIree.MixProject do
 
     link_name = Path.join(priv_path, "iree-compile")
 
-    File.rm!(link_name)
+    File.rm(link_name)
     File.ln_s!(iree_compile_path, link_name)
 
     :ok

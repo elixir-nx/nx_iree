@@ -1,14 +1,12 @@
 #!/usr/bin/env bash
 
 set -e
-\
+
+IREE_BUILD_TARGET=$1
+
 NUM_JOBS=-j$(($(nproc) - 2 ))
 
 mkdir -p iree-runtime/artifacts
-
-
-for IREE_BUILD_TARGET in "host" "ios" "ios_simulator" "visionos" "visionos_simulator" "tvos" "tvos_simulator"
-do
 
 IREE_CMAKE_BUILD_DIR=iree-runtime/${IREE_BUILD_TARGET}/iree-build
 IREE_RUNTIME_BUILD_DIR=iree-runtime/${IREE_BUILD_TARGET}/build
@@ -22,5 +20,3 @@ TAR_NAME=iree-runtime/artifacts/nx_iree-${HOST_ARCH}-${IREE_BUILD_TARGET}.tar.gz
 
 echo "Packaging into ${TAR_NAME}"
 tar -czf ${TAR_NAME} -C ${IREE_INSTALL_DIR} .
-
-done
