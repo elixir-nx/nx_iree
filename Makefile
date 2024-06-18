@@ -29,7 +29,7 @@ IREE_CMAKE_CONFIG ?= Release
 
 IREE_BUILD_TARGET ?= host
 
-BUILD_TARGET_FLAGS = ""
+BUILD_TARGET_FLAGS = -S cmake
 
 # flags for xcode 15.4
 ifeq ($(IREE_BUILD_TARGET), host)
@@ -80,22 +80,6 @@ else ifeq ($(IREE_BUILD_TARGET), tvos_simulator)
 else
 	$(error "Unknown IREE_BUILD_TARGET: $(IREE_BUILD_TARGET), must be one of host, ios, ios_simulator, visionos, visionos_simulator, tvos, tvos_simulator")
 endif
-
-# $(IREE_RUNTIME_BUILD_DIR): build_runtime
-
-# build_runtime: $(IREE_DIR)
-# 	cmake -G Ninja -S $(IREE_DIR) -B $(IREE_RUNTIME_BUILD_DIR) \
-# 		-DCMAKE_INSTALL_PREFIX=$(IREE_RUNTIME_BUILD_DIR)/install \
-# 		-DIREE_BUILD_TESTS=OFF \
-# 		-DIREE_BUILD_SAMPLES=OFF \
-# 		-DIREE_ENABLE_ASSERTIONS=ON \
-# 		-DIREE_BUILD_COMPILER=OFF \
-# 		-DCMAKE_BUILD_TYPE=$(IREE_CMAKE_CONFIG) \
-# 		-DCMAKE_CXX_FLAGS="-fvisibility=hidden"
-# 	cmake --build $(IREE_RUNTIME_BUILD_DIR)
-# 	cmake --build $(IREE_RUNTIME_BUILD_DIR) --target install
-
-BUILD_TARGET_FLAGS += -S cmake
 
 install_runtime: $(IREE_DIR)
 	cmake -G Ninja -B $(IREE_CMAKE_BUILD_DIR) \
