@@ -10,11 +10,12 @@ defmodule NxIree do
 
   ## Examples
 
-      iex> mlir_module = "
+      iex> mlir_module = \"""
       ...> func.func @simple_mul(%arg0: tensor<4xf32>, %arg1: tensor<4xf32>) -> tensor<4xf32> {
-      ...>   %0 = "arith.mulf"(%arg0, %arg1) : (tensor<4xf32>, tensor<4xf32>) -> tensor<4xf32>
+      ...>   %0 = "stablehlo.multiply"(%arg0, %arg1) : (tensor<4xf32>, tensor<4xf32>) -> tensor<4xf32>
       ...>   return %0 : tensor<4xf32>
-      ...> }"
+      ...> }
+      ...>\"""
       iex> flags = ["--iree-hal-target-backends=llvm-cpu", "--iree-input-type=stablehlo_xla", "--iree-execution-model=async-internal"]
       iex> NxIree.compile(mlir_module, flags)
   """
@@ -24,7 +25,7 @@ defmodule NxIree do
     try do
       {output, 0} =
         System.cmd(
-          "/Users/paulo.valente/coding/nx_iree/cache/iree-compiler/compiler/_mlir_libs/iree-compile",
+          Path.join(:code.priv_dir(:nx_iree), "iree-compile"),
           dbg(flags ++ [tmpfile])
         )
 

@@ -6,8 +6,7 @@ NUM_JOBS=-j$(($(nproc) - 2 ))
 
 mkdir -p iree-runtime/artifacts
 
-# for IREE_BUILD_TARGET in "host" "ios" "ios_simulator" "visionos" "visionos_simulator"
-for IREE_BUILD_TARGET in "tvos" "tvos_simulator"
+for IREE_BUILD_TARGET in "host" "ios" "ios_simulator" "visionos" "visionos_simulator" "tvos" "tvos_simulator"
 do
 
 IREE_CMAKE_BUILD_DIR=iree-runtime/${IREE_BUILD_TARGET}/iree-build

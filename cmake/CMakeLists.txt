@@ -36,9 +36,9 @@ install(
 )
 
 if(APPLE)
-  set_target_properties(${_NAME} PROPERTIES SUFFIX "-${IREE_BUILD_TARGET}.dylib")
+  set_target_properties(${_NAME} PROPERTIES SUFFIX ".dylib")
 else()
-  set_target_properties(${_NAME} PROPERTIES SUFFIX "-${IREE_BUILD_TARGET}.so")
+  set_target_properties(${_NAME} PROPERTIES SUFFIX ".so")
 endif()
 
 set_target_properties(${_NAME} PROPERTIES
@@ -76,3 +76,8 @@ target_link_libraries(${_NAME} iree_runtime_runtime)
 install(DIRECTORY "${IREE_RUNTIME_INCLUDE_PATH}"
         DESTINATION "include"
         FILES_MATCHING PATTERN "*.h")
+
+file(GLOB HEADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h")
+
+install(FILES ${HEADER_FILES}
+        DESTINATION include)

@@ -129,10 +129,39 @@ defmodule NxIree.MixProject do
         end
 
       download!(url, nx_iree_zip)
-
-      File.chmod!(nx_iree_config.compiler_path, 0o755)
-      File.chmod!(nx_iree_config.lld_path, 0o755)
     end
+
+    # Unpack libtorch and move to the target cache dir
+    parent_iree_dir = Path.dirname(nx_iree_config.dir)
+    File.mkdir_p!(parent_iree_dir)
+
+    # Extract to the parent directory (it will be inside the libtorch directory)
+    {:ok, _} =
+      nx_iree_zip
+      |> String.to_charlist()
+      |> :zip.unzip(cwd: String.to_charlist(parent_iree_dir))
+
+    # Remove stray files
+
+    File.rm_rf!(Path.join(parent_iree_dir, "iree_compiler.egg-info"))
+    File.rm_rf!(Path.join(parent_iree_dir, "iree_compiler-#{nx_iree_config.version}.dist-info"))
+
+    iree_compile_path =
+      Path.join([parent_iree_dir, "iree", "compiler", "_mlir_libs", "iree-compile"])
+
+    iree_lld_path =
+      Path.join([parent_iree_dir, "iree", "compiler", "_mlir_libs", "iree-lld"])
+
+    File.chmod!(iree_compile_path, 0o755)
+    File.chmod!(iree_lld_path, 0o755)
+
+    priv_path = Path.join(Mix.Project.app_path(), "priv")
+    File.mkdir_p!(priv_path)
+
+    link_name = Path.join(priv_path, "iree-compile")
+
+    File.rm!(link_name)
+    File.ln_s!(iree_compile_path, link_name)
 
     :ok
   end
