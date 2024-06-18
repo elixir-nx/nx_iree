@@ -14,7 +14,6 @@ IREE_DIR ?= $(BUILD_CACHE)/$(IREE_NS)
 
 
 # default rule
-# compile: build_runtime install_runtime
 compile: install_runtime
 
 $(IREE_DIR):
