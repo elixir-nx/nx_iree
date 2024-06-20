@@ -27,15 +27,110 @@ iree_vm_instance_t *create_instance() {
   return instance;
 }
 
-iree_hal_device_t *create_device(const std::string &device_uri) {
-  iree_hal_device_t *device = nullptr;
-  iree_status_t status = iree_hal_register_all_available_drivers(iree_hal_driver_registry_default());
+iree_status_t register_all_drivers() {
+  return iree_hal_register_all_available_drivers(iree_hal_driver_registry_default());
+}
+
+std::pair<iree_status_t, std::vector<iree::runtime::Driver>>
+list_drivers() {
+  size_t driver_info_count;
+  iree_hal_driver_info_t *driver_infos;
+
+  iree_status_t status = iree_hal_driver_registry_enumerate(
+      iree_hal_driver_registry_default(),
+      iree_allocator_system(),
+      &driver_info_count,
+      &driver_infos);
 
   if (!iree_status_is_ok(status)) {
-    return nullptr;
+    return {status, {}};
   }
 
-  status = iree_hal_create_device(
+  std::vector<iree::runtime::Driver> drivers;
+
+  for (size_t i = 0; i < driver_info_count; i++) {
+    iree::runtime::Driver driver;
+    auto info = driver_infos[i];
+    driver.name = std::string(info.driver_name.data, info.driver_name.size);
+    driver.full_name = std::string(info.full_name.data, info.full_name.size);
+    drivers.push_back(driver);
+  }
+
+  return {iree_ok_status(), drivers};
+}
+
+std::pair<iree_status_t, std::vector<iree::runtime::Device>> list_devices() {
+  auto [status, drivers] = list_drivers();
+  if (!iree_status_is_ok(status)) {
+    return {status, {}};
+  }
+
+  std::vector<iree::runtime::Device> devices;
+
+  for (auto driver : drivers) {
+    auto [status, driver_devices] = list_devices(driver.name);
+    if (!iree_status_is_ok(status)) {
+      return {status, {}};
+    }
+
+    devices.insert(devices.end(), driver_devices.begin(), driver_devices.end());
+  }
+
+  return {iree_ok_status(), devices};
+}
+
+std::pair<iree_status_t, std::vector<iree::runtime::Device>> list_devices(std::string driver_name) {
+  size_t device_info_count;
+  iree_hal_device_info_t *device_infos;
+  iree_hal_driver_t *driver;
+
+  iree_status_t status = iree_hal_driver_registry_try_create(
+      iree_hal_driver_registry_default(),
+      iree_make_cstring_view(driver_name.c_str()),
+      iree_allocator_system(),
+      &driver);
+
+  if (!iree_status_is_ok(status)) {
+    iree_hal_driver_release(driver);
+    return {status, {}};
+  }
+
+  status = iree_hal_driver_query_available_devices(
+      driver, iree_allocator_system(), &device_info_count, &device_infos);
+
+  if (!iree_status_is_ok(status)) {
+    iree_hal_driver_release(driver);
+    return {status, {}};
+  }
+
+  std::vector<iree::runtime::Device> devices;
+
+  for (size_t i = 0; i < device_info_count; i++) {
+    iree::runtime::Device device(driver_name);
+    auto info = device_infos[i];
+
+    iree_status_t status = iree_hal_create_device(
+        iree_hal_driver_registry_default(),
+        info.path,
+        iree_allocator_system(), &device.ref);
+
+    if (!iree_status_is_ok(status)) {
+      iree_hal_driver_release(driver);
+      return {status, {}};
+    }
+
+    device.uri = std::string(info.path.data, info.path.size);
+    devices.push_back(device);
+  }
+
+  iree_hal_driver_release(driver);
+  return {iree_ok_status(), devices};
+}
+
+iree_hal_device_t *create_device(const std::string &device_uri) {
+  iree_hal_device_t *device = nullptr;
+
+  iree_status_t status = iree_hal_create_device(
       iree_hal_driver_registry_default(),
       iree_make_cstring_view(device_uri.c_str()),
       iree_allocator_system(), &device);
@@ -157,4 +252,8 @@ std::string get_status_message(iree_status_t status) {
   ss << status_string;
   iree_status_free(status);
   return ss.str();
+}
+
+bool is_ok(iree_status_t status) {
+  return iree_status_is_ok(status);
 }

@@ -13,6 +13,24 @@
 namespace iree {
 namespace runtime {
 
+struct Driver {
+  std::string name;
+  std::string full_name;
+};
+
+struct Device {
+ public:
+  std::string uri;
+  iree_hal_device_t* ref;
+  std::string driver_name;
+
+  Device(std::string driver_name) : driver_name(driver_name) {}
+
+  ~Device() {
+    iree_hal_device_release(ref);
+  }
+};
+
 class IREEInput {
  public:
   void* data;
@@ -65,3 +83,11 @@ call(iree_vm_instance_t* i, iree_hal_device_t*, unsigned char*, size_t, std::vec
 
 iree_status_t read_buffer(iree_hal_device_t* device, iree_hal_buffer_view_t* buffer_view, void* output_buffer, size_t num_bytes);
 std::string get_status_message(iree_status_t status);
+
+iree_status_t register_all_drivers();
+
+std::pair<iree_status_t, std::vector<iree::runtime::Driver>> list_drivers();
+std::pair<iree_status_t, std::vector<iree::runtime::Device>> list_devices();
+std::pair<iree_status_t, std::vector<iree::runtime::Device>> list_devices(std::string driver_name);
+
+bool is_ok(iree_status_t status);

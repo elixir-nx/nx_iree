@@ -1,6 +1,6 @@
-defmodule NxIree do
+defmodule NxIREE do
   @moduledoc """
-  Documentation for `NxIree`.
+  Documentation for `NxIREE`.
   """
 
   @doc """
@@ -17,7 +17,7 @@ defmodule NxIree do
       ...> }
       ...>\"""
       iex> flags = ["--iree-hal-target-backends=llvm-cpu", "--iree-input-type=stablehlo_xla", "--iree-execution-model=async-internal"]
-      iex> NxIree.compile(mlir_module, flags)
+      iex> NxIREE.compile(mlir_module, flags)
   """
   def compile(mlir_module, flags \\ []) do
     {:ok, tmpfile} = create_temp_file(mlir_module)
@@ -26,10 +26,10 @@ defmodule NxIree do
       {output, 0} =
         System.cmd(
           Path.join(:code.priv_dir(:nx_iree), "iree-compile"),
-          dbg(flags ++ [tmpfile])
+          flags ++ [tmpfile]
         )
 
-      output
+      %NxIREE.Module{bytecode: output}
     after
       File.rm(tmpfile)
     end
@@ -42,5 +42,58 @@ defmodule NxIree do
       :ok -> {:ok, tmpfile}
       {:error, reason} -> {:error, reason}
     end
+  end
+
+  @doc """
+  Calls a function in the given module with the provided inputs.
+
+  ## Options
+
+    # `:function` - The name of the function to call in the module. If not provided, will default to `"main"`.
+    * `:device` - The device to run the module on. If not provided, will default to `"local-sync://".
+      Valid values can be obtained through `list_devices/0` or `list_devices/1`.
+  """
+  def call(%NxIREE.Module{bytecode: bytecode}, inputs, opts \\ []) do
+    opts = Keyword.validate!(opts, function: "main", device: "local-sync://")
+
+    {device_ref, kind} =
+      case NxIREE.Device.get(opts[:device]) do
+        {:ok, device_ref, kind} -> {device_ref, kind}
+        _ -> raise ArgumentError, "received unknown device URI: #{inspect(opts[:device])}"
+      end
+
+    if kind == :cpu do
+      NxIREE.Native.call_cpu(bytecode, inputs, opts[:function], device_ref)
+    else
+      NxIREE.Native.call_io(bytecode, inputs, opts[:function], device_ref)
+    end
+  end
+
+  @doc """
+  Lists all devices available for running IREE modules.
+  """
+  @spec list_devices(String.t()) :: {:ok, list(String.t())}
+  def list_devices do
+    # This function returns a tagged tuple for uniformity with the arity-1 clause.
+    NxIREE.Native.list_devices()
+  end
+
+  @doc """
+  Lists all devices available in a given driver for running IREE modules.
+
+  Valid drivers can be obtained through `list_drivers/0`.
+  """
+  @spec list_devices(String.t()) :: {:ok, list(String.t())} | {:error, :unknown_driver}
+  def list_devices(driver) do
+    # TO-DO: validate driver
+    NxIREE.Native.list_devices(driver)
+  end
+
+  @doc """
+  Lists all drivers available for running IREE modules.
+  """
+  @spec list_drivers() :: {:ok, list(String.t())} | {:error, :unknown_driver}
+  def list_drivers do
+    NxIREE.Native.list_drivers()
   end
 end

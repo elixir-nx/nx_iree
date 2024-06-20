@@ -1,4 +1,4 @@
-# NxIree
+# NxIREE
 
 **TODO: Add description**
 

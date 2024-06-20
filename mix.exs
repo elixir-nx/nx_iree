@@ -1,4 +1,4 @@
-defmodule NxIree.MixProject do
+defmodule NxIREE.MixProject do
   use Mix.Project
 
   def project do
@@ -40,7 +40,8 @@ defmodule NxIree.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:elixir_make, "~> 0.6", runtime: false}
+      {:elixir_make, "~> 0.6", runtime: false},
+      {:nx, "~> 0.7"}
     ]
   end
 
