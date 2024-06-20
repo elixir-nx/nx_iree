@@ -85,7 +85,7 @@ defmodule NxIREE do
   """
   @spec list_devices(String.t()) :: {:ok, list(String.t())} | {:error, :unknown_driver}
   def list_devices(driver) do
-    # TO-DO: validate driver
+    # TO-DO: validate driver?
     NxIREE.Native.list_devices(driver)
   end
 
@@ -94,6 +94,15 @@ defmodule NxIREE do
   """
   @spec list_drivers() :: {:ok, list(String.t())} | {:error, :unknown_driver}
   def list_drivers do
-    NxIREE.Native.list_drivers()
+    case NxIREE.Native.list_drivers() do
+      {:ok, drivers} ->
+        drivers =
+          Map.new(drivers, fn {name, full_name} -> {to_string(name), to_string(full_name)} end)
+
+        {:ok, drivers}
+
+      error ->
+        error
+    end
   end
 end

@@ -14,7 +14,7 @@ IREE_NS = iree-$(IREE_GIT_REV)
 IREE_DIR ?= $(BUILD_CACHE)/$(IREE_NS)
 
 # default rule for elixir_make
-all: nx_iree
+all: install_runtime nx_iree
 
 compile: install_runtime
 
@@ -24,7 +24,7 @@ $(IREE_DIR):
 IREE_CMAKE_BUILD_DIR ?= $(abspath iree-runtime/iree-build)
 IREE_RUNTIME_INCLUDE_PATH := $(abspath $(IREE_DIR)/runtime/src/iree)
 IREE_RUNTIME_BUILD_DIR ?= $(abspath iree-runtime/build)
-IREE_INSTALL_DIR ?= $(abspath iree-runtime/install)
+IREE_INSTALL_DIR ?= $(abspath iree-runtime/host/install)
 
 IREE_CMAKE_CONFIG ?= Release
 
@@ -100,7 +100,7 @@ NX_IREE_SO = $(MIX_APP_PATH)/priv/libnx_iree.so
 NX_IREE_CACHE_SO = cache/libnx_iree.so
 NX_IREE_SO_LINK_PATH = $(CWD_RELATIVE_TO_PRIV_PATH)/$(NX_IREE_CACHE_SO)
 
-NX_IREE_RUNTIME_LIB = cache/iree-runtime
+NX_IREE_RUNTIME_LIB = cache/iree-runtime/
 NX_IREE__IREE_RUNTIME_INCLUDE_PATH = $(NX_IREE_RUNTIME_LIB)/include
 
 CFLAGS = -fPIC -I$(ERTS_INCLUDE_DIR) -I$(NX_IREE__IREE_RUNTIME_INCLUDE_PATH) -Wall -Wno-sign-compare \
@@ -115,8 +115,19 @@ endif
 
 LDFLAGS = -L$(NX_IREE_RUNTIME_LIB) -lnx_iree_runtime -shared
 
-NX_IREE_LIB_DIR = $(MIX_APP_PATH)/priv/nx_iree_lib
-NX_IREE_LIB_LINK_PATH = ../$(CWD_RELATIVE_TO_PRIV_PATH)/$(NX_IREE_RUNTIME_LIB)
+ifeq ($(shell uname -s), Darwin)
+	LDFLAGS += -flat_namespace -undefined dynamic_lookup -rpath @loader_path/iree-runtime
+else
+	# Use a relative RPATH, so at runtime libexla.so looks for libxla_extension.so
+	# in ./lib regardless of the absolute location. This way priv can be safely
+	# packed into an Elixir release. Also, we use $$ to escape Makefile variable
+	# and single quotes to escape shell variable
+	LDFLAGS += -Wl,-rpath,'$$ORIGIN/iree-runtime'
+endif
+
+
+NX_IREE_LIB_DIR = $(MIX_APP_PATH)/priv/iree-runtime
+NX_IREE_LIB_LINK_PATH = $(CWD_RELATIVE_TO_PRIV_PATH)/$(NX_IREE_RUNTIME_LIB)
 NX_IREE_CACHE_SO_LINK_PATH = $(CWD_RELATIVE_TO_PRIV_PATH)/$(NX_IREE_CACHE_SO)
 
 OBJECTS = $(patsubst c_src/%.cc,cache/objs/%.o,$(wildcard c_src/*.cc))

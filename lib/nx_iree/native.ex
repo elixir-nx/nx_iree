@@ -8,6 +8,8 @@ defmodule NxIREE.Native do
     :erlang.load_nif(path, 0)
   end
 
+  def create_instance_and_register_drivers, do: :erlang.nif_error(:undef)
+
   def list_devices, do: :erlang.nif_error(:undef)
   def list_devices(_driver), do: :erlang.nif_error(:undef)
   def list_drivers, do: :erlang.nif_error(:undef)

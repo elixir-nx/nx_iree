@@ -76,4 +76,4 @@ install(DIRECTORY "${IREE_RUNTIME_INCLUDE_PATH}"
 file(GLOB HEADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h")
 
 install(FILES ${HEADER_FILES}
-        DESTINATION include)
+        DESTINATION "include/nx_iree")
