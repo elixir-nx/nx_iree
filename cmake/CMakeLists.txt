@@ -35,11 +35,7 @@ install(
     DESTINATION "."
 )
 
-if(APPLE)
-  set_target_properties(${_NAME} PROPERTIES SUFFIX ".dylib")
-else()
-  set_target_properties(${_NAME} PROPERTIES SUFFIX ".so")
-endif()
+set_target_properties(${_NAME} PROPERTIES SUFFIX ".so")
 
 set_target_properties(${_NAME} PROPERTIES
     INSTALL_RPATH_USE_LINK_PATH TRUE

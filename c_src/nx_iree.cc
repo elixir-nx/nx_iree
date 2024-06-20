@@ -32,7 +32,7 @@ static int upgrade(ErlNifEnv* env, void** priv_data, void** old_priv_data, ERL_N
   return 0;
 }
 
-#define DECLARE_NIF(NAME) ERL_NIF_TERM #NAME(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+#define DECLARE_NIF(NAME) ERL_NIF_TERM NAME(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
 DECLARE_NIF(create_instance_and_register_drivers) {
   // register all drivers
@@ -78,4 +78,4 @@ static ErlNifFunc funcs[] = {
     {"call_io", 4, call, ERL_NIF_DIRTY_JOB_IO_BOUND},
     {"call_cpu", 4, call, ERL_NIF_DIRTY_JOB_CPU_BOUND}};
 
-ERL_NIF_INIT(Elixir.EXLA.NIF, exla_funcs, &load, NULL, NULL, NULL);
+ERL_NIF_INIT(Elixir.NxIREE.Native, funcs, &load, NULL, &upgrade, NULL);

@@ -2,6 +2,7 @@
 # IREE_GIT_REV
 # IREE_DIR
 # IREE_BUILD_TARGET
+# MIX_APP_PATH
 
 # System vars
 TEMP ?= $(HOME)/.cache
@@ -12,8 +13,9 @@ IREE_REPO ?= https://github.com/iree-org/iree
 IREE_NS = iree-$(IREE_GIT_REV)
 IREE_DIR ?= $(BUILD_CACHE)/$(IREE_NS)
 
+# default rule for elixir_make
+all: nx_iree
 
-# default rule
 compile: install_runtime
 
 $(IREE_DIR):
@@ -91,10 +93,64 @@ install_runtime: $(IREE_DIR)
 	cmake --build $(IREE_CMAKE_BUILD_DIR) --config $(IREE_CMAKE_CONFIG)
 	cmake --install $(IREE_CMAKE_BUILD_DIR) --config $(IREE_CMAKE_CONFIG) --prefix $(IREE_INSTALL_DIR)
 
+
+### NxIREE Runtime NIF library
+
+NX_IREE_SO = $(MIX_APP_PATH)/priv/libnx_iree.so
+NX_IREE_CACHE_SO = cache/libnx_iree.so
+NX_IREE_SO_LINK_PATH = $(CWD_RELATIVE_TO_PRIV_PATH)/$(NX_IREE_CACHE_SO)
+
+NX_IREE_RUNTIME_LIB = cache/iree-runtime
+NX_IREE__IREE_RUNTIME_INCLUDE_PATH = $(NX_IREE_RUNTIME_LIB)/include
+
+CFLAGS = -fPIC -I$(ERTS_INCLUDE_DIR) -I$(NX_IREE__IREE_RUNTIME_INCLUDE_PATH) -Wall -Wno-sign-compare \
+	 -Wno-unused-parameter -Wno-missing-field-initializers -Wno-comment \
+	 -std=c++17 -w
+
+ifdef DEBUG
+	CFLAGS += -g
+else
+	CFLAGS += -O3
+endif
+
+LDFLAGS = -L$(NX_IREE_RUNTIME_LIB) -lnx_iree_runtime -shared
+
+NX_IREE_LIB_DIR = $(MIX_APP_PATH)/priv/nx_iree_lib
+NX_IREE_LIB_LINK_PATH = ../$(CWD_RELATIVE_TO_PRIV_PATH)/$(NX_IREE_RUNTIME_LIB)
+NX_IREE_CACHE_SO_LINK_PATH = $(CWD_RELATIVE_TO_PRIV_PATH)/$(NX_IREE_CACHE_SO)
+
+OBJECTS = $(patsubst c_src/%.cc,cache/objs/%.o,$(wildcard c_src/*.cc))
+
+nx_iree: $(NX_IREE__IREE_RUNTIME_INCLUDE_PATH) $(NX_IREE_SO)
+
+$(NX_IREE_SO): $(NX_IREE_CACHE_SO)
+	@ echo $(CWD_RELATIVE_TO_PRIV_PATH)
+	@ mkdir -p $(CWD_RELATIVE_TO_PRIV_PATH)
+	@ if [ "${MIX_BUILD_EMBEDDED}" = "true" ]; then \
+		cp -a $(abspath $(NX_IREE_RUNTIME_LIB)) $(NX_IREE_LIB_DIR) ; \
+		cp -a $(abspath $(NX_IREE_CACHE_SO)) $(NX_IREE_SO) ; \
+	else \
+		ln -sf $(NX_IREE_LIB_LINK_PATH) $(NX_IREE_LIB_DIR) ; \
+		ln -sf $(NX_IREE_CACHE_SO_LINK_PATH) $(NX_IREE_SO) ; \
+	fi
+
+$(NX_IREE_CACHE_SO): $(OBJECTS)
+	$(CXX) -shared -o $@ $^ $(LDFLAGS)
+
+# This rule may be overriden by the mix.exs compiler rule
+# in that it may download the .so instead of compiling it locally
+# It assumes that the .so has at least already been compiled with cmake
+$(NX_IREE__IREE_RUNTIME_INCLUDE_PATH):
+	cp -r iree-runtime/host/install $(dir $@)
+
+cache/objs/%.o: c_src/%.cc
+	@ mkdir -p $(dir $@)
+	$(CXX) $(CFLAGS) -o $@ -c $<
+
 # Print IREE Dir
 PTD:
 	@ echo $(IREE_DIR)
 
 clean:
-	rm -rf $(OPENXLA_DIR)
+	rm -rf cache/objs
 	rm -rf $(TARGET_DIR)

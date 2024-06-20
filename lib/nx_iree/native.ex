@@ -4,7 +4,7 @@ defmodule NxIREE.Native do
 
   def __on_load__ do
     # libnx_iree.so wraps libnx_iree_runtime.so/dylib and provides a NIF interface
-    path = :filename.join(:code.priv_dir(:nx_iree), "libnx_iree.so")
+    path = :filename.join(:code.priv_dir(:nx_iree), "libnx_iree")
     :erlang.load_nif(path, 0)
   end
 
