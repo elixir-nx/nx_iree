@@ -45,7 +45,7 @@ defmodule NxIREE do
   end
 
   @doc """
-  Calls a function in the given module with the provided inputs.
+  Calls a function in the given module with the provided Nx inputs.
 
   ## Options
 
@@ -62,10 +62,12 @@ defmodule NxIREE do
         _ -> raise ArgumentError, "received unknown device URI: #{inspect(opts[:device])}"
       end
 
+    input_refs = Enum.map(inputs, &NxIREE.VM.allocate_buffer(&1, device_ref))
+
     if kind == :cpu do
-      NxIREE.Native.call_cpu(bytecode, inputs, opts[:function], device_ref)
+      NxIREE.Native.call_cpu(bytecode, input_refs, opts[:function], device_ref)
     else
-      NxIREE.Native.call_io(bytecode, inputs, opts[:function], device_ref)
+      NxIREE.Native.call_io(bytecode, input_refs, opts[:function], device_ref)
     end
   end
 

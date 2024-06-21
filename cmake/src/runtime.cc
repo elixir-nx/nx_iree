@@ -153,7 +153,7 @@ iree_hal_device_t *create_device(iree_hal_driver_registry_t *registry, const std
 }
 
 std::pair<iree_status_t, std::optional<std::vector<iree_hal_buffer_view_t *>>>
-call(iree_vm_instance_t *instance, iree_hal_device_t *device, unsigned char *bytecode, size_t bytecode_size, std::vector<iree::runtime::IREEInput *> exla_inputs) {
+call(iree_vm_instance_t *instance, iree_hal_device_t *device, unsigned char *bytecode, size_t bytecode_size, std::vector<iree::runtime::IREETensor *> exla_inputs) {
   iree_vm_module_t *hal_module = nullptr;
   iree_vm_module_t *bytecode_module = nullptr;
   iree_vm_context_t *context = nullptr;

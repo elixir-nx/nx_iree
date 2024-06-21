@@ -91,8 +91,53 @@ static int open_resources(ErlNifEnv* env) {
   if (!open_resource<iree_hal_driver_registry_t*>(env, mod, "iree_hal_driver_registry_t")) {
     return -1;
   }
+  if (!open_resource<iree::runtime::IREETensor*>(env, mod, "iree::runtime::IREETensor")) {
+    return -1;
+  }
 
   return 1;
+}
+
+int get_list(ErlNifEnv* env, ERL_NIF_TERM list, std::vector<int64_t>& var) {
+  unsigned int length;
+  if (!enif_get_list_length(env, list, &length)) return 0;
+  var.reserve(length);
+  ERL_NIF_TERM head, tail;
+
+  while (enif_get_list_cell(env, list, &head, &tail)) {
+    int64_t elem;
+    if (!enif_get_int64(env, head, &elem)) return 0;
+    var.push_back(elem);
+    list = tail;
+  }
+  return 1;
+}
+
+int get_string(ErlNifEnv* env, ERL_NIF_TERM term, std::string& var) {
+  unsigned len;
+  int ret = enif_get_list_length(env, term, &len);
+
+  if (!ret) {
+    ErlNifBinary bin;
+    ret = enif_inspect_binary(env, term, &bin);
+    if (!ret) {
+      return 0;
+    }
+    var = std::string((const char*)bin.data, bin.size);
+    return ret;
+  }
+
+  var.resize(len + 1);
+  ret = enif_get_string(env, term, &*(var.begin()), var.size(), ERL_NIF_LATIN1);
+
+  if (ret > 0) {
+    var.resize(ret - 1);
+  } else if (ret == 0) {
+    var.resize(0);
+  } else {
+  }
+
+  return ret;
 }
 
 static int load(ErlNifEnv* env, void** priv, ERL_NIF_TERM load_info) {
@@ -156,14 +201,8 @@ DECLARE_NIF(list_devices) {
       return error(env, "invalid driver registry");
     }
 
-    enif_get_list_length(env, argv[1], &driver_name_length);
-    driver_name.resize(driver_name_length + 1);
-    auto ret = enif_get_string(env, argv[1], &(*driver_name.begin()), driver_name.size(), ERL_NIF_LATIN1);
-    if (ret > 0) {
-      driver_name.resize(ret - 1);
-    } else if (ret == 0) {
-      driver_name.resize(0);
-    } else {
+    if (!get_string(env, argv[1], driver_name)) {
+      return error(env, "invalid driver name");
     }
 
     iree_status_t status = list_devices(*registry, driver_name, devices);
@@ -213,6 +252,108 @@ DECLARE_NIF(list_drivers) {
   return ok(env, driver_list);
 }
 
+iree_hal_element_type_t nx_type_to_iree_type(std::string type) {
+  using type_enum = iree_hal_element_types_t;
+
+  if (type == "i8") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_INT_8;
+  } else if (type == "i16") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_INT_16;
+  } else if (type == "i32") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_INT_32;
+  } else if (type == "i64") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_INT_64;
+  } else if (type == "u8") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_UINT_8;
+  } else if (type == "u16") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_UINT_16;
+  } else if (type == "u32") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_UINT_32;
+  } else if (type == "u64") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_UINT_64;
+  } else if (type == "bf16") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_BFLOAT_16;
+  } else if (type == "f16") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_FLOAT_16;
+  } else if (type == "f32") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_FLOAT_32;
+  } else if (type == "f64") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_FLOAT_64;
+  } else if (type == "c64") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_COMPLEX_FLOAT_64;
+  } else if (type == "c128") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_COMPLEX_FLOAT_128;
+  }
+
+  return type_enum::IREE_HAL_ELEMENT_TYPE_NONE;
+}
+
+DECLARE_NIF(read_buffer_nif) {
+  iree_hal_device_t** device;
+  iree::runtime::IREETensor** input;
+
+  if (!get<iree_hal_device_t*>(env, argv[0], device)) {
+    return error(env, "invalid device");
+  }
+  if (!get<iree::runtime::IREETensor*>(env, argv[1], input)) {
+    return error(env, "invalid input");
+  }
+
+  ErlNifBinary binary;
+
+  if (!enif_alloc_binary((*input)->size, &binary)) {
+    return error(env, "unable to allocate binary");
+  }
+
+  if (!(*input)->buffer_view) {
+    std::memcpy(binary.data, (*input)->data, (*input)->size);
+  } else {
+    auto status = read_buffer(*device, (*input)->buffer_view, binary.data, (*input)->size);
+    if (!is_ok(status)) {
+      return error(env, get_status_message(status).c_str());
+    }
+  }
+
+  return ok(env, enif_make_binary(env, &binary));
+}
+
+DECLARE_NIF(allocate_buffer) {
+  if (argc != 4) {
+    return error(env, "invalid number of arguments");
+  }
+
+  ErlNifBinary binary;
+
+  iree_hal_device_t** device;
+
+  size_t num_dims;
+  std::vector<int64_t> dims;
+  std::string type_string;
+
+  if (!enif_inspect_binary(env, argv[0], &binary)) {
+    return error(env, "unable to read input data");
+  }
+  if (!get<iree_hal_device_t*>(env, argv[1], device)) {
+    return error(env, "unable to read device");
+  }
+  if (!get_list(env, argv[2], dims)) {
+    return error(env, "unable to read dimensions");
+  }
+  if (!get_string(env, argv[3], type_string)) {
+    return error(env, "unable to read type");
+  }
+
+  iree_hal_element_type_t type = nx_type_to_iree_type(type_string);
+
+  if (type == iree_hal_element_types_t::IREE_HAL_ELEMENT_TYPE_NONE) {
+    return error(env, "invalid type");
+  }
+
+  auto input = new iree::runtime::IREETensor(binary.data, binary.size, dims, type);
+
+  return ok(env, make<iree::runtime::IREETensor*>(env, input));
+}
+
 DECLARE_NIF(call) {
   return enif_make_atom(env, "ok");
 }
@@ -224,6 +365,8 @@ static ErlNifFunc funcs[] = {
     {"list_devices", 1, list_devices},
     {"list_devices", 2, list_devices},
     {"list_drivers", 1, list_drivers},
+    {"allocate_buffer", 4, allocate_buffer},
+    {"read_buffer", 2, read_buffer_nif},
     {"call_io", 4, call, ERL_NIF_DIRTY_JOB_IO_BOUND},
     {"call_cpu", 4, call, ERL_NIF_DIRTY_JOB_CPU_BOUND}};
 
