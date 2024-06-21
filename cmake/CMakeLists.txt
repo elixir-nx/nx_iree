@@ -42,6 +42,11 @@ set_target_properties(${_NAME} PROPERTIES
     BUILD_WITH_INSTALL_RPATH TRUE
 )
 
+if($ENV{DEBUG})
+  set(CMAKE_BUILD_TYPE Debug)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+endif()
+
 if(NOT APPLE)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -shared -fvisibility=default")
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--export-dynamic")
@@ -65,6 +70,7 @@ target_compile_options(${_NAME} PUBLIC ${IREE_DEFAULT_COPTS})
 add_definitions(-DLLVM_DISABLE_ABI_BREAKING_CHECKS_ENFORCING=1)
 
 target_link_libraries(${_NAME} iree_runtime_runtime)
+target_link_libraries(${_NAME} iree_tooling_context_util)
 
 # Install the header files - this will make it easier to copy them over
 # to the final bundle.

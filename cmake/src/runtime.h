@@ -13,22 +13,25 @@
 namespace iree {
 namespace runtime {
 
-struct Driver {
+class Driver {
+ public:
   std::string name;
   std::string full_name;
+
+  Driver(const char* name, size_t name_size, const char* full_name, size_t full_name_size) {
+    this->name = std::string(name, name_size);
+    this->full_name = std::string(full_name, full_name_size);
+  }
 };
 
-struct Device {
+class Device {
  public:
   std::string uri;
   iree_hal_device_t* ref;
   std::string driver_name;
 
   Device(std::string driver_name) : driver_name(driver_name) {}
-
-  ~Device() {
-    iree_hal_device_release(ref);
-  }
+  ~Device();
 };
 
 class IREEInput {
@@ -76,6 +79,7 @@ class IREEInput {
 }  // namespace iree
 
 iree_vm_instance_t* create_instance();
+iree_hal_driver_registry_t* get_driver_registry();
 iree_hal_device_t* create_device(const std::string& device_uri);
 
 std::pair<iree_status_t, std::optional<std::vector<iree_hal_buffer_view_t*>>>
@@ -84,10 +88,10 @@ call(iree_vm_instance_t* i, iree_hal_device_t*, unsigned char*, size_t, std::vec
 iree_status_t read_buffer(iree_hal_device_t* device, iree_hal_buffer_view_t* buffer_view, void* output_buffer, size_t num_bytes);
 std::string get_status_message(iree_status_t status);
 
-iree_status_t register_all_drivers();
+iree_status_t register_all_drivers(iree_hal_driver_registry_t*);
 
-std::pair<iree_status_t, std::vector<iree::runtime::Driver>> list_drivers();
-std::pair<iree_status_t, std::vector<iree::runtime::Device>> list_devices();
-std::pair<iree_status_t, std::vector<iree::runtime::Device>> list_devices(std::string driver_name);
+std::pair<iree_status_t, std::vector<iree::runtime::Driver*>> list_drivers(iree_hal_driver_registry_t*);
+iree_status_t list_devices(iree_hal_driver_registry_t*, std::vector<iree::runtime::Device*>&);
+iree_status_t list_devices(iree_hal_driver_registry_t*, std::string driver_name, std::vector<iree::runtime::Device*>&);
 
 bool is_ok(iree_status_t status);

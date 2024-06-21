@@ -4,7 +4,7 @@ defmodule NxIREE.VM do
   @cache_key {__MODULE__, :iree_vm_instance}
 
   def create_instance do
-    {:ok, instance} = NxIREE.Native.create_instance_and_register_drivers()
+    {:ok, instance} = NxIREE.Native.create_instance()
 
     :persistent_term.put(@cache_key, instance)
   end

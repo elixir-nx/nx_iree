@@ -75,7 +75,7 @@ defmodule NxIREE do
   @spec list_devices(String.t()) :: {:ok, list(String.t())}
   def list_devices do
     # This function returns a tagged tuple for uniformity with the arity-1 clause.
-    NxIREE.Native.list_devices()
+    NxIREE.Device.list()
   end
 
   @doc """
@@ -86,7 +86,7 @@ defmodule NxIREE do
   @spec list_devices(String.t()) :: {:ok, list(String.t())} | {:error, :unknown_driver}
   def list_devices(driver) do
     # TO-DO: validate driver?
-    NxIREE.Native.list_devices(driver)
+    NxIREE.Device.list(driver)
   end
 
   @doc """
@@ -94,7 +94,7 @@ defmodule NxIREE do
   """
   @spec list_drivers() :: {:ok, list(String.t())} | {:error, :unknown_driver}
   def list_drivers do
-    case NxIREE.Native.list_drivers() do
+    case NxIREE.Device.list_drivers() do
       {:ok, drivers} ->
         drivers =
           Map.new(drivers, fn {name, full_name} -> {to_string(name), to_string(full_name)} end)

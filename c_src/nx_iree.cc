@@ -70,12 +70,28 @@ ERL_NIF_TERM make(ErlNifEnv* env, T& var) {
   return ret;
 }
 
+// Returns a resource of the given template type T.
+template <typename T>
+ERL_NIF_TERM get(ErlNifEnv* env, ERL_NIF_TERM term, T*& var) {
+  return enif_get_resource(env, term,
+                           resource_object<T>::type,
+                           reinterpret_cast<void**>(&var));
+}
+
 static int open_resources(ErlNifEnv* env) {
   const char* mod = "NxIREE";
 
   if (!open_resource<iree_vm_instance_t*>(env, mod, "iree_vm_instance_t")) {
     return -1;
   }
+
+  if (!open_resource<iree_hal_device_t*>(env, mod, "iree_hal_device_t")) {
+    return -1;
+  }
+  if (!open_resource<iree_hal_driver_registry_t*>(env, mod, "iree_hal_driver_registry_t")) {
+    return -1;
+  }
+
   return 1;
 }
 
@@ -96,13 +112,7 @@ static int upgrade(ErlNifEnv* env, void** priv_data, void** old_priv_data, ERL_N
 
 #define DECLARE_NIF(NAME) ERL_NIF_TERM NAME(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
-DECLARE_NIF(create_instance_and_register_drivers) {
-  // register all drivers
-  auto status = register_all_drivers();
-  if (!is_ok(status)) {
-    return error(env, get_status_message(status).c_str());
-  }
-
+DECLARE_NIF(create_instance) {
   iree_vm_instance_t* vm_instance = create_instance();
 
   // create the global vm instance
@@ -111,26 +121,80 @@ DECLARE_NIF(create_instance_and_register_drivers) {
 
 DECLARE_NIF(create_device) {
   // create the ref for a device URI
+
+  iree_hal_driver_registry_t** registry;
+  if (!get<iree_hal_driver_registry_t*>(env, argv[0], registry)) {
+    return error(env, "invalid driver registry");
+  }
+
   return enif_make_atom(env, "ok");
 }
 
+DECLARE_NIF(get_driver_registry) {
+  auto registry = get_driver_registry();
+
+  return ok(env, make<iree_hal_driver_registry_t*>(env, registry));
+}
+
 DECLARE_NIF(list_devices) {
-  if (argc == 0) {
-    // list all devices
+  std::vector<iree::runtime::Device*> devices;
+  iree_hal_driver_registry_t** registry;
+  if (argc == 1) {
+    if (!get(env, argv[0], registry)) {
+      return error(env, "invalid driver registry");
+    }
+
+    iree_status_t status = list_devices(*registry, devices);
+
+    if (!is_ok(status)) {
+      return error(env, get_status_message(status).c_str());
+    }
+  } else {
+    std::string driver_name;
+    unsigned driver_name_length;
+    if (!get(env, argv[0], registry)) {
+      return error(env, "invalid driver registry");
+    }
+
+    enif_get_list_length(env, argv[1], &driver_name_length);
+    driver_name.resize(driver_name_length + 1);
+    auto ret = enif_get_string(env, argv[1], &(*driver_name.begin()), driver_name.size(), ERL_NIF_LATIN1);
+    if (ret > 0) {
+      driver_name.resize(ret - 1);
+    } else if (ret == 0) {
+      driver_name.resize(0);
+    } else {
+    }
+
+    iree_status_t status = list_devices(*registry, driver_name, devices);
+    if (!is_ok(status)) {
+      return error(env, get_status_message(status).c_str());
+    }
   }
 
-  iree_hal_driver_t* driver;
-  size_t device_count;
-  iree_hal_device_info_t* device_infos;
+  std::vector<ERL_NIF_TERM> device_terms;
 
-  // list devices for a specific driver
+  for (auto device : devices) {
+    auto ref_term = make<iree_hal_device_t*>(env, device->ref);
+    auto driver_name_term = enif_make_string(env, device->driver_name.c_str(), ERL_NIF_LATIN1);
+    auto uri_term = enif_make_string(env, device->uri.c_str(), ERL_NIF_LATIN1);
+    auto tuple = enif_make_tuple3(env, ref_term, driver_name_term, uri_term);
+    device_terms.push_back(tuple);
+  }
 
-  return enif_make_atom(env, "ok");
+  return ok(env, enif_make_list_from_array(env, device_terms.data(), device_terms.size()));
 }
 
 DECLARE_NIF(list_drivers) {
   // list all available drivers
-  auto [status, drivers] = list_drivers();
+
+  iree_hal_driver_registry_t** registry;
+
+  if (!get<iree_hal_driver_registry_t*>(env, argv[0], registry)) {
+    return error(env, "invalid driver registry");
+  }
+
+  auto [status, drivers] = list_drivers(*registry);
   if (!is_ok(status)) {
     return error(env, get_status_message(status).c_str());
   }
@@ -138,8 +202,8 @@ DECLARE_NIF(list_drivers) {
   std::vector<ERL_NIF_TERM> driver_terms;
 
   for (auto driver : drivers) {
-    auto name_term = enif_make_string(env, driver.name.c_str(), ERL_NIF_LATIN1);
-    auto full_name_term = enif_make_string(env, driver.full_name.c_str(), ERL_NIF_LATIN1);
+    auto name_term = enif_make_string(env, driver->name.c_str(), ERL_NIF_LATIN1);
+    auto full_name_term = enif_make_string(env, driver->full_name.c_str(), ERL_NIF_LATIN1);
     auto tuple = enif_make_tuple2(env, name_term, full_name_term);
     driver_terms.push_back(tuple);
   }
@@ -154,11 +218,12 @@ DECLARE_NIF(call) {
 }
 
 static ErlNifFunc funcs[] = {
-    {"create_instance_and_register_drivers", 0, create_instance_and_register_drivers},
-    {"create_device", 1, create_device},
-    {"list_devices", 0, list_devices},
+    {"create_instance", 0, create_instance},
+    {"get_driver_registry", 0, get_driver_registry},
+    {"create_device", 2, create_device},
     {"list_devices", 1, list_devices},
-    {"list_drivers", 0, list_drivers},
+    {"list_devices", 2, list_devices},
+    {"list_drivers", 1, list_drivers},
     {"call_io", 4, call, ERL_NIF_DIRTY_JOB_IO_BOUND},
     {"call_cpu", 4, call, ERL_NIF_DIRTY_JOB_CPU_BOUND}};
 
