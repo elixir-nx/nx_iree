@@ -38,7 +38,17 @@ defmodule NxIREE.Device do
 
   def list_drivers do
     driver_registry = :persistent_term.get(@registry_key)
-    NxIREE.Native.list_drivers(driver_registry)
+
+    case NxIREE.Native.list_drivers(driver_registry) do
+      {:ok, drivers} ->
+        drivers =
+          Map.new(drivers, fn {name, full_name} -> {to_string(name), to_string(full_name)} end)
+
+        {:ok, drivers}
+
+      error ->
+        error
+    end
   end
 
   def list do
