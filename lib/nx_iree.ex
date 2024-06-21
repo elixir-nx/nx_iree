@@ -11,7 +11,7 @@ defmodule NxIREE do
   ## Examples
 
       iex> mlir_module = \"""
-      ...> func.func @simple_mul(%arg0: tensor<4xf32>, %arg1: tensor<4xf32>) -> tensor<4xf32> {
+      ...> func.func @main(%arg0: tensor<4xf32>, %arg1: tensor<4xf32>) -> tensor<4xf32> {
       ...>   %0 = "stablehlo.multiply"(%arg0, %arg1) : (tensor<4xf32>, tensor<4xf32>) -> tensor<4xf32>
       ...>   return %0 : tensor<4xf32>
       ...> }
@@ -29,7 +29,7 @@ defmodule NxIREE do
           flags ++ [tmpfile]
         )
 
-      %NxIREE.Module{bytecode: output}
+      %NxIREE.Module{bytecode: output, compilation_flags: flags, mlir_module: mlir_module}
     after
       File.rm(tmpfile)
     end
@@ -64,10 +64,19 @@ defmodule NxIREE do
 
     input_refs = Enum.map(inputs, &NxIREE.VM.allocate_buffer(&1, device_ref))
 
-    if kind == :cpu do
-      NxIREE.Native.call_cpu(bytecode, input_refs, opts[:function], device_ref)
-    else
-      NxIREE.Native.call_io(bytecode, input_refs, opts[:function], device_ref)
+    instance_ref = NxIREE.VM.get_instance()
+
+    result =
+      if kind == :cpu do
+        NxIREE.Native.call_cpu(instance_ref, device_ref, bytecode, input_refs)
+      else
+        NxIREE.Native.call_io(instance_ref, device_ref, bytecode, input_refs)
+      end
+
+    case result do
+      {:ok, refs} ->
+        tensors = Enum.map(refs, &%NxIREE.Tensor{ref: &1, device: device_ref})
+        {:ok, tensors}
     end
   end
 

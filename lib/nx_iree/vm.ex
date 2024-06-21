@@ -7,6 +7,14 @@ defmodule NxIREE.VM do
     {:ok, instance} = NxIREE.Native.create_instance()
 
     :persistent_term.put(@cache_key, instance)
+    {:ok, instance}
+  end
+
+  def get_instance do
+    case :persistent_term.get(@cache_key, nil) do
+      nil -> create_instance()
+      instance -> instance
+    end
   end
 
   # TO-DO: provide a skeleton backend to transfer buffers from one computation

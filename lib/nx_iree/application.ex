@@ -7,7 +7,7 @@ defmodule NxIREE.Application do
     children = []
 
     :ok = NxIREE.Device.init()
-    :ok = NxIREE.VM.create_instance()
+    {:ok, _instance} = NxIREE.VM.create_instance()
 
     Supervisor.start_link(children, strategy: :one_for_one, name: NxIREE.Supervisor)
   end

@@ -18,6 +18,23 @@ iree::runtime::Device::~Device() {
   }
 }
 
+iree::runtime::IREETensor::IREETensor(iree_hal_buffer_view_t *buffer_view) : buffer_view(buffer_view) {
+  size = iree_hal_buffer_view_byte_length(buffer_view);
+}
+
+iree::runtime::IREETensor::IREETensor(void *data, size_t size, std::vector<int64_t> in_dims, iree_hal_element_type_t type) : size(size), type(type) {
+  dims.reserve(in_dims.size());
+
+  for (auto dim : in_dims) {
+    dims.push_back(static_cast<iree_hal_dim_t>(dim));
+  }
+
+  this->data = std::malloc(size);  // Allocate memory
+  std::memcpy(this->data, data, size);
+
+  this->buffer_view = nullptr;
+}
+
 iree_vm_instance_t *create_instance() {
   iree_vm_instance_t *instance = nullptr;
   iree_status_t status = iree_vm_instance_create(IREE_VM_TYPE_CAPACITY_DEFAULT, iree_allocator_system(), &instance);

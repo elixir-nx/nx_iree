@@ -113,6 +113,22 @@ int get_list(ErlNifEnv* env, ERL_NIF_TERM list, std::vector<int64_t>& var) {
   return 1;
 }
 
+template <typename T>
+int get_list(ErlNifEnv* env, ERL_NIF_TERM list, std::vector<T*>& var) {
+  unsigned int length;
+  if (!enif_get_list_length(env, list, &length)) return 0;
+  var.reserve(length);
+  ERL_NIF_TERM head, tail;
+
+  while (enif_get_list_cell(env, list, &head, &tail)) {
+    T** elem;
+    if (!get<T*>(env, head, elem)) return 0;
+    var.push_back(*elem);
+    list = tail;
+  }
+  return 1;
+}
+
 int get_string(ErlNifEnv* env, ERL_NIF_TERM term, std::string& var) {
   unsigned len;
   int ret = enif_get_list_length(env, term, &len);
@@ -354,8 +370,39 @@ DECLARE_NIF(allocate_buffer) {
   return ok(env, make<iree::runtime::IREETensor*>(env, input));
 }
 
-DECLARE_NIF(call) {
-  return enif_make_atom(env, "ok");
+DECLARE_NIF(call_nif) {
+  iree_vm_instance_t** instance;
+  iree_hal_device_t** device;
+  ErlNifBinary bytecode;
+  std::vector<iree::runtime::IREETensor*> inputs;
+
+  if (!get<iree_vm_instance_t*>(env, argv[0], instance)) {
+    return error(env, "invalid instance");
+  }
+  if (!get<iree_hal_device_t*>(env, argv[1], device)) {
+    return error(env, "invalid device");
+  }
+  if (!enif_inspect_binary(env, argv[2], &bytecode)) {
+    return error(env, "invalid bytecode");
+  }
+  if (!get_list(env, argv[3], inputs)) {
+    return error(env, "invalid inputs");
+  }
+
+  auto [status, result_buffers] = call(*instance, *device, bytecode.data, bytecode.size, inputs);
+
+  if (!is_ok(status)) {
+    return error(env, get_status_message(status).c_str());
+  }
+
+  std::vector<ERL_NIF_TERM> output_terms;
+  for (auto buffer_view : result_buffers.value()) {
+    auto tensor = new iree::runtime::IREETensor(buffer_view);
+    auto term = make<iree::runtime::IREETensor*>(env, tensor);
+    output_terms.push_back(term);
+  }
+
+  return ok(env, enif_make_list_from_array(env, output_terms.data(), output_terms.size()));
 }
 
 static ErlNifFunc funcs[] = {
@@ -367,7 +414,7 @@ static ErlNifFunc funcs[] = {
     {"list_drivers", 1, list_drivers},
     {"allocate_buffer", 4, allocate_buffer},
     {"read_buffer", 2, read_buffer_nif},
-    {"call_io", 4, call, ERL_NIF_DIRTY_JOB_IO_BOUND},
-    {"call_cpu", 4, call, ERL_NIF_DIRTY_JOB_CPU_BOUND}};
+    {"call_io", 4, call_nif, ERL_NIF_DIRTY_JOB_IO_BOUND},
+    {"call_cpu", 4, call_nif, ERL_NIF_DIRTY_JOB_CPU_BOUND}};
 
 ERL_NIF_INIT(Elixir.NxIREE.Native, funcs, &load, NULL, &upgrade, NULL);
