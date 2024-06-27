@@ -18,8 +18,7 @@ flags = ["--iree-hal-target-backends=cuda", "--iree-input-type=stablehlo_xla", "
 arg0 = Nx.tensor([1.0, 2.0, 3.0, 4.0])
 arg1 = Nx.tensor([1.0, -1.0, 1.0, -1.0])
 
-{:ok, [result]} = NxIREE.call(module, [arg0, arg1], device: cuda_dev) |> IO.inspect()
-
-NxIREE.VM.read_buffer(result.device, result.ref) |> Nx.from_binary(:f32) |> IO.inspect()
+IO.gets("Press enter to continue - #{System.pid()}")
+{:ok, [_result]} = NxIREE.call(module, [arg0, arg1], device: cuda_dev) |> IO.inspect()
 
 IO.gets("Press enter to finish")

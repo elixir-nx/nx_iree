@@ -82,12 +82,4 @@ defmodule NxIREE.Device do
       {device_ref, _driver, kind} -> {:ok, device_ref, kind}
     end
   end
-
-  def get_default_device do
-    [{}] = Enum.sort_by(list(), &device_priority/1, :asc)
-  end
-
-  def get_default_device(driver) do
-    [{}] = Enum.sort_by(list(driver), &device_priority/1, :asc)
-  end
 end

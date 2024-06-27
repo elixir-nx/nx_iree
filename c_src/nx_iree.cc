@@ -268,6 +268,42 @@ DECLARE_NIF(list_drivers) {
   return ok(env, driver_list);
 }
 
+std::string iree_type_to_nx_type(iree_hal_element_type_t type) {
+  using type_enum = iree_hal_element_types_t;
+
+  if (type == type_enum::IREE_HAL_ELEMENT_TYPE_INT_8) {
+    return "i8";
+  } else if (type == type_enum::IREE_HAL_ELEMENT_TYPE_INT_16) {
+    return "i16";
+  } else if (type == type_enum::IREE_HAL_ELEMENT_TYPE_INT_32) {
+    return "i32";
+  } else if (type == type_enum::IREE_HAL_ELEMENT_TYPE_INT_64) {
+    return "i64";
+  } else if (type == type_enum::IREE_HAL_ELEMENT_TYPE_UINT_8) {
+    return "u8";
+  } else if (type == type_enum::IREE_HAL_ELEMENT_TYPE_UINT_16) {
+    return "u16";
+  } else if (type == type_enum::IREE_HAL_ELEMENT_TYPE_UINT_32) {
+    return "u32";
+  } else if (type == type_enum::IREE_HAL_ELEMENT_TYPE_UINT_64) {
+    return "u64";
+  } else if (type == type_enum::IREE_HAL_ELEMENT_TYPE_BFLOAT_16) {
+    return "bf16";
+  } else if (type == type_enum::IREE_HAL_ELEMENT_TYPE_FLOAT_16) {
+    return "f16";
+  } else if (type == type_enum::IREE_HAL_ELEMENT_TYPE_FLOAT_32) {
+    return "f32";
+  } else if (type == type_enum::IREE_HAL_ELEMENT_TYPE_FLOAT_64) {
+    return "f64";
+  } else if (type == type_enum::IREE_HAL_ELEMENT_TYPE_COMPLEX_FLOAT_64) {
+    return "c64";
+  } else if (type == type_enum::IREE_HAL_ELEMENT_TYPE_COMPLEX_FLOAT_128) {
+    return "c128";
+  }
+
+  return "invalid_type";
+}
+
 iree_hal_element_type_t nx_type_to_iree_type(std::string type) {
   using type_enum = iree_hal_element_types_t;
 
@@ -393,16 +429,22 @@ DECLARE_NIF(call_nif) {
     return error(env, "invalid inputs");
   }
 
-  auto [status, result_buffers] = call(*instance, *device, driver_name, bytecode.data, bytecode.size, inputs);
+  auto [status, result_tensors] = call(*instance, *device, driver_name, bytecode.data, bytecode.size, inputs);
 
   if (!is_ok(status)) {
     return error(env, get_status_message(status).c_str());
   }
 
   std::vector<ERL_NIF_TERM> output_terms;
-  for (auto buffer_view : result_buffers.value()) {
-    auto tensor = new iree::runtime::IREETensor(buffer_view);
-    auto term = make<iree::runtime::IREETensor*>(env, tensor);
+  for (auto tensor : result_tensors.value()) {
+    auto tensor_term = make<iree::runtime::IREETensor*>(env, tensor);
+    std::vector<ERL_NIF_TERM> dims;
+    for (auto dim : tensor->dims) {
+      dims.push_back(enif_make_int64(env, dim));
+    }
+    auto dims_term = enif_make_list_from_array(env, dims.data(), dims.size());
+    auto type_term = enif_make_string(env, iree_type_to_nx_type(tensor->type).c_str(), ERL_NIF_LATIN1);
+    auto term = enif_make_tuple3(env, tensor_term, dims_term, type_term);
     output_terms.push_back(term);
   }
 

@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <vector>
 
 #define RETURN_PAIR_IF_ERROR(status) \
   if (!iree_status_is_ok(status)) {  \
@@ -19,7 +20,7 @@ iree::runtime::Device::~Device() {
   }
 }
 
-iree::runtime::IREETensor::IREETensor(iree_hal_buffer_view_t *buffer_view) : buffer_view(buffer_view) {
+iree::runtime::IREETensor::IREETensor(iree_hal_buffer_view_t *buffer_view, iree_hal_element_type_t type) : buffer_view(buffer_view), type(type) {
   size = iree_hal_buffer_view_byte_length(buffer_view);
 }
 
@@ -180,7 +181,7 @@ iree_hal_device_t *create_device(iree_hal_driver_registry_t *registry, const std
       iree_make_cstring_view(device_uri.c_str()),
       iree_allocator_system(), &device);
 
-  if (device_uri.find("cuda://")) {
+  if (device_uri.find("cuda://") != std::string::npos) {
     const iree_hal_cuda_dynamic_symbols_t *cuda_symbols = iree_hal_cuda_device_dynamic_symbols(device);
     auto ctx = iree_hal_cuda_device_context(device);
     cuda_symbols->cuCtxSetCurrent(ctx);
@@ -193,7 +194,7 @@ iree_hal_device_t *create_device(iree_hal_driver_registry_t *registry, const std
   return device;
 }
 
-std::pair<iree_status_t, std::optional<std::vector<iree_hal_buffer_view_t *>>>
+std::pair<iree_status_t, std::optional<std::vector<iree::runtime::IREETensor *>>>
 call(iree_vm_instance_t *instance, iree_hal_device_t *device, std::string driver_name, unsigned char *bytecode, size_t bytecode_size, std::vector<iree::runtime::IREETensor *> exla_inputs) {
   iree_vm_module_t *hal_module = nullptr;
   iree_vm_module_t *bytecode_module = nullptr;
@@ -268,7 +269,7 @@ call(iree_vm_instance_t *instance, iree_hal_device_t *device, std::string driver
       context, main_function, IREE_VM_INVOCATION_FLAG_NONE,
       /*policy=*/NULL, inputs, outputs, iree_allocator_system()));
 
-  std::vector<iree_hal_buffer_view_t *> results;
+  std::vector<iree::runtime::IREETensor *> results;
   results.resize(output_signature.size);
   for (int i = 0; i < output_signature.size; i++) {
     iree_hal_buffer_view_t *output_buffer_view = iree_vm_list_get_buffer_view_retain(outputs, i);
@@ -276,7 +277,17 @@ call(iree_vm_instance_t *instance, iree_hal_device_t *device, std::string driver
       return {iree_make_status(IREE_STATUS_NOT_FOUND, "can't get output buffer view [index=%d]", i), std::nullopt};
     }
 
-    results[i] = output_buffer_view;
+    iree_host_size_t out_shape_rank = iree_hal_buffer_view_shape_rank(output_buffer_view);
+    const iree_hal_dim_t *out_shape = iree_hal_buffer_view_shape_dims(output_buffer_view);
+    iree_hal_element_type_t out_type = iree_hal_buffer_view_element_type(output_buffer_view);
+
+    auto tensor = new iree::runtime::IREETensor(output_buffer_view, out_type);
+    tensor->dims = std::vector<iree_hal_dim_t>();
+    for (int j = 0; j < out_shape_rank; j++) {
+      tensor->dims.push_back(out_shape[j]);
+    }
+
+    results[i] = tensor;
   }
 
   iree_vm_list_release(inputs);
@@ -290,10 +301,22 @@ iree_status_t read_buffer(iree_hal_device_t *device, iree_hal_buffer_view_t *buf
 
   iree_device_size_t num_bytes_actual = num_bytes == -1 ? iree_hal_buffer_byte_length(buffer) : (iree_device_size_t)num_bytes;
 
-  return iree_hal_device_transfer_d2h(
+  iree_string_view_t device_id = iree_hal_device_id(device);
+
+  std::string device_id_str = std::string(device_id.data, device_id.size);
+
+  if (device_id_str.find("cuda") != std::string::npos) {
+    const iree_hal_cuda_dynamic_symbols_t *cuda_symbols = iree_hal_cuda_device_dynamic_symbols(device);
+    auto ctx = iree_hal_cuda_device_context(device);
+    cuda_symbols->cuCtxSetCurrent(ctx);
+  }
+
+  iree_status_t status = iree_hal_device_transfer_d2h(
       device, buffer, 0, output_buffer,
       num_bytes_actual, IREE_HAL_TRANSFER_BUFFER_FLAG_DEFAULT,
       iree_infinite_timeout());
+
+  return status;
 }
 
 std::string get_status_message(iree_status_t status) {

@@ -80,20 +80,20 @@ defmodule NxIREE do
     case result do
       {:ok, refs} ->
         tensors =
-          Enum.map(
-            refs,
-            &%Nx.Tensor{
-              # type: out_type,
-              # shape: out_shape,
+          Enum.map(refs, fn {ref, dims, type_str} ->
+            %Nx.Tensor{
+              names: Enum.map(dims, fn _ -> nil end),
+              type: type_str_to_nx(type_str),
+              shape: List.to_tuple(dims),
               data: %NxIREE.Tensor{
-                ref: &1,
+                ref: ref,
                 data: nil,
                 device_uri: device,
                 device: device_ref,
                 driver: driver_name
               }
             }
-          )
+          end)
 
         {:ok, tensors}
 
@@ -101,6 +101,21 @@ defmodule NxIREE do
         raise "IREE call failed due to: #{inspect(error)}"
     end
   end
+
+  defp type_str_to_nx(~c"i8"), do: {:s, 8}
+  defp type_str_to_nx(~c"i16"), do: {:s, 16}
+  defp type_str_to_nx(~c"i32"), do: {:s, 32}
+  defp type_str_to_nx(~c"i64"), do: {:s, 64}
+  defp type_str_to_nx(~c"u8"), do: {:u, 8}
+  defp type_str_to_nx(~c"u16"), do: {:u, 16}
+  defp type_str_to_nx(~c"u32"), do: {:u, 32}
+  defp type_str_to_nx(~c"u64"), do: {:u, 64}
+  defp type_str_to_nx(~c"bf16"), do: {:bf, 16}
+  defp type_str_to_nx(~c"f16"), do: {:f, 16}
+  defp type_str_to_nx(~c"f32"), do: {:f, 32}
+  defp type_str_to_nx(~c"f64"), do: {:f, 64}
+  defp type_str_to_nx(~c"c64"), do: {:c, 64}
+  defp type_str_to_nx(~c"c128"), do: {:c, 128}
 
   @doc """
   Lists all devices available for running IREE modules.
