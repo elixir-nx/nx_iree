@@ -13,6 +13,7 @@ defmodule NxIREE.Device do
     devices =
       Enum.flat_map(drivers, fn {name, _} ->
         {:ok, devices} = NxIREE.Native.list_devices(driver_registry, name)
+        devices
       end)
 
     cache =
@@ -80,5 +81,13 @@ defmodule NxIREE.Device do
       nil -> {:error, :unknown_device}
       {device_ref, _driver, kind} -> {:ok, device_ref, kind}
     end
+  end
+
+  def get_default_device do
+    [{}] = Enum.sort_by(list(), &device_priority/1, :asc)
+  end
+
+  def get_default_device(driver) do
+    [{}] = Enum.sort_by(list(driver), &device_priority/1, :asc)
   end
 end

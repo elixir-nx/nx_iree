@@ -79,8 +79,26 @@ defmodule NxIREE do
 
     case result do
       {:ok, refs} ->
-        tensors = Enum.map(refs, &%NxIREE.Tensor{ref: &1, device: device_ref})
+        tensors =
+          Enum.map(
+            refs,
+            &%Nx.Tensor{
+              # type: out_type,
+              # shape: out_shape,
+              data: %NxIREE.Tensor{
+                ref: &1,
+                data: nil,
+                device_uri: device,
+                device: device_ref,
+                driver: driver_name
+              }
+            }
+          )
+
         {:ok, tensors}
+
+      {:error, error} ->
+        raise "IREE call failed due to: #{inspect(error)}"
     end
   end
 
