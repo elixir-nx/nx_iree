@@ -72,7 +72,7 @@ iree_hal_driver_registry_t* get_driver_registry();
 iree_hal_device_t* create_device(const std::string& device_uri);
 
 std::pair<iree_status_t, std::optional<std::vector<iree_hal_buffer_view_t*>>>
-call(iree_vm_instance_t* i, iree_hal_device_t*, unsigned char*, size_t, std::vector<iree::runtime::IREETensor*>);
+call(iree_vm_instance_t* i, iree_hal_device_t*, std::string, unsigned char*, size_t, std::vector<iree::runtime::IREETensor*>);
 
 iree_status_t read_buffer(iree_hal_device_t* device, iree_hal_buffer_view_t* buffer_view, void* output_buffer, size_t num_bytes);
 std::string get_status_message(iree_status_t status);

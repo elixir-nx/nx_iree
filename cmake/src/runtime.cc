@@ -1,6 +1,7 @@
 #include "runtime.h"
 
 #include <iree/hal/api.h>
+#include <iree/hal/drivers/cuda/cuda_device.h>
 #include <iree/hal/drivers/init.h>
 #include <iree/tooling/device_util.h>
 
@@ -79,6 +80,10 @@ list_drivers(iree_hal_driver_registry_t *registry) {
     auto driver = new iree::runtime::Driver(
         info.driver_name.data, info.driver_name.size,
         info.full_name.data, info.full_name.size);
+
+    if (driver->name == "hip") {
+      continue;
+    }
     drivers.push_back(driver);
   }
 
@@ -93,6 +98,7 @@ iree_status_t list_devices(iree_hal_driver_registry_t *registry, std::vector<ire
 
   for (auto driver : drivers) {
     std::vector<iree::runtime::Device *> driver_devices;
+
     status = list_devices(registry, driver->name, driver_devices);
     if (!iree_status_is_ok(status)) {
       return status;
@@ -115,13 +121,20 @@ iree_status_t list_devices(iree_hal_driver_registry_t *registry, std::string dri
       iree_allocator_system(),
       &driver);
 
-  if (iree_status_is_unavailable(status)) {
-    iree_status_ignore(status);
-    return iree_ok_status();
-  } else if (!iree_status_is_ok(status)) {
+  if (!iree_status_is_ok(status)) {
     iree_hal_driver_release(driver);
     return status;
   }
+
+  auto out_device = new iree::runtime::Device(driver_name);
+  status = iree_hal_driver_create_default_device(driver, iree_allocator_system(),
+                                                 &out_device->ref);
+  if (!iree_status_is_ok(status)) {
+    return status;
+  }
+
+  out_device->uri = driver_name + "://default";
+  devices.push_back(out_device);
 
   status = iree_hal_driver_query_available_devices(
       driver, iree_allocator_system(), &device_info_count, &device_infos);
@@ -146,6 +159,11 @@ iree_status_t list_devices(iree_hal_driver_registry_t *registry, std::string dri
       iree_hal_driver_release(driver);
       return status;
     }
+    if (driver_name == "cuda") {
+      const iree_hal_cuda_dynamic_symbols_t *cuda_symbols = iree_hal_cuda_device_dynamic_symbols(device->ref);
+      auto ctx = iree_hal_cuda_device_context(device->ref);
+      cuda_symbols->cuCtxSetCurrent(ctx);
+    }
 
     devices.push_back(device);
   }
@@ -162,6 +180,12 @@ iree_hal_device_t *create_device(iree_hal_driver_registry_t *registry, const std
       iree_make_cstring_view(device_uri.c_str()),
       iree_allocator_system(), &device);
 
+  if (device_uri.find("cuda://")) {
+    const iree_hal_cuda_dynamic_symbols_t *cuda_symbols = iree_hal_cuda_device_dynamic_symbols(device);
+    auto ctx = iree_hal_cuda_device_context(device);
+    cuda_symbols->cuCtxSetCurrent(ctx);
+  }
+
   if (!iree_status_is_ok(status)) {
     return nullptr;
   }
@@ -170,7 +194,7 @@ iree_hal_device_t *create_device(iree_hal_driver_registry_t *registry, const std
 }
 
 std::pair<iree_status_t, std::optional<std::vector<iree_hal_buffer_view_t *>>>
-call(iree_vm_instance_t *instance, iree_hal_device_t *device, unsigned char *bytecode, size_t bytecode_size, std::vector<iree::runtime::IREETensor *> exla_inputs) {
+call(iree_vm_instance_t *instance, iree_hal_device_t *device, std::string driver_name, unsigned char *bytecode, size_t bytecode_size, std::vector<iree::runtime::IREETensor *> exla_inputs) {
   iree_vm_module_t *hal_module = nullptr;
   iree_vm_module_t *bytecode_module = nullptr;
   iree_vm_context_t *context = nullptr;
@@ -178,6 +202,12 @@ call(iree_vm_instance_t *instance, iree_hal_device_t *device, unsigned char *byt
   iree_vm_function_t main_function;
   iree_vm_list_t *inputs = nullptr;
   iree_vm_list_t *outputs = nullptr;
+
+  if (driver_name == "cuda") {
+    const iree_hal_cuda_dynamic_symbols_t *cuda_symbols = iree_hal_cuda_device_dynamic_symbols(device);
+    auto ctx = iree_hal_cuda_device_context(device);
+    cuda_symbols->cuCtxSetCurrent(ctx);
+  }
 
   RETURN_PAIR_IF_ERROR(iree_hal_module_create(
       instance, /*device_count=*/1, &device, IREE_HAL_MODULE_FLAG_SYNCHRONOUS,

@@ -20,6 +20,9 @@ defmodule NxIREE.Native do
   def allocate_buffer(_data, _device_ref, _dims, _element_type), do: :erlang.nif_error(:undef)
   def read_buffer(_device_ref, _input_ref), do: :erlang.nif_error(:undef)
 
-  def call_io(_instance_ref, _device_ref, _bytecode, _inputs), do: :erlang.nif_error(:undef)
-  def call_cpu(_instance_ref, _device_ref, _bytecode, _inputs), do: :erlang.nif_error(:undef)
+  def call_io(_instance_ref, _device_ref, _driver_name, _bytecode, _inputs),
+    do: :erlang.nif_error(:undef)
+
+  def call_cpu(_instance_ref, _device_ref, _driver_name, _bytecode, _inputs),
+    do: :erlang.nif_error(:undef)
 end

@@ -375,6 +375,7 @@ DECLARE_NIF(call_nif) {
   iree_hal_device_t** device;
   ErlNifBinary bytecode;
   std::vector<iree::runtime::IREETensor*> inputs;
+  std::string driver_name;
 
   if (!get<iree_vm_instance_t*>(env, argv[0], instance)) {
     return error(env, "invalid instance");
@@ -382,14 +383,17 @@ DECLARE_NIF(call_nif) {
   if (!get<iree_hal_device_t*>(env, argv[1], device)) {
     return error(env, "invalid device");
   }
-  if (!enif_inspect_binary(env, argv[2], &bytecode)) {
+  if (!get_string(env, argv[2], driver_name)) {
+    return error(env, "invalid device");
+  }
+  if (!enif_inspect_binary(env, argv[3], &bytecode)) {
     return error(env, "invalid bytecode");
   }
-  if (!get_list(env, argv[3], inputs)) {
+  if (!get_list(env, argv[4], inputs)) {
     return error(env, "invalid inputs");
   }
 
-  auto [status, result_buffers] = call(*instance, *device, bytecode.data, bytecode.size, inputs);
+  auto [status, result_buffers] = call(*instance, *device, driver_name, bytecode.data, bytecode.size, inputs);
 
   if (!is_ok(status)) {
     return error(env, get_status_message(status).c_str());
@@ -414,7 +418,7 @@ static ErlNifFunc funcs[] = {
     {"list_drivers", 1, list_drivers},
     {"allocate_buffer", 4, allocate_buffer},
     {"read_buffer", 2, read_buffer_nif},
-    {"call_io", 4, call_nif, ERL_NIF_DIRTY_JOB_IO_BOUND},
-    {"call_cpu", 4, call_nif, ERL_NIF_DIRTY_JOB_CPU_BOUND}};
+    {"call_io", 5, call_nif, ERL_NIF_DIRTY_JOB_IO_BOUND},
+    {"call_cpu", 5, call_nif, ERL_NIF_DIRTY_JOB_CPU_BOUND}};
 
 ERL_NIF_INIT(Elixir.NxIREE.Native, funcs, &load, NULL, &upgrade, NULL);

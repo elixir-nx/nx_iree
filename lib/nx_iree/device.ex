@@ -53,7 +53,10 @@ defmodule NxIREE.Device do
 
   def list do
     devices = :persistent_term.get(@device_key)
-    {:ok, Map.keys(devices)}
+
+    devices = devices |> Map.keys() |> Enum.sort(&String.ends_with?(&1, "://default"))
+
+    {:ok, devices}
   end
 
   def list(driver) do
@@ -68,7 +71,12 @@ defmodule NxIREE.Device do
         entry
       end
 
-    {:ok, Map.keys(devices)}
+    default_key = driver <> "://default"
+    {_, rest} = Map.pop!(devices, default_key)
+
+    devices = [default_key | Map.keys(rest)]
+
+    {:ok, devices}
   end
 
   def get(device_uri) do

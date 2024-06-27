@@ -56,11 +56,15 @@ defmodule NxIREE do
   def call(%NxIREE.Module{bytecode: bytecode}, inputs, opts \\ []) do
     opts = Keyword.validate!(opts, function: "main", device: "local-sync://")
 
+    device = opts[:device]
+
     {device_ref, kind} =
-      case NxIREE.Device.get(opts[:device]) do
+      case NxIREE.Device.get(device) do
         {:ok, device_ref, kind} -> {device_ref, kind}
         _ -> raise ArgumentError, "received unknown device URI: #{inspect(opts[:device])}"
       end
+
+    [driver_name, _] = String.split(device, "://", parts: 2)
 
     input_refs = Enum.map(inputs, &NxIREE.VM.allocate_buffer(&1, device_ref))
 
@@ -68,9 +72,9 @@ defmodule NxIREE do
 
     result =
       if kind == :cpu do
-        NxIREE.Native.call_cpu(instance_ref, device_ref, bytecode, input_refs)
+        NxIREE.Native.call_cpu(instance_ref, device_ref, driver_name, bytecode, input_refs)
       else
-        NxIREE.Native.call_io(instance_ref, device_ref, bytecode, input_refs)
+        NxIREE.Native.call_io(instance_ref, device_ref, driver_name, bytecode, input_refs)
       end
 
     case result do
