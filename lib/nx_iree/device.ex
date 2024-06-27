@@ -8,17 +8,11 @@ defmodule NxIREE.Device do
     {:ok, driver_registry} = NxIREE.Native.get_driver_registry()
     :persistent_term.put(@registry_key, driver_registry)
 
-    dbg(driver_registry)
-
-    IO.gets("Press enter - #{System.pid()}")
-
     {:ok, drivers} = NxIREE.Native.list_drivers(driver_registry)
 
     devices =
       Enum.flat_map(drivers, fn {name, _} ->
-        dbg(name)
         {:ok, devices} = NxIREE.Native.list_devices(driver_registry, name)
-        dbg(devices)
       end)
 
     cache =
