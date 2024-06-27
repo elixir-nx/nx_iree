@@ -19,6 +19,9 @@ arg0 = Nx.tensor([1.0, 2.0, 3.0, 4.0])
 arg1 = Nx.tensor([1.0, -1.0, 1.0, -1.0])
 
 IO.gets("Press enter to continue - #{System.pid()}")
-{:ok, [_result]} = NxIREE.call(module, [arg0, arg1], device: cuda_dev) |> IO.inspect()
+{:ok, [result]} = NxIREE.call(module, [arg0, arg1], device: cuda_dev) |> IO.inspect()
+
+IO.inspect(result, limit: 2)
+
 
 IO.gets("Press enter to finish")

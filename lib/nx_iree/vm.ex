@@ -67,8 +67,8 @@ defmodule NxIREE.VM do
     read_buffer(t.device, t.ref)
   end
 
-  def read_buffer(device_ref, buffer_ref) do
-    {:ok, binary} = NxIREE.Native.read_buffer(device_ref, buffer_ref)
+  def read_buffer(device_ref, buffer_ref, num_bytes \\ -1) do
+    {:ok, binary} = NxIREE.Native.read_buffer(device_ref, buffer_ref, num_bytes)
     binary
   end
 

@@ -343,6 +343,7 @@ iree_hal_element_type_t nx_type_to_iree_type(std::string type) {
 DECLARE_NIF(read_buffer_nif) {
   iree_hal_device_t** device;
   iree::runtime::IREETensor** input;
+  int64_t num_bytes;
 
   if (!get<iree_hal_device_t*>(env, argv[0], device)) {
     return error(env, "invalid device");
@@ -350,17 +351,20 @@ DECLARE_NIF(read_buffer_nif) {
   if (!get<iree::runtime::IREETensor*>(env, argv[1], input)) {
     return error(env, "invalid input");
   }
+  if (!enif_get_int64(env, argv[2], &num_bytes)) {
+    return error(env, "invalid num_bytes");
+  }
 
   ErlNifBinary binary;
 
-  if (!enif_alloc_binary((*input)->size, &binary)) {
+  if (!enif_alloc_binary(num_bytes, &binary)) {
     return error(env, "unable to allocate binary");
   }
 
   if (!(*input)->buffer_view) {
-    std::memcpy(binary.data, (*input)->data, (*input)->size);
+    std::memcpy(binary.data, (*input)->data, num_bytes);
   } else {
-    auto status = read_buffer(*device, (*input)->buffer_view, binary.data, (*input)->size);
+    auto status = read_buffer(*device, (*input)->buffer_view, binary.data, num_bytes);
     if (!is_ok(status)) {
       return error(env, get_status_message(status).c_str());
     }
@@ -459,7 +463,7 @@ static ErlNifFunc funcs[] = {
     {"list_devices", 2, list_devices},
     {"list_drivers", 1, list_drivers},
     {"allocate_buffer", 4, allocate_buffer},
-    {"read_buffer", 2, read_buffer_nif},
+    {"read_buffer", 3, read_buffer_nif},
     {"call_io", 5, call_nif, ERL_NIF_DIRTY_JOB_IO_BOUND},
     {"call_cpu", 5, call_nif, ERL_NIF_DIRTY_JOB_CPU_BOUND}};
 

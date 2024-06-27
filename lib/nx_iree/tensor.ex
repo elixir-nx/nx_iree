@@ -103,7 +103,7 @@ defmodule NxIREE.Tensor do
     data =
       case data do
         %{data: nil} ->
-          NxIREE.VM.read_buffer(data.device, data.ref)
+          NxIREE.VM.read_buffer(data.device, data.ref, bytes)
 
         %{data: data} ->
           data
