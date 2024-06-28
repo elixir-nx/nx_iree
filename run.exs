@@ -1,6 +1,6 @@
 NxIREE.list_drivers() |> IO.inspect(label: "drivers")
 
-{:ok, [cuda_dev | _]} = NxIREE.list_devices("cuda") |> IO.inspect()
+{:ok, [dev | _]} = NxIREE.list_devices("metal") |> IO.inspect()
 
 mlir_module = """
 module {
@@ -11,7 +11,8 @@ module {
 }
 """
 
-flags = ["--iree-hal-target-backends=cuda", "--iree-input-type=stablehlo_xla", "--iree-execution-model=async-internal"]
+# flags = ["--iree-hal-target-backends=cuda", "--iree-input-type=stablehlo_xla", "--iree-execution-model=async-internal"]
+flags = ["--iree-hal-target-backends=metal-spirv", "--iree-input-type=stablehlo_xla", "--iree-execution-model=async-internal"]
 
 %NxIREE.Module{} = module = NxIREE.compile(mlir_module, flags)
 
@@ -19,7 +20,7 @@ arg0 = Nx.tensor([1.0, 2.0, 3.0, 4.0])
 arg1 = Nx.tensor([1.0, -1.0, 1.0, -1.0])
 
 IO.gets("Press enter to continue - #{System.pid()}")
-{:ok, [result]} = NxIREE.call(module, [arg0, arg1], device: cuda_dev) |> IO.inspect()
+{:ok, [result]} = NxIREE.call(module, [arg0, arg1], device: dev) |> IO.inspect()
 
 IO.inspect(result, limit: 2)
 

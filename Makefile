@@ -125,6 +125,11 @@ else
 	LDFLAGS += -Wl,-rpath,'$$ORIGIN/iree-runtime'
 endif
 
+CUDA_PRESENT := $(shell command -v nvcc >/dev/null 2>&1 && echo true || echo false)
+
+ifeq ($(CUDA_PRESENT), true)
+	CFLAGS += -DCUDA_ENABLED
+endif
 
 NX_IREE_LIB_DIR = $(MIX_APP_PATH)/priv/iree-runtime
 NX_IREE_LIB_LINK_PATH = $(CWD_RELATIVE_TO_PRIV_PATH)/$(NX_IREE_RUNTIME_LIB)

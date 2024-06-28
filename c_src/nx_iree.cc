@@ -105,9 +105,9 @@ int get_list(ErlNifEnv* env, ERL_NIF_TERM list, std::vector<int64_t>& var) {
   ERL_NIF_TERM head, tail;
 
   while (enif_get_list_cell(env, list, &head, &tail)) {
-    int64_t elem;
+    ErlNifSInt64 elem;
     if (!enif_get_int64(env, head, &elem)) return 0;
-    var.push_back(elem);
+    var.push_back(static_cast<int64_t>(elem));
     list = tail;
   }
   return 1;
@@ -343,7 +343,7 @@ iree_hal_element_type_t nx_type_to_iree_type(std::string type) {
 DECLARE_NIF(read_buffer_nif) {
   iree_hal_device_t** device;
   iree::runtime::IREETensor** input;
-  int64_t num_bytes;
+  ErlNifSInt64 num_bytes;
 
   if (!get<iree_hal_device_t*>(env, argv[0], device)) {
     return error(env, "invalid device");

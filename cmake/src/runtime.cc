@@ -1,13 +1,19 @@
 #include "runtime.h"
 
 #include <iree/hal/api.h>
-#include <iree/hal/drivers/cuda/cuda_device.h>
 #include <iree/hal/drivers/init.h>
 #include <iree/tooling/device_util.h>
 
 #include <iostream>
 #include <sstream>
 #include <vector>
+
+#ifdef CUDA_ENABLED
+#include <iree/hal/drivers/cuda/cuda_device.h>
+#define RUN_IF_CUDA_ENABLED(CODE) CODE
+#else
+#define RUN_IF_CUDA_ENABLED(CODE) ;
+#endif
 
 #define RETURN_PAIR_IF_ERROR(status) \
   if (!iree_status_is_ok(status)) {  \
@@ -160,11 +166,13 @@ iree_status_t list_devices(iree_hal_driver_registry_t *registry, std::string dri
       iree_hal_driver_release(driver);
       return status;
     }
-    if (driver_name == "cuda") {
-      const iree_hal_cuda_dynamic_symbols_t *cuda_symbols = iree_hal_cuda_device_dynamic_symbols(device->ref);
-      auto ctx = iree_hal_cuda_device_context(device->ref);
-      cuda_symbols->cuCtxSetCurrent(ctx);
-    }
+
+    RUN_IF_CUDA_ENABLED(
+        if (driver_name == "cuda") {
+          const iree_hal_cuda_dynamic_symbols_t *cuda_symbols = iree_hal_cuda_device_dynamic_symbols(device->ref);
+          auto ctx = iree_hal_cuda_device_context(device->ref);
+          cuda_symbols->cuCtxSetCurrent(ctx);
+        });
 
     devices.push_back(device);
   }
@@ -181,11 +189,12 @@ iree_hal_device_t *create_device(iree_hal_driver_registry_t *registry, const std
       iree_make_cstring_view(device_uri.c_str()),
       iree_allocator_system(), &device);
 
-  if (device_uri.find("cuda://") != std::string::npos) {
-    const iree_hal_cuda_dynamic_symbols_t *cuda_symbols = iree_hal_cuda_device_dynamic_symbols(device);
-    auto ctx = iree_hal_cuda_device_context(device);
-    cuda_symbols->cuCtxSetCurrent(ctx);
-  }
+  RUN_IF_CUDA_ENABLED(
+      if (device_uri.find("cuda://") != std::string::npos) {
+        const iree_hal_cuda_dynamic_symbols_t *cuda_symbols = iree_hal_cuda_device_dynamic_symbols(device);
+        auto ctx = iree_hal_cuda_device_context(device);
+        cuda_symbols->cuCtxSetCurrent(ctx);
+      });
 
   if (!iree_status_is_ok(status)) {
     return nullptr;
@@ -204,11 +213,12 @@ call(iree_vm_instance_t *instance, iree_hal_device_t *device, std::string driver
   iree_vm_list_t *inputs = nullptr;
   iree_vm_list_t *outputs = nullptr;
 
-  if (driver_name == "cuda") {
-    const iree_hal_cuda_dynamic_symbols_t *cuda_symbols = iree_hal_cuda_device_dynamic_symbols(device);
-    auto ctx = iree_hal_cuda_device_context(device);
-    cuda_symbols->cuCtxSetCurrent(ctx);
-  }
+  RUN_IF_CUDA_ENABLED(
+      if (driver_name == "cuda") {
+        const iree_hal_cuda_dynamic_symbols_t *cuda_symbols = iree_hal_cuda_device_dynamic_symbols(device);
+        auto ctx = iree_hal_cuda_device_context(device);
+        cuda_symbols->cuCtxSetCurrent(ctx);
+      });
 
   RETURN_PAIR_IF_ERROR(iree_hal_module_create(
       instance, /*device_count=*/1, &device, IREE_HAL_MODULE_FLAG_SYNCHRONOUS,
@@ -305,11 +315,12 @@ iree_status_t read_buffer(iree_hal_device_t *device, iree_hal_buffer_view_t *buf
 
   std::string device_id_str = std::string(device_id.data, device_id.size);
 
-  if (device_id_str.find("cuda") != std::string::npos) {
-    const iree_hal_cuda_dynamic_symbols_t *cuda_symbols = iree_hal_cuda_device_dynamic_symbols(device);
-    auto ctx = iree_hal_cuda_device_context(device);
-    cuda_symbols->cuCtxSetCurrent(ctx);
-  }
+  RUN_IF_CUDA_ENABLED(
+      if (device_id_str.find("cuda") != std::string::npos) {
+        const iree_hal_cuda_dynamic_symbols_t *cuda_symbols = iree_hal_cuda_device_dynamic_symbols(device);
+        auto ctx = iree_hal_cuda_device_context(device);
+        cuda_symbols->cuCtxSetCurrent(ctx);
+      });
 
   iree_status_t status = iree_hal_device_transfer_d2h(
       device, buffer, 0, output_buffer,
