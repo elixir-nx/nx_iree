@@ -85,7 +85,9 @@ endif
 .PHONY: install_runtime
 install_runtime: $(IREE_INSTALL_DIR)
 
-$(IREE_INSTALL_DIR): $(IREE_DIR)
+CMAKE_SOURCES = cmake/src/runtime.cc cmake/src/runtime.h
+
+$(IREE_INSTALL_DIR): $(IREE_DIR) $(CMAKE_SOURCES)
 	cmake -G Ninja -B $(IREE_CMAKE_BUILD_DIR) \
 		-DCMAKE_BUILD_TYPE=$(IREE_CMAKE_CONFIG)\
 		-DIREE_BUILD_COMPILER=OFF\
@@ -138,7 +140,9 @@ NX_IREE_LIB_DIR = $(MIX_APP_PATH)/priv/iree-runtime
 NX_IREE_LIB_LINK_PATH = $(CWD_RELATIVE_TO_PRIV_PATH)/$(NX_IREE_RUNTIME_LIB)
 NX_IREE_CACHE_SO_LINK_PATH = $(CWD_RELATIVE_TO_PRIV_PATH)/$(NX_IREE_CACHE_SO)
 
-OBJECTS = $(patsubst c_src/%.cc,cache/objs/%.o,$(wildcard c_src/*.cc))
+SOURCES = $(wildcard c_src/*.cc)
+HEADERS = $(wildcard c_src/*.h)
+OBJECTS = $(patsubst c_src/%.cc,cache/objs/%.o,$(SOURCES))
 
 nx_iree: $(NX_IREE__IREE_RUNTIME_INCLUDE_PATH) $(NX_IREE_SO)
 
