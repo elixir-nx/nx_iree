@@ -82,7 +82,10 @@ else
 	$(error "Unknown IREE_BUILD_TARGET: $(IREE_BUILD_TARGET), must be one of host, ios, ios_simulator, visionos, visionos_simulator, tvos, tvos_simulator")
 endif
 
-install_runtime: $(IREE_DIR)
+.PHONY: install_runtime
+install_runtime: $(IREE_INSTALL_DIR)
+
+$(IREE_INSTALL_DIR): $(IREE_DIR)
 	cmake -G Ninja -B $(IREE_CMAKE_BUILD_DIR) \
 		-DCMAKE_BUILD_TYPE=$(IREE_CMAKE_CONFIG)\
 		-DIREE_BUILD_COMPILER=OFF\

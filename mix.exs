@@ -61,7 +61,7 @@ defmodule NxIREE.MixProject do
     env_dir = System.get_env("NX_IREE_COMPILER_DIR")
     source_env_dir = System.get_env("NX_IREE_SOURCE_DIR")
 
-    dir = env_dir || Path.join(__DIR__, "cache/iree-compiler")
+    dir = env_dir || Path.join(__DIR__, "cache/iree")
     source_dir = source_env_dir || Path.join(__DIR__, "cache/iree-source")
 
     %{
