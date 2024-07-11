@@ -35,16 +35,17 @@ install(
     DESTINATION "."
 )
 
-if(APPLE)
-  set_target_properties(${_NAME} PROPERTIES SUFFIX ".dylib")
-else()
-  set_target_properties(${_NAME} PROPERTIES SUFFIX ".so")
-endif()
+set_target_properties(${_NAME} PROPERTIES SUFFIX ".so")
 
 set_target_properties(${_NAME} PROPERTIES
     INSTALL_RPATH_USE_LINK_PATH TRUE
     BUILD_WITH_INSTALL_RPATH TRUE
 )
+
+if($ENV{DEBUG})
+  set(CMAKE_BUILD_TYPE Debug)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+endif()
 
 if(NOT APPLE)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -shared -fvisibility=default")
@@ -69,6 +70,7 @@ target_compile_options(${_NAME} PUBLIC ${IREE_DEFAULT_COPTS})
 add_definitions(-DLLVM_DISABLE_ABI_BREAKING_CHECKS_ENFORCING=1)
 
 target_link_libraries(${_NAME} iree_runtime_runtime)
+target_link_libraries(${_NAME} iree_tooling_context_util)
 
 # Install the header files - this will make it easier to copy them over
 # to the final bundle.
@@ -80,4 +82,4 @@ install(DIRECTORY "${IREE_RUNTIME_INCLUDE_PATH}"
 file(GLOB HEADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h")
 
 install(FILES ${HEADER_FILES}
-        DESTINATION include)
+        DESTINATION "include/nx_iree")

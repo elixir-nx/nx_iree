@@ -1,4 +1,4 @@
-defmodule NxIree.MixProject do
+defmodule NxIREE.MixProject do
   use Mix.Project
 
   def project do
@@ -33,14 +33,16 @@ defmodule NxIree.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger]
+      extra_applications: [:logger],
+      mod: {NxIREE.Application, []}
     ]
   end
 
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:elixir_make, "~> 0.6", runtime: false}
+      {:elixir_make, "~> 0.6", runtime: false},
+      {:nx, "~> 0.7"}
     ]
   end
 
@@ -59,7 +61,7 @@ defmodule NxIree.MixProject do
     env_dir = System.get_env("NX_IREE_COMPILER_DIR")
     source_env_dir = System.get_env("NX_IREE_SOURCE_DIR")
 
-    dir = env_dir || Path.join(__DIR__, "cache/iree-compiler")
+    dir = env_dir || Path.join(__DIR__, "cache/iree")
     source_dir = source_env_dir || Path.join(__DIR__, "cache/iree-source")
 
     %{
