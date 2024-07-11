@@ -1,6 +1,8 @@
 # NxIREE
 
-**TODO: Add description**
+Companion library to [EXLA](https://github.com/elixir-nx/exla), providing bindings for the [IREE](https://iree.dev) runtime for MLIR.
+
+MLIR modules can be obtained from Nx functions by calling `EXLA.to_mlir_module/2` on them.
 
 ## Installation
 
