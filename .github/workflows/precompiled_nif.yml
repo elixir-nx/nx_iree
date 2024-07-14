@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  precompile:
+  precompile_nif:
     runs-on: macos-14
     env:
       MIX_ENV: prod
@@ -59,6 +59,8 @@ jobs:
       - name: Clone IREE
         if: steps.cache-iree-dir.outputs.cache-hit != 'true'
         run: |
+          BUILD_CACHE=$(realpath ${{env.BUILD_CACHE}}) \
+          IREE_DIR=$(realpath ${{env.IREE_DIR}}) \
           make clone_iree
       - name: Compile NIF
         run: |
