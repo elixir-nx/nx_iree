@@ -38,8 +38,8 @@ jobs:
           brew install ninja
           mix local.hex --force
           mix local.rebar --force
-          echo "BUILD_CACHE=$(realpath ${{env.BUILD_CACHE}})" > $GITHUB_ENV
-          echo "IREE_DIR=$(realpath ${{env.IREE_DIR}})" > $GITHUB_ENV
+          echo "BUILD_CACHE=$(abspath ${{env.BUILD_CACHE}})" > $GITHUB_ENV
+          echo "IREE_DIR=$(abspath ${{env.IREE_DIR}})" > $GITHUB_ENV
           echo $IREE_DIR
           echo $BUILD_CACHE
 
