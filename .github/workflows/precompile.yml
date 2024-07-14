@@ -1,0 +1,46 @@
+name: precompile
+
+on:
+  push:
+    branches:
+      - pv-feat/precompile-artifacts
+    tags:
+      - "v*"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  runs-on: macos-14
+  env:
+    MIX_ENV: prod
+    NX_IREE_PREFER_PRECOMPILED: false
+  strategy:
+    fail-fast: false
+    matrix:
+      NIF_VERSION: "2.16"
+      OTP_VERSION: "26.0"
+      ELIXIR_VERSION: "1.17.0"
+  steps:
+    - name: checkout
+      uses: actions/checkout@v4
+
+    - name: Install asdf and tools
+      uses: asdf-vm/actions/install@v3
+
+    - name: Setup dependencies
+      run: |
+        mix local.hex --force
+        mix local.rebar --force
+
+    - name: Cache mix dependencies
+      id: cache-mix-deps
+      uses: actions/cache@v4
+      with:
+        key: deps-${{ hashFiles('mix.lock') }}
+        path: |
+          ./deps
+    - name: Get mix deps
+      if: steps.cache-mix-deps.outputs.cache-hit != 'true'
+      run: mix deps.get
