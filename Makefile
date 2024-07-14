@@ -18,6 +18,9 @@ all: install_runtime nx_iree
 
 compile: install_runtime
 
+.PHONY: clone_iree
+clone_iree: $(IREE_DIR)
+
 $(IREE_DIR):
 	./scripts/clone_iree.sh $(BUILD_CACHE) $(IREE_GIT_REV) $(IREE_DIR)
 

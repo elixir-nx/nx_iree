@@ -17,6 +17,9 @@ jobs:
     env:
       MIX_ENV: prod
       NX_IREE_PREFER_PRECOMPILED: false
+      BUILD_CACHE: ./build-cache
+      IREE_DIR: ./build-cache/iree
+      IREE_GIT_REV: candidate-20240604.914
     strategy:
       fail-fast: false
       matrix:
@@ -45,3 +48,14 @@ jobs:
       - name: Get mix deps
         if: steps.cache-mix-deps.outputs.cache-hit != 'true'
         run: mix deps.get
+      - name: Cache IREE dir
+        id: cache-iree-dir
+        uses: actions/cache@v4
+        with:
+          key: iree-dir-${{ env.IREE_GIT_REV }}
+          path: |
+            ${{ env.IREE_DIR }}
+      - name: Clone IREE
+        if: steps.cache-iree-dir.outputs.cache-hit != 'true'
+        run: |
+          make clone_iree
