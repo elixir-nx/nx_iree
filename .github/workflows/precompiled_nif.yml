@@ -27,10 +27,10 @@ jobs:
         os: ["macos-12", "macos-14"]
         arch: ["x86_64", "aarch64"]
         exclude:
-          - os: macos-12
-            arch: aarch64
-          - os: macos-14
-            arch: x86_64
+          - os: "macos-12"
+            arch: "aarch64"
+          - os: "macos-14"
+            arch: "x86_64"
     steps:
       - name: checkout
         uses: actions/checkout@v4
