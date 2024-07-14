@@ -69,11 +69,9 @@ jobs:
         run: |
           mix compile
           cp ./cache/libnx_iree.so ./libnx_iree-${{matrix.os}}-${{matrix.arch}}-nif-${{matrix.nif_version}}.so
-          sha256sum ./libnx_iree-${{matrix.os}}-${{matrix.arch}}-nif-${{matrix.nif_version}}.so > ./libnx_iree-${{matrix.os}}-${{matrix.arch}}-nif-${{matrix.nif_version}}.sha256
       - name: Release Artifacts
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
             ./*.so
-            ./*.sha256
