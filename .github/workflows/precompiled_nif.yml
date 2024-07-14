@@ -19,16 +19,17 @@ jobs:
       NX_IREE_PREFER_PRECOMPILED: false
       NX_IREE_SOURCE_DIR: ./build-cache/iree
       IREE_GIT_REV: candidate-20240604.914
+      OTP_VERSION: "26.0"
     strategy:
       fail-fast: false
       matrix:
-        NIF_VERSION: ["2.16"]
-        OTP_VERSION: ["26.0"]
-        ELIXIR_VERSION: ["1.17.0"]
-        include:
-          - os: macos-14
-            arch: aarch64
+        NIF_VERSION: ["2.16", "2.17"]
+        os: ["macos-12", "macos-14"]
+        arch: ["x86_64", "aarch64"]
+        exclude:
           - os: macos-12
+            arch: aarch64
+          - os: macos-14
             arch: x86_64
     steps:
       - name: checkout
