@@ -43,7 +43,7 @@ jobs:
           mix local.hex --force
           mix local.rebar --force
           echo "NX_IREE_SOURCE_DIR=$(elixir -e 'IO.puts(Path.absname(~s(${{env.NX_IREE_SOURCE_DIR}})))')" > $GITHUB_ENV
-          echo "PKG_NAME=libnx_iree-macos-${{matrix.arch}}-nif-${{matrix.nif_version}}" > $GITHUB_ENV
+          echo "PKG_NAME=libnx_iree-macos-${{matrix.arch}}-nif-${{matrix.nif_version}}" >> $GITHUB_ENV
 
       - name: Cache mix dependencies
         id: cache-mix-deps
