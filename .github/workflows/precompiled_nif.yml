@@ -12,8 +12,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  precompile_nif:
-    runs-on: ${{ matrix.os.version }}
+  precompile_nif_macos:
+    runs-on: ${{ matrix.os }}
     env:
       MIX_ENV: prod
       NX_IREE_PREFER_PRECOMPILED: false
@@ -23,15 +23,13 @@ jobs:
       fail-fast: false
       matrix:
         nif_version: [2.16, 2.17]
-        include:
-          - os:
-              name: macos
-              version: macos-12
-            arch: x86_64
-          - os:
-              name: macos
-              version: macos-14
+        os: [macos-12, macos-14]
+        arch: [x86_64, aarch64]
+        exclude:
+          - os: macos-12
             arch: aarch64
+          - os: macos-14
+            arch: x86_64
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -69,7 +67,7 @@ jobs:
       - name: Compile NIF
         run: |
           mix compile
-          cp ./cache/libnx_iree.so ./libnx_iree-${{matrix.os.name}}-${{matrix.arch}}-nif-${{matrix.nif_version}}.so
+          cp ./cache/libnx_iree.so ./libnx_iree-macos-${{matrix.arch}}-nif-${{matrix.nif_version}}.so
       - name: Release Artifacts
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
