@@ -12,7 +12,11 @@ IREE_NS = iree-$(IREE_GIT_REV)
 NX_IREE_SOURCE_DIR ?= $(TEMP)/nx_iree/$(IREE_NS)
 
 # default rule for elixir_make
+ifeq ($(NX_IREE_PREFER_PRECOMPILED), true)
+all: nx_iree
+else
 all: install_runtime nx_iree
+endif
 
 compile: install_runtime
 

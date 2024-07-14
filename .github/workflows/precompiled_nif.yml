@@ -43,6 +43,7 @@ jobs:
           mix local.hex --force
           mix local.rebar --force
           echo "NX_IREE_SOURCE_DIR=$(elixir -e 'IO.puts(Path.absname(~s(${{env.NX_IREE_SOURCE_DIR}})))')" > $GITHUB_ENV
+          echo "PKG_NAME=libnx_iree-macos-${{matrix.arch}}-nif-${{matrix.nif_version}}" > $GITHUB_ENV
 
       - name: Cache mix dependencies
         id: cache-mix-deps
@@ -67,10 +68,13 @@ jobs:
       - name: Compile NIF
         run: |
           mix compile
-          cp ./cache/libnx_iree.so ./libnx_iree-macos-${{matrix.arch}}-nif-${{matrix.nif_version}}.so
+          mkdir ${{ env.PKG_NAME }}
+          cp ./cache/libnx_iree.so ./${{ env.PKG_NAME }}/libnx_iree.so
+          cp -r ./cache/iree-runtime ./${{ env.PKG_NAME }}/iree-runtime
+          tar -czf ${{ env.PKG_NAME }}.tar.gz ${{ env.PKG_NAME }}
       - name: Release Artifacts
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
-            ./*.so
+            ./*.tar.gz

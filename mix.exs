@@ -27,7 +27,8 @@ defmodule NxIREE.MixProject do
           "MAKE_NUM_JOBS" => n_jobs,
           "IREE_GIT_REV" => nx_iree_config().tag,
           "NX_IREE_SOURCE_DIR" => nx_iree_config().source_dir,
-          "NX_IREE_CACHE_SO" => nx_iree_config().nx_iree_so_path
+          "NX_IREE_CACHE_SO" => nx_iree_config().nx_iree_so_path,
+          "NX_IREE_PREFER_PRECOMPILED" => to_string(nx_iree_config().use_precompiled)
         }
       end
     ]
@@ -208,7 +209,7 @@ defmodule NxIREE.MixProject do
 
     # This is the precompiled path, which should match what's included in releases
     # by the github actions workflows
-    source_so_path = "libnx_iree-#{os_name}-#{arch}-#{nif_version}.so"
+    source_so_path = "libnx_iree-#{os_name}-#{arch}-nif-#{nif_version}.so"
 
     download!(
       "https://github.com/elixir-nx/nx_iree/releases/download/v#{@version}/#{source_so_path}",
