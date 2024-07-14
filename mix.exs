@@ -74,9 +74,7 @@ defmodule NxIREE.MixProject do
       base: "iree",
       env_dir: env_dir,
       dir: dir,
-      source_dir: source_dir,
-      compiler_path: Path.join([dir, "compiler/_mlir_libs/iree-compile"]),
-      lld_path: Path.join([dir, "compiler/_mlir_libs/iree-lld"])
+      source_dir: source_dir
     }
   end
 
