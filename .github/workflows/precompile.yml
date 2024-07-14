@@ -59,3 +59,7 @@ jobs:
         if: steps.cache-iree-dir.outputs.cache-hit != 'true'
         run: |
           make clone_iree
+      - name: Compile NIF
+        run: |
+          NX_IREE_SO=./libnx_iree.so mix compile
+          ls ./

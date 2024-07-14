@@ -104,7 +104,7 @@ $(IREE_INSTALL_DIR): $(IREE_DIR) $(CMAKE_SOURCES)
 
 ### NxIREE Runtime NIF library
 
-NX_IREE_SO = $(MIX_APP_PATH)/priv/libnx_iree.so
+NX_IREE_SO ?= $(MIX_APP_PATH)/priv/libnx_iree.so
 NX_IREE_CACHE_SO = cache/libnx_iree.so
 NX_IREE_SO_LINK_PATH = $(CWD_RELATIVE_TO_PRIV_PATH)/$(NX_IREE_CACHE_SO)
 
