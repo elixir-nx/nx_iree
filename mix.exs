@@ -24,7 +24,7 @@ defmodule NxIREE.MixProject do
           "CWD_RELATIVE_TO_PRIV_PATH" => cwd_relative_to_priv,
           "MAKE_NUM_JOBS" => n_jobs,
           "IREE_GIT_REV" => nx_iree_config().tag,
-          "IREE_DIR" => nx_iree_config().source_dir
+          "NX_IREE_SOURCE_DIR" => nx_iree_config().source_dir
         }
       end
     ]

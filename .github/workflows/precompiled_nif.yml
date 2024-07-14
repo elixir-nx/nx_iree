@@ -38,7 +38,6 @@ jobs:
           mix local.hex --force
           mix local.rebar --force
           echo "NX_IREE_SOURCE_DIR=$(elixir -e 'IO.puts(Path.absname(~s(${{env.NX_IREE_SOURCE_DIR}})))')" > $GITHUB_ENV
-          echo $NX_IREE_SOURCE_DIR
 
       - name: Cache mix dependencies
         id: cache-mix-deps
