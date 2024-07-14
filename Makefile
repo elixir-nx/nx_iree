@@ -1,17 +1,15 @@
 # Environment variables passed via elixir_make
 # IREE_GIT_REV
-# IREE_DIR
+# NX_IREE_SOURCE_DIR
 # IREE_BUILD_TARGET
 # MIX_APP_PATH
 
 # System vars
 TEMP ?= $(HOME)/.cache
-BUILD_CACHE ?= $(TEMP)/nx_iree
-
 IREE_REPO ?= https://github.com/iree-org/iree
 
 IREE_NS = iree-$(IREE_GIT_REV)
-IREE_DIR ?= $(BUILD_CACHE)/$(IREE_NS)
+NX_IREE_SOURCE_DIR ?= $(TEMP)/nx_iree/$(IREE_NS)
 
 # default rule for elixir_make
 all: install_runtime nx_iree
@@ -19,13 +17,13 @@ all: install_runtime nx_iree
 compile: install_runtime
 
 .PHONY: clone_iree
-clone_iree: $(IREE_DIR)
+clone_iree: $(NX_IREE_SOURCE_DIR)
 
-$(IREE_DIR):
-	./scripts/clone_iree.sh $(BUILD_CACHE) $(IREE_GIT_REV) $(IREE_DIR)
+$(NX_IREE_SOURCE_DIR):
+	./scripts/clone_iree.sh $(IREE_GIT_REV) $(NX_IREE_SOURCE_DIR)
 
 IREE_CMAKE_BUILD_DIR ?= $(abspath iree-runtime/iree-build)
-IREE_RUNTIME_INCLUDE_PATH := $(abspath $(IREE_DIR)/runtime/src/iree)
+IREE_RUNTIME_INCLUDE_PATH := $(abspath $(NX_IREE_SOURCE_DIR)/runtime/src/iree)
 IREE_RUNTIME_BUILD_DIR ?= $(abspath iree-runtime/build)
 IREE_INSTALL_DIR ?= $(abspath iree-runtime/host/install)
 
@@ -90,13 +88,13 @@ install_runtime: $(IREE_INSTALL_DIR)
 
 CMAKE_SOURCES = cmake/src/runtime.cc cmake/src/runtime.h
 
-$(IREE_INSTALL_DIR): $(IREE_DIR) $(CMAKE_SOURCES)
+$(IREE_INSTALL_DIR): $(NX_IREE_SOURCE_DIR) $(CMAKE_SOURCES)
 	cmake -G Ninja -B $(IREE_CMAKE_BUILD_DIR) \
 		-DCMAKE_BUILD_TYPE=$(IREE_CMAKE_CONFIG)\
 		-DIREE_BUILD_COMPILER=OFF\
 		-DIREE_RUNTIME_BUILD_DIR=$(IREE_RUNTIME_BUILD_DIR)\
 		-DIREE_RUNTIME_INCLUDE_PATH=$(IREE_RUNTIME_INCLUDE_PATH)\
-		-DIREE_DIR=$(IREE_DIR) \
+		-DNX_IREE_SOURCE_DIR=$(NX_IREE_SOURCE_DIR) \
 		$(BUILD_TARGET_FLAGS)
 	cmake --build $(IREE_CMAKE_BUILD_DIR) --config $(IREE_CMAKE_CONFIG)
 	cmake --install $(IREE_CMAKE_BUILD_DIR) --config $(IREE_CMAKE_CONFIG) --prefix $(IREE_INSTALL_DIR)
@@ -175,7 +173,7 @@ cache/objs/%.o: c_src/%.cc
 
 # Print IREE Dir
 PTD:
-	@ echo $(IREE_DIR)
+	@ echo $(NX_IREE_SOURCE_DIR)
 
 clean:
 	rm -rf cache/objs

@@ -24,7 +24,7 @@ defmodule NxIREE.MixProject do
           "CWD_RELATIVE_TO_PRIV_PATH" => cwd_relative_to_priv,
           "MAKE_NUM_JOBS" => n_jobs,
           "IREE_GIT_REV" => nx_iree_config().tag,
-          "IREE_SOURCE_DIR" => nx_iree_config().source_dir
+          "IREE_DIR" => nx_iree_config().source_dir
         }
       end
     ]
@@ -59,7 +59,11 @@ defmodule NxIREE.MixProject do
     tag = System.get_env("NX_IREE_GIT_REV", "candidate-20240604.914")
 
     env_dir = System.get_env("NX_IREE_COMPILER_DIR")
-    source_env_dir = System.get_env("NX_IREE_SOURCE_DIR")
+
+    home_cache = Path.join(System.fetch_env!("HOME"), ".cache")
+
+    source_env_dir =
+      System.get_env("NX_IREE_SOURCE_DIR", Path.join([home_cache, "nx_iree", "iree-#{tag}"]))
 
     dir = env_dir || Path.join(__DIR__, "cache/iree")
     source_dir = source_env_dir || Path.join(__DIR__, "cache/iree-source")

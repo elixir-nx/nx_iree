@@ -17,8 +17,7 @@ jobs:
     env:
       MIX_ENV: prod
       NX_IREE_PREFER_PRECOMPILED: false
-      BUILD_CACHE: ./build-cache
-      IREE_DIR: ./build-cache/iree
+      NX_IREE_SOURCE_DIR: ./build-cache/iree
       IREE_GIT_REV: candidate-20240604.914
     strategy:
       fail-fast: false
@@ -38,10 +37,8 @@ jobs:
           brew install ninja
           mix local.hex --force
           mix local.rebar --force
-          echo "BUILD_CACHE=$(abspath ${{env.BUILD_CACHE}})" > $GITHUB_ENV
-          echo "IREE_DIR=$(abspath ${{env.IREE_DIR}})" > $GITHUB_ENV
-          echo $IREE_DIR
-          echo $BUILD_CACHE
+          echo "NX_IREE_SOURCE_DIR=$(elixir -e 'IO.puts(Path.absname(${{env.NX_IREE_SOURCE_DIR}}))')" > $GITHUB_ENV
+          echo $NX_IREE_SOURCE_DIR
 
       - name: Cache mix dependencies
         id: cache-mix-deps
@@ -59,7 +56,7 @@ jobs:
         with:
           key: iree-dir-${{ env.IREE_GIT_REV }}
           path: |
-            ${{ env.IREE_DIR }}
+            ${{ env.NX_IREE_SOURCE_DIR }}
       - name: Clone IREE
         if: steps.cache-iree-dir.outputs.cache-hit != 'true'
         run: make clone_iree
