@@ -33,11 +33,15 @@ jobs:
       - name: Install asdf and tools
         uses: asdf-vm/actions/install@v3
 
-      - name: Setup dependencies
+      - name: Setup dependencies and env
         run: |
           brew install ninja
           mix local.hex --force
           mix local.rebar --force
+          echo "BUILD_CACHE=$(realpath ${{env.BUILD_CACHE}})" > $GITHUB_ENV
+          echo "IREE_DIR=$(realpath ${{env.IREE_DIR}})" > $GITHUB_ENV
+          echo $IREE_DIR
+          echo $BUILD_CACHE
 
       - name: Cache mix dependencies
         id: cache-mix-deps
@@ -58,11 +62,8 @@ jobs:
             ${{ env.IREE_DIR }}
       - name: Clone IREE
         if: steps.cache-iree-dir.outputs.cache-hit != 'true'
-        run: |
-          BUILD_CACHE=$(realpath ${{env.BUILD_CACHE}}) \
-          IREE_DIR=$(realpath ${{env.IREE_DIR}}) \
-          make clone_iree
+        run: make clone_iree
       - name: Compile NIF
         run: |
-          NX_IREE_SO=./libnx_iree.so mix compile
-          ls ./
+          mix compile
+          ls -l ./cache
