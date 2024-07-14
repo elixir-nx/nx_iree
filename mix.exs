@@ -88,7 +88,8 @@ defmodule NxIREE.MixProject do
       dir: dir,
       source_dir: source_dir,
       use_precompiled: use_precompiled,
-      nx_iree_so_path: Path.join("cache", "libnx_iree.so")
+      nx_iree_so_path: Path.join("cache", "libnx_iree.so"),
+      nx_iree_tar_gz_path: Path.join("cache", "libnx_iree.tar.gz")
     }
   end
 
@@ -209,12 +210,35 @@ defmodule NxIREE.MixProject do
 
     # This is the precompiled path, which should match what's included in releases
     # by the github actions workflows
-    source_so_path = "libnx_iree-#{os_name}-#{arch}-nif-#{nif_version}.so"
+    version_path = "libnx_iree-#{os_name}-#{arch}-nif-#{nif_version}"
+    source_tar_path = "#{version_path}.tar.gz"
+    zip_name = nx_iree_config.nx_iree_tar_gz_path
 
     download!(
-      "https://github.com/elixir-nx/nx_iree/releases/download/v#{@version}/#{source_so_path}",
-      nx_iree_config.nx_iree_so_path
+      "https://github.com/elixir-nx/nx_iree/releases/download/v#{@version}/#{source_tar_path}",
+      zip_name
     )
+
+    parent_dir = Path.dirname(zip_name)
+
+    :ok =
+      zip_name
+      |> String.to_charlist()
+      |> :erl_tar.extract([:compressed, cwd: String.to_charlist(parent_dir)])
+
+    File.rename(
+      Path.join([parent_dir, version_path, "libnx_iree.so"]),
+      Path.join(parent_dir, "libnx_iree.so")
+    )
+
+    File.rename(
+      Path.join([parent_dir, version_path, "iree-runtime"]),
+      Path.join(parent_dir, "iree-runtime")
+    )
+
+    File.rmdir(Path.join(parent_dir, version_path))
+
+    :ok
   end
 
   defp assert_network_tool!() do
