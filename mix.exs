@@ -1,7 +1,7 @@
 defmodule NxIREE.MixProject do
   use Mix.Project
 
-  @version "v0.0.1-pre.2"
+  @version "0.0.1-pre.2"
 
   def project do
     n_jobs = to_string(max(System.schedulers_online() - 2, 1))
@@ -56,8 +56,10 @@ defmodule NxIREE.MixProject do
   defp compile(args) do
     :ok = download_and_unzip_iree_release(args)
 
-    if nx_iree_config().use_precompiled do
+    if nx_iree_config().use_precompiled and not File.exists?(nx_iree_config().nx_iree_so_path) do
       download_precompiled_nx_iree_lib()
+    else
+      :ok
     end
   end
 
@@ -209,7 +211,7 @@ defmodule NxIREE.MixProject do
     source_so_path = "libnx_iree-#{os_name}-#{arch}-#{nif_version}.so"
 
     download!(
-      "https://github.com/elixir-nx/nx_iree/releases/download/#{@version}/#{source_so_path}",
+      "https://github.com/elixir-nx/nx_iree/releases/download/v#{@version}/#{source_so_path}",
       nx_iree_config.nx_iree_so_path
     )
   end
