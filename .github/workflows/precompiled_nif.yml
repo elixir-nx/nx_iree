@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   precompile_nif:
-    runs-on: ${{ matrix.os.name }}-${{ matrix.os.version }}
+    runs-on: ${{ matrix.os.version }}
     env:
       MIX_ENV: prod
       NX_IREE_PREFER_PRECOMPILED: false
@@ -23,19 +23,15 @@ jobs:
       fail-fast: false
       matrix:
         nif_version: [2.16, 2.17]
-        os:
-          - name: macos
-            version: [12, 14]
-        arch: [x86_64, aarch64]
-        exclude:
+        include:
           - os:
               name: macos
-              version: 12
-            arch: aarch64
-          - os:
-              name: macos
-              version: 14
+              version: macos-12
             arch: x86_64
+          - os:
+              name: macos
+              version: macos-14
+            arch: aarch64
     steps:
       - name: checkout
         uses: actions/checkout@v4
