@@ -35,6 +35,7 @@ jobs:
 
       - name: Setup dependencies
         run: |
+          brew install ninja
           mix local.hex --force
           mix local.rebar --force
 
