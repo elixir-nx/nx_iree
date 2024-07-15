@@ -149,10 +149,28 @@ SOURCES = $(wildcard c_src/*.cc)
 HEADERS = $(wildcard c_src/*.h)
 OBJECTS = $(patsubst c_src/%.cc,cache/objs/%.o,$(SOURCES))
 
+ifeq ($(NX_IREE_PREFER_PRECOMPILED), true)
+# If we are using precompiled libnx_iree.so, we need to make sure that
+# we're not trying to compile it again, which may happen due to the file
+# having been recently downloaded.
+# By using different nx_iree and NX_IREE_CACHE_SO rules we can ensure
+# that only the precompiled .so is used directly.
+nx_iree: $(NX_IREE_SO)
+
+.PHONY: $(NX_IREE_CACHE_SO)
+$(NX_IREE_CACHE_SO):
+ifdef DEBUG
+	@echo "Using precompiled libnx_iree.so"
+endif
+else
+
 nx_iree: $(NX_IREE__IREE_RUNTIME_INCLUDE_PATH) $(NX_IREE_SO)
 
+$(NX_IREE_CACHE_SO): $(OBJECTS)
+	$(CXX) -shared -o $@ $^ $(LDFLAGS)
+endif
+
 $(NX_IREE_SO): $(NX_IREE_CACHE_SO)
-	@ echo $(CWD_RELATIVE_TO_PRIV_PATH)
 	@ mkdir -p $(CWD_RELATIVE_TO_PRIV_PATH)
 	@ if [ "${MIX_BUILD_EMBEDDED}" = "true" ]; then \
 		cp -a $(abspath $(NX_IREE_RUNTIME_LIB)) $(NX_IREE_LIB_DIR) ; \
@@ -162,8 +180,6 @@ $(NX_IREE_SO): $(NX_IREE_CACHE_SO)
 		ln -sf $(NX_IREE_CACHE_SO_LINK_PATH) $(NX_IREE_SO) ; \
 	fi
 
-$(NX_IREE_CACHE_SO): $(OBJECTS)
-	$(CXX) -shared -o $@ $^ $(LDFLAGS)
 
 # This rule may be overriden by the mix.exs compiler rule
 # in that it may download the .so instead of compiling it locally

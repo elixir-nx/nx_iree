@@ -146,7 +146,7 @@ defmodule NxIREE.MixProject do
             Mix.raise("OS #{inspect(os)} is not supported")
         end
 
-      download!(url, nx_iree_zip)
+      download!("IREE", url, nx_iree_zip)
     end
 
     # Unpack libtorch and move to the target cache dir
@@ -215,6 +215,7 @@ defmodule NxIREE.MixProject do
     zip_name = nx_iree_config.nx_iree_tar_gz_path
 
     download!(
+      "NxIREE NIFs",
       "https://github.com/elixir-nx/nx_iree/releases/download/v#{@version}/#{source_tar_path}",
       zip_name
     )
@@ -247,10 +248,10 @@ defmodule NxIREE.MixProject do
     end
   end
 
-  defp download!(url, dest) do
+  defp download!(name, url, dest) do
     assert_network_tool!()
 
-    case download(url, dest) do
+    case download(name, url, dest) do
       :ok ->
         :ok
 
@@ -259,14 +260,14 @@ defmodule NxIREE.MixProject do
     end
   end
 
-  defp download(url, dest) do
+  defp download(name, url, dest) do
     {command, args} =
       case network_tool() do
         :curl -> {"curl", ["--fail", "-L", url, "-o", dest]}
         :wget -> {"wget", ["-O", dest, url]}
       end
 
-    IO.puts("Downloading iree from #{url}")
+    IO.puts("Downloading #{name} from #{url}")
 
     case System.cmd(command, args) do
       {_, 0} -> :ok

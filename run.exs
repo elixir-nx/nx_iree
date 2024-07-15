@@ -1,6 +1,6 @@
 NxIREE.list_drivers() |> IO.inspect(label: "drivers")
 
-{:ok, [dev | _]} = NxIREE.list_devices("metal") |> IO.inspect()
+{:ok, [dev | _]} = NxIREE.list_devices("local-sync") |> IO.inspect()
 
 # Obtained by using EXLA.to_mlir_module(fn a, b -> Nx.add(Nx.cos(a), Nx.sin(b)) end, [Nx.template({4}, :f32), Nx.template({4}, :s64)])
 mlir_module = """
@@ -15,8 +15,8 @@ module {
 }
 """
 
-# flags = ["--iree-hal-target-backends=cuda", "--iree-input-type=stablehlo_xla", "--iree-execution-model=async-internal"]
-flags = ["--iree-hal-target-backends=metal-spirv", "--iree-input-type=stablehlo_xla", "--iree-execution-model=async-internal"]
+flags = ["--iree-hal-target-backends=llvm-cpu", "--iree-input-type=stablehlo_xla", "--iree-execution-model=async-internal"]
+# flags = ["--iree-hal-target-backends=metal-spirv", "--iree-input-type=stablehlo_xla", "--iree-execution-model=async-internal"]
 
 %NxIREE.Module{} = module = NxIREE.compile(mlir_module, flags)
 
