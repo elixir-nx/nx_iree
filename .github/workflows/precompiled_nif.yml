@@ -1,0 +1,187 @@
+name: precompile
+
+on:
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  precompile_nif_macos:
+    runs-on: ${{ matrix.os }}
+    env:
+      MIX_ENV: prod
+      NX_IREE_PREFER_PRECOMPILED: false
+      NX_IREE_SOURCE_DIR: ./build-cache/iree
+      IREE_GIT_REV: candidate-20240604.914
+    strategy:
+      fail-fast: false
+      matrix:
+        nif_version: [2.16, 2.17]
+        os: [macos-12, macos-14]
+        arch: [x86_64, aarch64]
+        exclude:
+          - os: macos-12
+            arch: aarch64
+          - os: macos-14
+            arch: x86_64
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: Install asdf and tools
+        uses: asdf-vm/actions/install@v3
+
+      - name: Setup dependencies and env
+        run: |
+          brew install ninja
+          mix local.hex --force
+          mix local.rebar --force
+          echo "NX_IREE_SOURCE_DIR=$(elixir -e 'IO.puts(Path.absname(~s(${{env.NX_IREE_SOURCE_DIR}})))')" > $GITHUB_ENV
+          echo "PKG_NAME=libnx_iree-macos-${{matrix.arch}}-nif-${{matrix.nif_version}}" >> $GITHUB_ENV
+
+      - name: Cache mix dependencies
+        id: cache-mix-deps
+        uses: actions/cache@v4
+        with:
+          key: deps-${{ hashFiles('mix.lock') }}
+          path: |
+            ./deps
+      - name: Get mix deps
+        if: steps.cache-mix-deps.outputs.cache-hit != 'true'
+        run: mix deps.get
+      - name: Cache IREE dir
+        id: cache-iree-dir
+        uses: actions/cache@v4
+        with:
+          key: iree-dir-${{ env.IREE_GIT_REV }}
+          path: |
+            ${{ env.NX_IREE_SOURCE_DIR }}
+      - name: Clone IREE
+        if: steps.cache-iree-dir.outputs.cache-hit != 'true'
+        run: make clone_iree
+      - name: Compile NIF
+        run: |
+          mix compile
+          mkdir ${{ env.PKG_NAME }}
+          cp ./cache/libnx_iree.so ./${{ env.PKG_NAME }}/libnx_iree.so
+          cp -r ./cache/iree-runtime ./${{ env.PKG_NAME }}/iree-runtime
+          tar -czf ${{ env.PKG_NAME }}.tar.gz ${{ env.PKG_NAME }}
+      - name: Release Artifacts
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            ./*.tar.gz
+  precompile_nif_linux_x86_64:
+    runs-on: ubuntu-22.04
+    env:
+      MIX_ENV: prod
+      NX_IREE_PREFER_PRECOMPILED: false
+      NX_IREE_SOURCE_DIR: ./build-cache/iree
+      IREE_GIT_REV: candidate-20240604.914
+      ImageOS: ubuntu22
+      LANG: en_US.UTF-8
+      LANGUAGE: en_US:en
+      LC_ALL: en_US.UTF-8
+      DEBIAN_FRONTEND: noninteractive
+    strategy:
+      fail-fast: false
+      matrix:
+        nif_version: [2.16, 2.17]
+        include:
+          - container: "nvidia/cuda:12.5.0-devel-ubuntu22.04"
+            cuda_version: "12.5.0"
+            cuda_id: "12"
+            cudnn_id: "8"
+            cudnn_tarball: "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-9.2.0.82_cuda12-archive.tar.xz"
+    container: ${{ matrix.container }}
+    steps:
+      - name: Setup Dependencies
+        run: |
+          apt-get update
+          apt-get install -y build-essential automake autoconf pkg-config bc curl git libssl-dev gzip python3 ca-certificates \
+          locales curl wget zip unzip
+          echo "${LANG} UTF-8" >> /etc/locale.gen
+          locale-gen
+          update-locale LANG=${LANG}
+
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.21.x'
+
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - uses: erlef/setup-beam@v1
+        with:
+          version-file: .tool-versions
+          version-type: strict
+
+      - name: Configure Env
+        run: |
+          echo "NX_IREE_SOURCE_DIR=$(elixir -e 'IO.puts(Path.absname(~s(${{env.NX_IREE_SOURCE_DIR}})))')" > $GITHUB_ENV
+          echo "PKG_NAME=libnx_iree-linux-x86_64-nif-${{matrix.nif_version}}" >> $GITHUB_ENV
+
+      - name: Setup Ninja
+        uses: ashutoshvarma/setup-ninja@master
+        with:
+          version: 1.10.0
+
+      - name: Download and install cudnn
+        run: |
+          curl -fSL "${{ matrix.cudnn_tarball }}" -o cudnn.tar.xz
+          mkdir -p cudnn
+          tar -xvf cudnn.tar.xz -C cudnn --strip-components=1
+          rm -f cudnn.tar.xz
+          cp -a cudnn/include/* /usr/local/cuda/include/
+          if [ -d "$(pwd)/cudnn/lib" ]; then
+            cp -a cudnn/lib/* /usr/local/cuda/lib64/
+          fi
+          if [ -d "$(pwd)/cudnn/lib64" ]; then
+            cp -a cudnn/lib64/* /usr/local/cuda/lib64/
+          fi
+          rm -rf cudnn
+
+      - name: Setup Local Hex
+        run: |
+          mix local.hex --force
+          mix local.rebar --force
+
+      - name: Cache mix dependencies
+        id: cache-mix-deps
+        uses: actions/cache@v4
+        with:
+          key: deps-${{ hashFiles('mix.lock') }}
+          path: |
+            ./deps
+      - name: Get mix deps
+        if: steps.cache-mix-deps.outputs.cache-hit != 'true'
+        run: mix deps.get
+      - name: Cache IREE dir
+        id: cache-iree-dir
+        uses: actions/cache@v4
+        with:
+          key: iree-dir-${{ env.IREE_GIT_REV }}
+          path: |
+            ${{ env.NX_IREE_SOURCE_DIR }}
+      - name: Clone IREE
+        if: steps.cache-iree-dir.outputs.cache-hit != 'true'
+        run: make clone_iree
+      - name: Compile NIF
+        run: |
+          mix compile
+          mkdir ${{ env.PKG_NAME }}
+          cp ./cache/libnx_iree.so ./${{ env.PKG_NAME }}/libnx_iree.so
+          cp -r ./cache/iree-runtime ./${{ env.PKG_NAME }}/iree-runtime
+          tar -czf ${{ env.PKG_NAME }}.tar.gz ${{ env.PKG_NAME }}
+      - name: Release Artifacts
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            ./*.tar.gz

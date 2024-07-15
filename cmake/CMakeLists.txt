@@ -28,7 +28,7 @@ add_library(${_NAME} SHARED ${iree_runtime_sources})
 
 set(__BUILD_DIR "${IREE_RUNTIME_BUILD_DIR}")
 
-add_subdirectory("${IREE_DIR}" ${__BUILD_DIR} EXCLUDE_FROM_ALL)
+add_subdirectory("${NX_IREE_SOURCE_DIR}" ${__BUILD_DIR} EXCLUDE_FROM_ALL)
 
 install(
     TARGETS ${_NAME}

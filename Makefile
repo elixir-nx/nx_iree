@@ -1,28 +1,33 @@
 # Environment variables passed via elixir_make
 # IREE_GIT_REV
-# IREE_DIR
+# NX_IREE_SOURCE_DIR
 # IREE_BUILD_TARGET
 # MIX_APP_PATH
 
 # System vars
 TEMP ?= $(HOME)/.cache
-BUILD_CACHE ?= $(TEMP)/nx_iree
-
 IREE_REPO ?= https://github.com/iree-org/iree
 
 IREE_NS = iree-$(IREE_GIT_REV)
-IREE_DIR ?= $(BUILD_CACHE)/$(IREE_NS)
+NX_IREE_SOURCE_DIR ?= $(TEMP)/nx_iree/$(IREE_NS)
 
 # default rule for elixir_make
+ifeq ($(NX_IREE_PREFER_PRECOMPILED), true)
+all: nx_iree
+else
 all: install_runtime nx_iree
+endif
 
 compile: install_runtime
 
-$(IREE_DIR):
-	./scripts/clone_iree.sh $(BUILD_CACHE) $(IREE_GIT_REV) $(IREE_DIR)
+.PHONY: clone_iree
+clone_iree: $(NX_IREE_SOURCE_DIR)
+
+$(NX_IREE_SOURCE_DIR):
+	./scripts/clone_iree.sh $(IREE_GIT_REV) $(NX_IREE_SOURCE_DIR)
 
 IREE_CMAKE_BUILD_DIR ?= $(abspath iree-runtime/iree-build)
-IREE_RUNTIME_INCLUDE_PATH := $(abspath $(IREE_DIR)/runtime/src/iree)
+IREE_RUNTIME_INCLUDE_PATH := $(abspath $(NX_IREE_SOURCE_DIR)/runtime/src/iree)
 IREE_RUNTIME_BUILD_DIR ?= $(abspath iree-runtime/build)
 IREE_INSTALL_DIR ?= $(abspath iree-runtime/host/install)
 
@@ -87,13 +92,13 @@ install_runtime: $(IREE_INSTALL_DIR)
 
 CMAKE_SOURCES = cmake/src/runtime.cc cmake/src/runtime.h
 
-$(IREE_INSTALL_DIR): $(IREE_DIR) $(CMAKE_SOURCES)
+$(IREE_INSTALL_DIR): $(NX_IREE_SOURCE_DIR) $(CMAKE_SOURCES)
 	cmake -G Ninja -B $(IREE_CMAKE_BUILD_DIR) \
 		-DCMAKE_BUILD_TYPE=$(IREE_CMAKE_CONFIG)\
 		-DIREE_BUILD_COMPILER=OFF\
 		-DIREE_RUNTIME_BUILD_DIR=$(IREE_RUNTIME_BUILD_DIR)\
 		-DIREE_RUNTIME_INCLUDE_PATH=$(IREE_RUNTIME_INCLUDE_PATH)\
-		-DIREE_DIR=$(IREE_DIR) \
+		-DNX_IREE_SOURCE_DIR=$(NX_IREE_SOURCE_DIR) \
 		$(BUILD_TARGET_FLAGS)
 	cmake --build $(IREE_CMAKE_BUILD_DIR) --config $(IREE_CMAKE_CONFIG)
 	cmake --install $(IREE_CMAKE_BUILD_DIR) --config $(IREE_CMAKE_CONFIG) --prefix $(IREE_INSTALL_DIR)
@@ -101,8 +106,8 @@ $(IREE_INSTALL_DIR): $(IREE_DIR) $(CMAKE_SOURCES)
 
 ### NxIREE Runtime NIF library
 
-NX_IREE_SO = $(MIX_APP_PATH)/priv/libnx_iree.so
-NX_IREE_CACHE_SO = cache/libnx_iree.so
+NX_IREE_SO ?= $(MIX_APP_PATH)/priv/libnx_iree.so
+NX_IREE_CACHE_SO ?= cache/libnx_iree.so
 NX_IREE_SO_LINK_PATH = $(CWD_RELATIVE_TO_PRIV_PATH)/$(NX_IREE_CACHE_SO)
 
 NX_IREE_RUNTIME_LIB = cache/iree-runtime/
@@ -144,10 +149,28 @@ SOURCES = $(wildcard c_src/*.cc)
 HEADERS = $(wildcard c_src/*.h)
 OBJECTS = $(patsubst c_src/%.cc,cache/objs/%.o,$(SOURCES))
 
+ifeq ($(NX_IREE_PREFER_PRECOMPILED), true)
+# If we are using precompiled libnx_iree.so, we need to make sure that
+# we're not trying to compile it again, which may happen due to the file
+# having been recently downloaded.
+# By using different nx_iree and NX_IREE_CACHE_SO rules we can ensure
+# that only the precompiled .so is used directly.
+nx_iree: $(NX_IREE_SO)
+
+.PHONY: $(NX_IREE_CACHE_SO)
+$(NX_IREE_CACHE_SO):
+ifdef DEBUG
+	@echo "Using precompiled libnx_iree.so"
+endif
+else
+
 nx_iree: $(NX_IREE__IREE_RUNTIME_INCLUDE_PATH) $(NX_IREE_SO)
 
+$(NX_IREE_CACHE_SO): $(OBJECTS)
+	$(CXX) -shared -o $@ $^ $(LDFLAGS)
+endif
+
 $(NX_IREE_SO): $(NX_IREE_CACHE_SO)
-	@ echo $(CWD_RELATIVE_TO_PRIV_PATH)
 	@ mkdir -p $(CWD_RELATIVE_TO_PRIV_PATH)
 	@ if [ "${MIX_BUILD_EMBEDDED}" = "true" ]; then \
 		cp -a $(abspath $(NX_IREE_RUNTIME_LIB)) $(NX_IREE_LIB_DIR) ; \
@@ -157,8 +180,6 @@ $(NX_IREE_SO): $(NX_IREE_CACHE_SO)
 		ln -sf $(NX_IREE_CACHE_SO_LINK_PATH) $(NX_IREE_SO) ; \
 	fi
 
-$(NX_IREE_CACHE_SO): $(OBJECTS)
-	$(CXX) -shared -o $@ $^ $(LDFLAGS)
 
 # This rule may be overriden by the mix.exs compiler rule
 # in that it may download the .so instead of compiling it locally
@@ -172,7 +193,7 @@ cache/objs/%.o: c_src/%.cc
 
 # Print IREE Dir
 PTD:
-	@ echo $(IREE_DIR)
+	@ echo $(NX_IREE_SOURCE_DIR)
 
 clean:
 	rm -rf cache/objs

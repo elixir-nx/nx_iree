@@ -2,27 +2,23 @@
 
 set -e
 
-BUILD_CACHE=$1
-IREE_GIT_REV=$2
-IREE_DIR=$3
+IREE_GIT_REV=$1
+NX_IREE_SOURCE_DIR=$2
 
 echo "Args:"
-echo "  BUILD_CACHE: ${BUILD_CACHE}"
 echo "  IREE_GIT_REV: ${IREE_GIT_REV}"
-echo "  IREE_DIR: ${IREE_DIR}"
-
-mkdir -p ${BUILD_CACHE}
+echo "  NX_IREE_SOURCE_DIR: ${NX_IREE_SOURCE_DIR}"
 
 IREE_REPO=https://github.com/iree-org/iree
 
-if [ -d ${IREE_DIR} ]; then
+if [ -d ${NX_IREE_SOURCE_DIR} ]; then
   echo "IREE directory already exists. Skipping clone."
-  ls ${IREE_DIR}
+  ls ${NX_IREE_SOURCE_DIR}
 else
-  git clone --branch ${IREE_GIT_REV} --depth 1 ${IREE_REPO} ${IREE_DIR}
+  git clone --branch ${IREE_GIT_REV} --depth 1 ${IREE_REPO} ${NX_IREE_SOURCE_DIR}
 fi
 
-cd ${IREE_DIR}
+cd ${NX_IREE_SOURCE_DIR}
 
 git config --global submodule.recurse true
 for submodule in $(git config --file .gitmodules --name-only --get-regexp path | sed 's/\.path$//'); do

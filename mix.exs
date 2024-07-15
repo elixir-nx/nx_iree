@@ -1,12 +1,14 @@
 defmodule NxIREE.MixProject do
   use Mix.Project
 
+  @version "0.0.1-pre.2"
+
   def project do
     n_jobs = to_string(max(System.schedulers_online() - 2, 1))
 
     [
       app: :nx_iree,
-      version: "0.1.0",
+      version: @version,
       elixir: "~> 1.15",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -24,7 +26,9 @@ defmodule NxIREE.MixProject do
           "CWD_RELATIVE_TO_PRIV_PATH" => cwd_relative_to_priv,
           "MAKE_NUM_JOBS" => n_jobs,
           "IREE_GIT_REV" => nx_iree_config().tag,
-          "IREE_SOURCE_DIR" => nx_iree_config().source_dir
+          "NX_IREE_SOURCE_DIR" => nx_iree_config().source_dir,
+          "NX_IREE_CACHE_SO" => nx_iree_config().nx_iree_so_path,
+          "NX_IREE_PREFER_PRECOMPILED" => to_string(nx_iree_config().use_precompiled)
         }
       end
     ]
@@ -51,7 +55,13 @@ defmodule NxIREE.MixProject do
   end
 
   defp compile(args) do
-    download_and_unzip(args)
+    :ok = download_and_unzip_iree_release(args)
+
+    if nx_iree_config().use_precompiled and not File.exists?(nx_iree_config().nx_iree_so_path) do
+      download_precompiled_nx_iree_lib()
+    else
+      :ok
+    end
   end
 
   defp nx_iree_config() do
@@ -59,10 +69,16 @@ defmodule NxIREE.MixProject do
     tag = System.get_env("NX_IREE_GIT_REV", "candidate-20240604.914")
 
     env_dir = System.get_env("NX_IREE_COMPILER_DIR")
-    source_env_dir = System.get_env("NX_IREE_SOURCE_DIR")
+
+    home_cache = Path.join(System.fetch_env!("HOME"), ".cache")
+
+    source_env_dir =
+      System.get_env("NX_IREE_SOURCE_DIR", Path.join([home_cache, "nx_iree", "iree-#{tag}"]))
 
     dir = env_dir || Path.join(__DIR__, "cache/iree")
     source_dir = source_env_dir || Path.join(__DIR__, "cache/iree-source")
+
+    use_precompiled = System.get_env("NX_IREE_PREFER_PRECOMPILED", "true") in ["1", "true"]
 
     %{
       version: version,
@@ -71,12 +87,13 @@ defmodule NxIREE.MixProject do
       env_dir: env_dir,
       dir: dir,
       source_dir: source_dir,
-      compiler_path: Path.join([dir, "compiler/_mlir_libs/iree-compile"]),
-      lld_path: Path.join([dir, "compiler/_mlir_libs/iree-lld"])
+      use_precompiled: use_precompiled,
+      nx_iree_so_path: Path.join("cache", "libnx_iree.so"),
+      nx_iree_tar_gz_path: Path.join("cache", "libnx_iree.tar.gz")
     }
   end
 
-  defp download_and_unzip(args) do
+  defp download_and_unzip_iree_release(args) do
     nx_iree_config = nx_iree_config()
 
     cache_dir =
@@ -93,21 +110,20 @@ defmodule NxIREE.MixProject do
     end
 
     if File.dir?(nx_iree_config.dir) do
-      {:ok, []}
+      :ok
     else
-      download_and_unzip(cache_dir, nx_iree_config)
+      download_and_unzip_iree_release(cache_dir, nx_iree_config)
     end
   end
 
-  defp download_and_unzip(cache_dir, nx_iree_config) do
+  defp download_and_unzip_iree_release(cache_dir, nx_iree_config) do
     File.mkdir_p!(cache_dir)
 
     nx_iree_zip =
       Path.join(cache_dir, "iree-compiler-#{nx_iree_config.version}.zip")
 
     unless File.exists?(nx_iree_zip) do
-      # Download nx_iree
-
+      # Download iree release for the compiler
       os = :os.type()
 
       arch =
@@ -130,7 +146,7 @@ defmodule NxIREE.MixProject do
             Mix.raise("OS #{inspect(os)} is not supported")
         end
 
-      download!(url, nx_iree_zip)
+      download!("IREE", url, nx_iree_zip)
     end
 
     # Unpack libtorch and move to the target cache dir
@@ -168,16 +184,74 @@ defmodule NxIREE.MixProject do
     :ok
   end
 
+  defp download_precompiled_nx_iree_lib() do
+    nx_iree_config = nx_iree_config()
+
+    arch =
+      case to_string(:erlang.system_info(:system_architecture)) do
+        "x86_64" <> _ -> "x86_64"
+        "aarch64" <> _ -> "aarch64"
+        _ -> Mix.raise("Unsupported architecture")
+      end
+
+    nif_version = :erlang.system_info(:nif_version)
+
+    os_name =
+      case :os.type() do
+        {:unix, :darwin} ->
+          "macos"
+
+        {:unix, :linux} ->
+          "linux"
+
+        os ->
+          Mix.raise("OS #{inspect(os)} is not supported")
+      end
+
+    # This is the precompiled path, which should match what's included in releases
+    # by the github actions workflows
+    version_path = "libnx_iree-#{os_name}-#{arch}-nif-#{nif_version}"
+    source_tar_path = "#{version_path}.tar.gz"
+    zip_name = nx_iree_config.nx_iree_tar_gz_path
+
+    download!(
+      "NxIREE NIFs",
+      "https://github.com/elixir-nx/nx_iree/releases/download/v#{@version}/#{source_tar_path}",
+      zip_name
+    )
+
+    parent_dir = Path.dirname(zip_name)
+
+    :ok =
+      zip_name
+      |> String.to_charlist()
+      |> :erl_tar.extract([:compressed, cwd: String.to_charlist(parent_dir)])
+
+    File.rename(
+      Path.join([parent_dir, version_path, "libnx_iree.so"]),
+      Path.join(parent_dir, "libnx_iree.so")
+    )
+
+    File.rename(
+      Path.join([parent_dir, version_path, "iree-runtime"]),
+      Path.join(parent_dir, "iree-runtime")
+    )
+
+    File.rmdir(Path.join(parent_dir, version_path))
+
+    :ok
+  end
+
   defp assert_network_tool!() do
     unless network_tool() do
       raise "expected either curl or wget to be available in your system, but neither was found"
     end
   end
 
-  defp download!(url, dest) do
+  defp download!(name, url, dest) do
     assert_network_tool!()
 
-    case download(url, dest) do
+    case download(name, url, dest) do
       :ok ->
         :ok
 
@@ -186,14 +260,14 @@ defmodule NxIREE.MixProject do
     end
   end
 
-  defp download(url, dest) do
+  defp download(name, url, dest) do
     {command, args} =
       case network_tool() do
         :curl -> {"curl", ["--fail", "-L", url, "-o", dest]}
         :wget -> {"wget", ["-O", dest, url]}
       end
 
-    IO.puts("Downloading iree from #{url}")
+    IO.puts("Downloading #{name} from #{url}")
 
     case System.cmd(command, args) do
       {_, 0} -> :ok
