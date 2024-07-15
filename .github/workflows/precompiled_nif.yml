@@ -110,8 +110,6 @@ jobs:
           echo "${LANG} UTF-8" >> /etc/locale.gen
           locale-gen
           update-locale LANG=${LANG}
-          mix local.hex --force
-          mix local.rebar --force
           echo "NX_IREE_SOURCE_DIR=$(elixir -e 'IO.puts(Path.absname(~s(${{env.NX_IREE_SOURCE_DIR}})))')" > $GITHUB_ENV
           echo "PKG_NAME=libnx_iree-linux-x86_64-nif-${{matrix.nif_version}}" >> $GITHUB_ENV
 
@@ -140,6 +138,11 @@ jobs:
             cp -a cudnn/lib64/* /usr/local/cuda/lib64/
           fi
           rm -rf cudnn
+
+      - name: Setup Local Hex
+        run: |
+          mix local.hex --force
+          mix local.rebar --force
 
       - name: Cache mix dependencies
         id: cache-mix-deps
