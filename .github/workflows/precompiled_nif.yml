@@ -102,20 +102,6 @@ jobs:
             cudnn_tarball: "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-9.2.0.82_cuda12-archive.tar.xz"
     container: ${{ matrix.container }}
     steps:
-      - name: checkout
-        uses: actions/checkout@v4
-
-      - name: Install asdf and tools
-        uses: asdf-vm/actions/install@v3
-
-      - name: cuda-toolkit
-        uses: Jimver/cuda-toolkit@v0.2.16
-
-      - name: Setup Ninja
-        uses: ashutoshvarma/setup-ninja@master
-        with:
-          version: 1.10.0
-
       - name: Setup dependencies and env
         run: |
           apt-get update
@@ -128,6 +114,17 @@ jobs:
           mix local.rebar --force
           echo "NX_IREE_SOURCE_DIR=$(elixir -e 'IO.puts(Path.absname(~s(${{env.NX_IREE_SOURCE_DIR}})))')" > $GITHUB_ENV
           echo "PKG_NAME=libnx_iree-linux-x86_64-nif-${{matrix.nif_version}}" >> $GITHUB_ENV
+
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: Install asdf and tools
+        uses: asdf-vm/actions/install@v3
+
+      - name: Setup Ninja
+        uses: ashutoshvarma/setup-ninja@master
+        with:
+          version: 1.10.0
 
       - name: Download and install cudnn
         run: |
