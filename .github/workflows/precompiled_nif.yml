@@ -116,8 +116,9 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
 
-      - name: Install asdf and tools
-        uses: asdf-vm/actions/install@v3
+      - uses: erlef/setup-beam@v1
+        with:
+          version-file: .tool-versions
 
       - name: Setup Ninja
         uses: ashutoshvarma/setup-ninja@master
