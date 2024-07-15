@@ -94,11 +94,12 @@ jobs:
       fail-fast: false
       matrix:
         nif_version: [2.16, 2.17]
-        container: "nvidia/cuda:12.5.0-devel-ubuntu20.04"
-        cuda_version: "12.5.0"
-        cuda_id: "12"
-        cudnn_id: "8"
-        cudnn_tarball: "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-9.2.0.82_cuda12-archive.tar.xz"
+        include:
+          - container: "nvidia/cuda:12.5.0-devel-ubuntu20.04"
+            cuda_version: "12.5.0"
+            cuda_id: "12"
+            cudnn_id: "8"
+            cudnn_tarball: "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-9.2.0.82_cuda12-archive.tar.xz"
     container: ${{ matrix.container }}
     steps:
       - name: checkout
