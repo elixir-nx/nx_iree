@@ -79,13 +79,13 @@ jobs:
           files: |
             ./*.tar.gz
   precompile_nif_linux_x86_64:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       MIX_ENV: prod
       NX_IREE_PREFER_PRECOMPILED: false
       NX_IREE_SOURCE_DIR: ./build-cache/iree
       IREE_GIT_REV: candidate-20240604.914
-      ImageOS: ubuntu20
+      ImageOS: ubuntu22
       LANG: en_US.UTF-8
       LANGUAGE: en_US:en
       LC_ALL: en_US.UTF-8
@@ -95,7 +95,7 @@ jobs:
       matrix:
         nif_version: [2.16, 2.17]
         include:
-          - container: "nvidia/cuda:12.5.0-devel-ubuntu20.04"
+          - container: "nvidia/cuda:12.5.0-devel-ubuntu22.04"
             cuda_version: "12.5.0"
             cuda_id: "12"
             cudnn_id: "8"
@@ -106,7 +106,12 @@ jobs:
         run: |
           apt-get update
           apt-get install -y build-essential automake autoconf pkg-config bc curl git libssl-dev gzip python3 ca-certificates \
-          locales curl wget cmake zip unzip
+          locales curl wget zip unzip
+          wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null
+          sudo apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main"
+          sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 6AF7F09730B3F0A4
+          sudo apt update
+          sudo apt install -y cmake
           echo "${LANG} UTF-8" >> /etc/locale.gen
           locale-gen
           update-locale LANG=${LANG}
