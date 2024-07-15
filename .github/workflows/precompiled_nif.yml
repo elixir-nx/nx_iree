@@ -102,7 +102,7 @@ jobs:
             cudnn_tarball: "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-9.2.0.82_cuda12-archive.tar.xz"
     container: ${{ matrix.container }}
     steps:
-      - name: Setup dependencies and env
+      - name: Setup Dependencies
         run: |
           apt-get update
           apt-get install -y build-essential automake autoconf pkg-config bc curl git libssl-dev gzip python3 ca-certificates \
@@ -110,8 +110,6 @@ jobs:
           echo "${LANG} UTF-8" >> /etc/locale.gen
           locale-gen
           update-locale LANG=${LANG}
-          echo "NX_IREE_SOURCE_DIR=$(elixir -e 'IO.puts(Path.absname(~s(${{env.NX_IREE_SOURCE_DIR}})))')" > $GITHUB_ENV
-          echo "PKG_NAME=libnx_iree-linux-x86_64-nif-${{matrix.nif_version}}" >> $GITHUB_ENV
 
       - name: checkout
         uses: actions/checkout@v4
@@ -120,6 +118,11 @@ jobs:
         with:
           version-file: .tool-versions
           version-type: strict
+
+      - name: Configure Env
+        run: |
+          echo "NX_IREE_SOURCE_DIR=$(elixir -e 'IO.puts(Path.absname(~s(${{env.NX_IREE_SOURCE_DIR}})))')" > $GITHUB_ENV
+          echo "PKG_NAME=libnx_iree-linux-x86_64-nif-${{matrix.nif_version}}" >> $GITHUB_ENV
 
       - name: Setup Ninja
         uses: ashutoshvarma/setup-ninja@master
