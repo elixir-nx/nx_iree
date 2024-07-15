@@ -2,8 +2,6 @@ name: precompile
 
 on:
   push:
-    branches:
-      - pv-feat/precompile-artifacts
     tags:
       - "v*"
 
