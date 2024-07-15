@@ -79,16 +79,27 @@ jobs:
           files: |
             ./*.tar.gz
   precompile_nif_linux_x86_64:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
     env:
       MIX_ENV: prod
       NX_IREE_PREFER_PRECOMPILED: false
       NX_IREE_SOURCE_DIR: ./build-cache/iree
       IREE_GIT_REV: candidate-20240604.914
+      ImageOS: ubuntu20
+      LANG: en_US.UTF-8
+      LANGUAGE: en_US:en
+      LC_ALL: en_US.UTF-8
+      DEBIAN_FRONTEND: noninteractive
     strategy:
       fail-fast: false
       matrix:
         nif_version: [2.16, 2.17]
+        container: "nvidia/cuda:12.5.0-devel-ubuntu20.04"
+        cuda_version: "12.5.0"
+        cuda_id: "12"
+        cudnn_id: "8"
+        cudnn_tarball: "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-9.2.0.82_cuda12-archive.tar.xz"
+    container: ${{ matrix.container }}
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -106,10 +117,31 @@ jobs:
 
       - name: Setup dependencies and env
         run: |
+          apt-get update
+          apt-get install -y build-essential automake autoconf pkg-config bc curl git libssl-dev gzip python3 ca-certificates \
+          locales curl wget cmake
+          echo "${LANG} UTF-8" >> /etc/locale.gen
+          locale-gen
+          update-locale LANG=${LANG}
           mix local.hex --force
           mix local.rebar --force
           echo "NX_IREE_SOURCE_DIR=$(elixir -e 'IO.puts(Path.absname(~s(${{env.NX_IREE_SOURCE_DIR}})))')" > $GITHUB_ENV
           echo "PKG_NAME=libnx_iree-linux-x86_64-nif-${{matrix.nif_version}}" >> $GITHUB_ENV
+
+      - name: Download and install cudnn
+        run: |
+          curl -fSL "${{ matrix.cudnn_tarball }}" -o cudnn.tar.xz
+          mkdir -p cudnn
+          tar -xvf cudnn.tar.xz -C cudnn --strip-components=1
+          rm -f cudnn.tar.xz
+          cp -a cudnn/include/* /usr/local/cuda/include/
+          if [ -d "$(pwd)/cudnn/lib" ]; then
+            cp -a cudnn/lib/* /usr/local/cuda/lib64/
+          fi
+          if [ -d "$(pwd)/cudnn/lib64" ]; then
+            cp -a cudnn/lib64/* /usr/local/cuda/lib64/
+          fi
+          rm -rf cudnn
 
       - name: Cache mix dependencies
         id: cache-mix-deps
