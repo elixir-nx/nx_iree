@@ -46,13 +46,10 @@ build() {
     local IREE_RUNTIME_BUILD_DIR=iree-runtime/$1/build
     local IREE_INSTALL_DIR=$(install_dir $1)
 
-    if [[ $1 -eq "host" ]]; then
-        local IREE_HOST_BUILD_DIR=iree-runtime/host-build
-        local IREE_HOST_INSTALL_DIR=${IREE_HOST_BUILD_DIR}/install
-        local IREE_HOST_BIN_DIR=${IREE_HOST_BUILD_DIR}/install/bin
-    else
-        local IREE_HOST_BIN_DIR=iree-runtime/host-build/install/bin
-    fi
+    local IREE_HOST_BUILD_DIR=iree-runtime/host-build
+    local IREE_HOST_INSTALL_DIR=${IREE_HOST_BUILD_DIR}/install
+    local IREE_HOST_BIN_DIR=${IREE_HOST_BUILD_DIR}/install/bin
+    local IREE_HOST_BIN_DIR=iree-runtime/host-build/install/bin
 
     echo "IREE_CMAKE_BUILD_DIR: $IREE_CMAKE_BUILD_DIR"
     echo "IREE_RUNTIME_BUILD_DIR: $IREE_RUNTIME_BUILD_DIR"
@@ -61,14 +58,22 @@ build() {
     echo "IREE_HOST_INSTALL_DIR: $IREE_HOST_INSTALL_DIR"
     echo "IREE_HOST_BUILD_DIR: $IREE_HOST_BUILD_DIR"
 
-    make ${NUM_JOBS} install_runtime \
-        IREE_GIT_REV=$(mix iree.version) \
-        IREE_INSTALL_DIR=${IREE_INSTALL_DIR} \
-        IREE_CMAKE_BUILD_DIR=${IREE_CMAKE_BUILD_DIR} \
-        IREE_RUNTIME_BUILD_DIR=${IREE_RUNTIME_BUILD_DIR} \
-        IREE_BUILD_TARGET=$1
-
-    echo $IREE_INSTALL_DIR
+    if [[ $1 -eq "host" ]]; then
+        make ${NUM_JOBS} install_runtime \
+            IREE_GIT_REV=$(mix iree.version) \
+            IREE_INSTALL_DIR=${IREE_INSTALL_DIR} \
+            IREE_CMAKE_BUILD_DIR=${IREE_CMAKE_BUILD_DIR} \
+            IREE_RUNTIME_BUILD_DIR=${IREE_RUNTIME_BUILD_DIR} \
+            IREE_BUILD_TARGET=$1
+    else
+        make ${NUM_JOBS} install_runtime \
+            IREE_GIT_REV=$(mix iree.version) \
+            IREE_INSTALL_DIR=${IREE_INSTALL_DIR} \
+            IREE_HOST_BIN_DIR=${IREE_HOST_BIN_DIR} \
+            IREE_CMAKE_BUILD_DIR=${IREE_CMAKE_BUILD_DIR} \
+            IREE_RUNTIME_BUILD_DIR=${IREE_RUNTIME_BUILD_DIR} \
+            IREE_BUILD_TARGET=$1
+    fi
 }
 
 if $build_host_flag; then
