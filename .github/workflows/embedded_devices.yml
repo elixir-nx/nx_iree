@@ -24,11 +24,11 @@ jobs:
       matrix:
         build_target:
           - ios
-          # - ios_simulator
-          # - visionos
-          # - visionos_simulator
-          # - tvos
-          # - tvos_simulator
+          - ios_simulator
+          - visionos
+          - visionos_simulator
+          - tvos
+          - tvos_simulator
     steps:
       - name: checkout
         uses: actions/checkout@v4
