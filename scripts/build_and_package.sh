@@ -71,7 +71,7 @@ build() {
 build $IREE_BUILD_TARGET
 IREE_INSTALL_DIR=$(install_dir $IREE_BUILD_TARGET)
 
-TAR_NAME=iree-runtime/artifacts/nx_iree-${HOST_ARCH}-${IREE_BUILD_TARGET}.tar.gz
+TAR_NAME=iree-runtime/artifacts/nx_iree-embedded-macos-${IREE_BUILD_TARGET}.tar.gz
 
 echo "Packaging into ${TAR_NAME}"
 tar -czf ${TAR_NAME} -C ${IREE_INSTALL_DIR} .
