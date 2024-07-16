@@ -2,8 +2,6 @@
 
 set -e
 
-IREE_BUILD_TARGET=$1
-
 get_nproc() {
     if [ "$(uname -s)" = "Darwin" ]; then
         sysctl -n hw.ncpu
@@ -18,6 +16,10 @@ build_host_flag=false
 # Parse options
 while [[ $# -gt 0 ]]; do
   case $1 in
+    --target=*)
+      IREE_BUILD_TARGET="${1#*=}"
+      shift # Shift past the argument
+      ;;
     --build-host)
       build_host_flag=true
       shift # Shift past the argument

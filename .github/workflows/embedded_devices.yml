@@ -64,7 +64,7 @@ jobs:
         if: steps.cache-iree-dir.outputs.cache-hit != 'true'
         run: make clone_iree
       - name: Compile
-        run: ./scripts/build_and_package.sh ${{ matrix.build_target }} --build-host
+        run: ./scripts/build_and_package.sh --target=${{ matrix.build_target }} --build-host
       - name: Release Artifacts
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
