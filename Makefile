@@ -104,7 +104,7 @@ $(IREE_INSTALL_DIR): $(NX_IREE_SOURCE_DIR) $(CMAKE_SOURCES)
 	cmake --install $(IREE_CMAKE_BUILD_DIR) --config $(IREE_CMAKE_CONFIG) --prefix $(IREE_INSTALL_DIR)
 
 .PHONY: iree_host
-ifdef IREE_HOST_BUILD_DIR
+ifeq ($(IREE_BUILD_TARGET), host)
 iree_host:
 	@echo "Building IREE runtime host binaries at $(IREE_HOST_BUILD_DIR)."
 	cmake -G Ninja -B $(IREE_HOST_BUILD_DIR) \
