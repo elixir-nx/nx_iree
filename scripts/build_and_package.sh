@@ -47,7 +47,7 @@ build() {
     local IREE_INSTALL_DIR=$(install_dir $1)
 
     export IREE_HOST_BUILD_DIR=iree-runtime/host-build
-    local IREE_HOST_INSTALL_DIR=${IREE_HOST_BUILD_DIR}/install
+    export IREE_HOST_INSTALL_DIR=${IREE_HOST_BUILD_DIR}/install
     export IREE_HOST_BIN_DIR=${IREE_HOST_BUILD_DIR}/install/bin
 
     echo "IREE_CMAKE_BUILD_DIR: $IREE_CMAKE_BUILD_DIR"
