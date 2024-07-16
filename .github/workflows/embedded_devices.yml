@@ -36,6 +36,14 @@ jobs:
       - name: Install asdf and tools
         uses: asdf-vm/actions/install@v3
 
+      - name: Set up Xcode
+        uses: maxim-lobanov/setup-xcode@v2
+        with:
+          xcode-version: "15.4"
+
+      - name: List XCode SDKs
+        run: xcodebuild -showsdks
+
       - name: Setup dependencies and env
         run: |
           brew install ninja
