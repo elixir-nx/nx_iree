@@ -45,7 +45,7 @@ else ifeq ($(IREE_BUILD_TARGET), ios)
 		-DCMAKE_SYSTEM_PROCESSOR=arm64\
 		-DCMAKE_IOS_INSTALL_COMBINED=YES\
 		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk iphoneos Path)\
-		-DIREE_HOST_BIN_DIR=$(IREE_HOST_BIN_DIR)
+		-DIREE_HOST_BIN_DIR=$(abspath $(IREE_HOST_BIN_DIR))
 else ifeq ($(IREE_BUILD_TARGET), ios_simulator)
 	BUILD_TARGET_FLAGS += \
 		-DCMAKE_SYSTEM_NAME=iOS\
