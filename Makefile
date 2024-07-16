@@ -53,35 +53,40 @@ else ifeq ($(IREE_BUILD_TARGET), ios_simulator)
 		-DCMAKE_OSX_ARCHITECTURES=arm64\
 		-DCMAKE_SYSTEM_PROCESSOR=arm64\
 		-DCMAKE_IOS_INSTALL_COMBINED=YES\
-		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk iphonesimulator Path)
+		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk iphonesimulator Path)\
+		-DIREE_HOST_BIN_DIR=$(abspath $(IREE_HOST_BIN_DIR))
 else ifeq ($(IREE_BUILD_TARGET), visionos)
 	BUILD_TARGET_FLAGS += \
 		-DCMAKE_SYSTEM_NAME=visionOS\
 		-DCMAKE_OSX_DEPLOYMENT_TARGET=1.2\
 		-DCMAKE_OSX_ARCHITECTURES=arm64\
 		-DCMAKE_SYSTEM_PROCESSOR=arm64\
-		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk xros Path)
+		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk xros Path)\
+		-DIREE_HOST_BIN_DIR=$(abspath $(IREE_HOST_BIN_DIR))
 else ifeq ($(IREE_BUILD_TARGET), visionos_simulator)
 	BUILD_TARGET_FLAGS += \
 		-DCMAKE_SYSTEM_NAME=visionOS\
 		-DCMAKE_OSX_DEPLOYMENT_TARGET=1.2\
 		-DCMAKE_OSX_ARCHITECTURES=arm64\
 		-DCMAKE_SYSTEM_PROCESSOR=arm64\
-		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk xrsimulator Path)
+		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk xrsimulator Path)\
+		-DIREE_HOST_BIN_DIR=$(abspath $(IREE_HOST_BIN_DIR))
 else ifeq ($(IREE_BUILD_TARGET), tvos)
 	BUILD_TARGET_FLAGS += \
 		-DCMAKE_SYSTEM_NAME=tvOS\
 		-DCMAKE_OSX_DEPLOYMENT_TARGET=17.5\
 		-DCMAKE_OSX_ARCHITECTURES=arm64\
 		-DCMAKE_SYSTEM_PROCESSOR=arm64\
-		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk appletvos Path)
+		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk appletvos Path)\
+		-DIREE_HOST_BIN_DIR=$(abspath $(IREE_HOST_BIN_DIR))
 else ifeq ($(IREE_BUILD_TARGET), tvos_simulator)
 	BUILD_TARGET_FLAGS += \
 		-DCMAKE_SYSTEM_NAME=tvOS\
 		-DCMAKE_OSX_DEPLOYMENT_TARGET=17.5\
 		-DCMAKE_OSX_ARCHITECTURES=arm64\
 		-DCMAKE_SYSTEM_PROCESSOR=arm64\
-		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk appletvsimulator Path)
+		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk appletvsimulator Path)\
+		-DIREE_HOST_BIN_DIR=$(abspath $(IREE_HOST_BIN_DIR))
 else
 	$(error "Unknown IREE_BUILD_TARGET: $(IREE_BUILD_TARGET), must be one of host, ios, ios_simulator, visionos, visionos_simulator, tvos, tvos_simulator")
 endif
