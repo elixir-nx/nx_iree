@@ -4,7 +4,15 @@ set -e
 
 IREE_BUILD_TARGET=$1
 
-NUM_JOBS=-j$(($(nproc) - 2 ))
+get_nproc() {
+    if [ "$(uname -s)" = "Darwin" ]; then
+        sysctl -n hw.ncpu
+    else
+        nproc
+    fi
+}
+
+NUM_JOBS=-j$(get_nproc)
 
 mkdir -p iree-runtime/artifacts
 
