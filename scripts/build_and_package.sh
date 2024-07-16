@@ -10,18 +10,11 @@ get_nproc() {
     fi
 }
 
-# Initialize variable
-build_host_flag=false
-
 # Parse options
 while [[ $# -gt 0 ]]; do
   case $1 in
     --target=*)
       IREE_BUILD_TARGET="${1#*=}"
-      shift # Shift past the argument
-      ;;
-    --build-host)
-      build_host_flag=true
       shift # Shift past the argument
       ;;
     *)
@@ -74,12 +67,6 @@ build() {
             IREE_BUILD_TARGET=$1
     fi
 }
-
-if $build_host_flag; then
-    echo "Building Host Runtime"
-    build host
-    echo "Done building Host Runtime"
-fi
 
 build $IREE_BUILD_TARGET
 IREE_INSTALL_DIR=$(install_dir $IREE_BUILD_TARGET)
