@@ -18,8 +18,6 @@ else
 all: install_runtime nx_iree
 endif
 
-compile: install_runtime
-
 .PHONY: clone_iree
 clone_iree: $(NX_IREE_SOURCE_DIR)
 
@@ -47,7 +45,7 @@ else ifeq ($(IREE_BUILD_TARGET), ios)
 		-DCMAKE_SYSTEM_PROCESSOR=arm64\
 		-DCMAKE_IOS_INSTALL_COMBINED=YES\
 		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk iphoneos Path)\
-		-DIREE_HOST_BIN_DIR=$(IREE_HOST_INSTALL_DIR)
+		-DIREE_HOST_BIN_DIR=$(IREE_HOST_BIN_DIR)
 else ifeq ($(IREE_BUILD_TARGET), ios_simulator)
 	BUILD_TARGET_FLAGS += \
 		-DCMAKE_SYSTEM_NAME=iOS\
@@ -89,11 +87,8 @@ else
 endif
 
 .PHONY: install_runtime
-ifdef IREE_HOST_INSTALL_DIR
-install_runtime: $(IREE_HOST_INSTALL_DIR) $(IREE_INSTALL_DIR)
-else
-install_runtime: $(IREE_INSTALL_DIR)
-endif
+install_runtime: iree_host $(IREE_INSTALL_DIR)
+
 
 CMAKE_SOURCES = cmake/src/runtime.cc cmake/src/runtime.h
 
@@ -108,6 +103,19 @@ $(IREE_INSTALL_DIR): $(NX_IREE_SOURCE_DIR) $(CMAKE_SOURCES)
 	cmake --build $(IREE_CMAKE_BUILD_DIR) --config $(IREE_CMAKE_CONFIG)
 	cmake --install $(IREE_CMAKE_BUILD_DIR) --config $(IREE_CMAKE_CONFIG) --prefix $(IREE_INSTALL_DIR)
 
+.PHONY: iree_host
+ifdef IREE_HOST_BUILD_DIR
+iree_host:
+	@echo "Building IREE runtime host binaries at $(IREE_HOST_BUILD_DIR)."
+	cmake -G Ninja -B $(IREE_HOST_BUILD_DIR) \
+		-DCMAKE_INSTALL_PREFIX=$(IREE_HOST_INSTALL_DIR) \
+		-DCMAKE_BUILD_TYPE=$(IREE_CMAKE_CONFIG) \
+		-S $(NX_IREE_SOURCE_DIR)
+	cmake --build $(IREE_HOST_BUILD_DIR) --target install
+else
+iree_host:
+	@echo "No host build directory specified. Skipping."
+endif
 
 ### NxIREE Runtime NIF library
 
