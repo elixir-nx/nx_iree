@@ -109,7 +109,7 @@ $(IREE_INSTALL_DIR): $(NX_IREE_SOURCE_DIR) $(CMAKE_SOURCES)
 	cmake --install $(IREE_CMAKE_BUILD_DIR) --config $(IREE_CMAKE_CONFIG) --prefix $(IREE_INSTALL_DIR)
 
 .PHONY: iree_host
-ifeq ($(IREE_BUILD_TARGET), host)
+ifeq ($(BUILD_IREE_RUNTIME), true)
 iree_host:
 	@echo "Building IREE runtime host binaries at $(IREE_HOST_BUILD_DIR)."
 	cmake -G Ninja -B $(IREE_HOST_BUILD_DIR) \
@@ -120,7 +120,7 @@ iree_host:
 	cmake --build $(IREE_HOST_BUILD_DIR) --target install
 else
 iree_host:
-	@echo "No host build directory specified. Skipping."
+	@echo "Not building IREE runtime host binaries. Skipping."
 endif
 
 ### NxIREE Runtime NIF library
