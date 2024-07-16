@@ -109,6 +109,7 @@ iree_host:
 	@echo "Building IREE runtime host binaries at $(IREE_HOST_BUILD_DIR)."
 	cmake -G Ninja -B $(IREE_HOST_BUILD_DIR) \
 		-DCMAKE_INSTALL_PREFIX=$(IREE_HOST_INSTALL_DIR) \
+		-DIREE_BUILD_COMPILER=OFF\
 		-DCMAKE_BUILD_TYPE=$(IREE_CMAKE_CONFIG) \
 		-S $(NX_IREE_SOURCE_DIR)
 	cmake --build $(IREE_HOST_BUILD_DIR) --target install
