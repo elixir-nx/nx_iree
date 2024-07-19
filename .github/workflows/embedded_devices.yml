@@ -2,8 +2,6 @@ name: embedded_devices
 
 on:
   push:
-    branches:
-      - pv-feat/package-for-devices
     tags:
       - "v*"
 
