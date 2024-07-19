@@ -17,6 +17,7 @@ jobs:
       NX_IREE_PREFER_PRECOMPILED: false
       NX_IREE_SOURCE_DIR: ./build-cache/iree
       IREE_GIT_REV: candidate-20240604.914
+      BUILD_IREE_RUNTIME: false
     strategy:
       fail-fast: false
       matrix:
@@ -112,7 +113,7 @@ jobs:
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v2
         with:
-          cmake-version: '3.21.x'
+          cmake-version: "3.21.x"
 
       - name: checkout
         uses: actions/checkout@v4

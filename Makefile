@@ -18,8 +18,6 @@ else
 all: install_runtime nx_iree
 endif
 
-compile: install_runtime
-
 .PHONY: clone_iree
 clone_iree: $(NX_IREE_SOURCE_DIR)
 
@@ -40,55 +38,62 @@ BUILD_TARGET_FLAGS = -S cmake
 # flags for xcode 15.4
 ifeq ($(IREE_BUILD_TARGET), host)
 else ifeq ($(IREE_BUILD_TARGET), ios)
-	BUILD_TARGET_FLAGS = \
+	BUILD_TARGET_FLAGS += \
 		-DCMAKE_SYSTEM_NAME=iOS\
 		-DCMAKE_OSX_DEPLOYMENT_TARGET=17.5\
 		-DCMAKE_OSX_ARCHITECTURES=arm64\
 		-DCMAKE_SYSTEM_PROCESSOR=arm64\
 		-DCMAKE_IOS_INSTALL_COMBINED=YES\
-		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk iphoneos Path)
+		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk iphoneos Path)\
+		-DIREE_HOST_BIN_DIR=$(abspath $(IREE_HOST_BIN_DIR))
 else ifeq ($(IREE_BUILD_TARGET), ios_simulator)
-	BUILD_TARGET_FLAGS = \
+	BUILD_TARGET_FLAGS += \
 		-DCMAKE_SYSTEM_NAME=iOS\
 		-DCMAKE_OSX_DEPLOYMENT_TARGET=17.5\
 		-DCMAKE_OSX_ARCHITECTURES=arm64\
 		-DCMAKE_SYSTEM_PROCESSOR=arm64\
 		-DCMAKE_IOS_INSTALL_COMBINED=YES\
-		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk iphonesimulator Path)
+		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk iphonesimulator Path)\
+		-DIREE_HOST_BIN_DIR=$(abspath $(IREE_HOST_BIN_DIR))
 else ifeq ($(IREE_BUILD_TARGET), visionos)
-	BUILD_TARGET_FLAGS = \
+	BUILD_TARGET_FLAGS += \
 		-DCMAKE_SYSTEM_NAME=visionOS\
 		-DCMAKE_OSX_DEPLOYMENT_TARGET=1.2\
 		-DCMAKE_OSX_ARCHITECTURES=arm64\
 		-DCMAKE_SYSTEM_PROCESSOR=arm64\
-		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk xros Path)
+		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk xros Path)\
+		-DIREE_HOST_BIN_DIR=$(abspath $(IREE_HOST_BIN_DIR))
 else ifeq ($(IREE_BUILD_TARGET), visionos_simulator)
-	BUILD_TARGET_FLAGS = \
+	BUILD_TARGET_FLAGS += \
 		-DCMAKE_SYSTEM_NAME=visionOS\
 		-DCMAKE_OSX_DEPLOYMENT_TARGET=1.2\
 		-DCMAKE_OSX_ARCHITECTURES=arm64\
 		-DCMAKE_SYSTEM_PROCESSOR=arm64\
-		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk xrsimulator Path)
+		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk xrsimulator Path)\
+		-DIREE_HOST_BIN_DIR=$(abspath $(IREE_HOST_BIN_DIR))
 else ifeq ($(IREE_BUILD_TARGET), tvos)
-	BUILD_TARGET_FLAGS = \
+	BUILD_TARGET_FLAGS += \
 		-DCMAKE_SYSTEM_NAME=tvOS\
 		-DCMAKE_OSX_DEPLOYMENT_TARGET=17.5\
 		-DCMAKE_OSX_ARCHITECTURES=arm64\
 		-DCMAKE_SYSTEM_PROCESSOR=arm64\
-		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk appletvos Path)
+		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk appletvos Path)\
+		-DIREE_HOST_BIN_DIR=$(abspath $(IREE_HOST_BIN_DIR))
 else ifeq ($(IREE_BUILD_TARGET), tvos_simulator)
-	BUILD_TARGET_FLAGS = \
+	BUILD_TARGET_FLAGS += \
 		-DCMAKE_SYSTEM_NAME=tvOS\
 		-DCMAKE_OSX_DEPLOYMENT_TARGET=17.5\
 		-DCMAKE_OSX_ARCHITECTURES=arm64\
 		-DCMAKE_SYSTEM_PROCESSOR=arm64\
-		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk appletvsimulator Path)
+		-DCMAKE_OSX_SYSROOT=$(shell xcodebuild -version -sdk appletvsimulator Path)\
+		-DIREE_HOST_BIN_DIR=$(abspath $(IREE_HOST_BIN_DIR))
 else
 	$(error "Unknown IREE_BUILD_TARGET: $(IREE_BUILD_TARGET), must be one of host, ios, ios_simulator, visionos, visionos_simulator, tvos, tvos_simulator")
 endif
 
 .PHONY: install_runtime
-install_runtime: $(IREE_INSTALL_DIR)
+install_runtime: iree_host $(IREE_INSTALL_DIR)
+
 
 CMAKE_SOURCES = cmake/src/runtime.cc cmake/src/runtime.h
 
@@ -103,6 +108,20 @@ $(IREE_INSTALL_DIR): $(NX_IREE_SOURCE_DIR) $(CMAKE_SOURCES)
 	cmake --build $(IREE_CMAKE_BUILD_DIR) --config $(IREE_CMAKE_CONFIG)
 	cmake --install $(IREE_CMAKE_BUILD_DIR) --config $(IREE_CMAKE_CONFIG) --prefix $(IREE_INSTALL_DIR)
 
+.PHONY: iree_host
+ifeq ($(BUILD_IREE_RUNTIME), true)
+iree_host:
+	@echo "Building IREE runtime host binaries at $(IREE_HOST_BUILD_DIR)."
+	cmake -G Ninja -B $(IREE_HOST_BUILD_DIR) \
+		-DCMAKE_INSTALL_PREFIX=$(IREE_HOST_INSTALL_DIR) \
+		-DIREE_BUILD_COMPILER=OFF\
+		-DCMAKE_BUILD_TYPE=$(IREE_CMAKE_CONFIG) \
+		-S $(NX_IREE_SOURCE_DIR)
+	cmake --build $(IREE_HOST_BUILD_DIR) --target install
+else
+iree_host:
+	@echo "Not building IREE runtime host binaries. Skipping."
+endif
 
 ### NxIREE Runtime NIF library
 
