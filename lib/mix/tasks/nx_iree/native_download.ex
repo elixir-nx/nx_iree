@@ -48,8 +48,7 @@ defmodule Mix.Tasks.NxIree.NativeDownload do
 
     file = "nx_iree-Darwin-arm64-#{platform}.tar.gz"
 
-    project = Mix.Project.get()
-    url = project.github_release_path(file)
-    :ok = project.download!("Native NxIREE library (#{platform})", url, destination)
+    url = LiveNxIREE.MixProject.github_release_path(file)
+    :ok = LiveNxIREE.MixProject.download!("Native NxIREE library (#{platform})", url, destination)
   end
 end

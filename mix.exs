@@ -19,7 +19,7 @@ defmodule NxIREE.MixProject do
       ],
       make_env: fn ->
         priv_path = Path.join(Mix.Project.app_path(), "priv")
-        cwd_relative_to_priv = relative_to(File.cwd!(), priv_path)
+        cwd_relative_to_priv = relative_to(__DIR__, priv_path)
 
         %{
           "MIX_BUILD_EMBEDDED" => "#{Mix.Project.config()[:build_embedded]}",
@@ -95,8 +95,8 @@ defmodule NxIREE.MixProject do
       dir: dir,
       source_dir: source_dir,
       use_precompiled: use_precompiled,
-      nx_iree_so_path: Path.join("cache", "libnx_iree.so"),
-      nx_iree_tar_gz_path: Path.join("cache", "libnx_iree.tar.gz")
+      nx_iree_so_path: Path.join([__DIR__, "cache", "libnx_iree.so"]),
+      nx_iree_tar_gz_path: Path.join([__DIR__, "cache", "libnx_iree.tar.gz"])
     }
   end
 

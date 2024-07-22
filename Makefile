@@ -162,7 +162,7 @@ endif
 
 NX_IREE_LIB_DIR = $(MIX_APP_PATH)/priv/iree-runtime
 NX_IREE_LIB_LINK_PATH = $(CWD_RELATIVE_TO_PRIV_PATH)/$(NX_IREE_RUNTIME_LIB)
-NX_IREE_CACHE_SO_LINK_PATH = $(CWD_RELATIVE_TO_PRIV_PATH)/$(NX_IREE_CACHE_SO)
+NX_IREE_CACHE_SO_LINK_PATH = $(NX_IREE_CACHE_SO)
 
 SOURCES = $(wildcard c_src/*.cc)
 HEADERS = $(wildcard c_src/*.h)
@@ -190,7 +190,7 @@ $(NX_IREE_CACHE_SO): $(OBJECTS)
 endif
 
 $(NX_IREE_SO): $(NX_IREE_CACHE_SO)
-	@ mkdir -p $(CWD_RELATIVE_TO_PRIV_PATH)
+	@ mkdir -p $(MIX_APP_PATH)/priv
 	@ if [ "${MIX_BUILD_EMBEDDED}" = "true" ]; then \
 		cp -a $(abspath $(NX_IREE_RUNTIME_LIB)) $(NX_IREE_LIB_DIR) ; \
 		cp -a $(abspath $(NX_IREE_CACHE_SO)) $(NX_IREE_SO) ; \
