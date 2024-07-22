@@ -1,0 +1,293 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		00DE67B4B700BD53A488A8D1 /* ConnectingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 580109D5BF9F118FF9B39FB7 /* ConnectingView.swift */; };
+		019462C5C187024761226CEE /* LiveNxIREE.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB615E539217C456B9FBC1F5 /* LiveNxIREE.swift */; };
+		0A6CE5F5167F6157FF061569 /* DisconnectedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D488732A3104CEE004CB7B42 /* DisconnectedView.swift */; };
+		125165EBA8D40490F0AABE88 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 51F3B59B97B70D891071B6C4 /* Assets.xcassets */; };
+		137E19B83B668B9C3130A3D7 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7955FA5760A1DB1E827049B /* ContentView.swift */; };
+		459F92DE90F9275614EDC9F7 /* LiveViewNative in Frameworks */ = {isa = PBXBuildFile; productRef = 6767E5600DE50B2F89C488A9 /* LiveViewNative */; };
+		82539B66B2DD23CF4560F655 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7BB2FC47EF2667DBC127B716 /* Preview Assets.xcassets */; };
+		BFA36AAE5D8350C95692758F /* ReconnectingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C32E6E8FE5182B70F4A8001 /* ReconnectingView.swift */; };
+		E4C8EE2081B99D0A468A7913 /* LiveViewNativeLiveForm in Frameworks */ = {isa = PBXBuildFile; productRef = 20E5CDCF6B54971957E37C14 /* LiveViewNativeLiveForm */; };
+		E8ABDB597CE60B7A14F06131 /* ErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5349E6CFD45E8C0A7E66CA2B /* ErrorView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0C32E6E8FE5182B70F4A8001 /* ReconnectingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReconnectingView.swift; sourceTree = "<group>"; };
+		51F3B59B97B70D891071B6C4 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		5349E6CFD45E8C0A7E66CA2B /* ErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorView.swift; sourceTree = "<group>"; };
+		580109D5BF9F118FF9B39FB7 /* ConnectingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectingView.swift; sourceTree = "<group>"; };
+		7BB2FC47EF2667DBC127B716 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		D488732A3104CEE004CB7B42 /* DisconnectedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisconnectedView.swift; sourceTree = "<group>"; };
+		D7955FA5760A1DB1E827049B /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		ED91B94F55B356ED92775153 /* LiveNxIREE.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LiveNxIREE.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		FB615E539217C456B9FBC1F5 /* LiveNxIREE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveNxIREE.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		22F70DB26730B53329332C83 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				459F92DE90F9275614EDC9F7 /* LiveViewNative in Frameworks */,
+				E4C8EE2081B99D0A468A7913 /* LiveViewNativeLiveForm in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		163C4DE8D68444A97E61DD40 /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				7BB2FC47EF2667DBC127B716 /* Preview Assets.xcassets */,
+			);
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		2F2E8465248E555C831C9B55 /* LiveNxIREE */ = {
+			isa = PBXGroup;
+			children = (
+				163C4DE8D68444A97E61DD40 /* Preview Content */,
+				51F3B59B97B70D891071B6C4 /* Assets.xcassets */,
+				580109D5BF9F118FF9B39FB7 /* ConnectingView.swift */,
+				D7955FA5760A1DB1E827049B /* ContentView.swift */,
+				D488732A3104CEE004CB7B42 /* DisconnectedView.swift */,
+				5349E6CFD45E8C0A7E66CA2B /* ErrorView.swift */,
+				FB615E539217C456B9FBC1F5 /* LiveNxIREE.swift */,
+				0C32E6E8FE5182B70F4A8001 /* ReconnectingView.swift */,
+			);
+			path = LiveNxIREE;
+			sourceTree = "<group>";
+		};
+		6CF8FEA143D447C31948C8CB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				ED91B94F55B356ED92775153 /* LiveNxIREE.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		9C300C6CBFF81137887E5576 = {
+			isa = PBXGroup;
+			children = (
+				2F2E8465248E555C831C9B55 /* LiveNxIREE */,
+				6CF8FEA143D447C31948C8CB /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		AA07807E2FEEE5A8804063E5 /* LiveNxIREE */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2FBD16D6DFFB71B77D516DD7 /* Build configuration list for PBXNativeTarget "LiveNxIREE" */;
+			buildPhases = (
+				D43BFCA900A98D1510808FD6 /* Sources */,
+				7288EE5E619E83B96AB819F8 /* Resources */,
+				22F70DB26730B53329332C83 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LiveNxIREE;
+			packageProductDependencies = (
+				6767E5600DE50B2F89C488A9 /* LiveViewNative */,
+				20E5CDCF6B54971957E37C14 /* LiveViewNativeLiveForm */,
+			);
+			productName = LiveNxIREE;
+			productReference = ED91B94F55B356ED92775153 /* LiveNxIREE.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		50EB616941645334D59C0D4C /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+			};
+			buildConfigurationList = DC9D780C26DB6DF5A37DBCB4 /* Build configuration list for PBXProject "LiveNxIREE" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 9C300C6CBFF81137887E5576;
+			packageReferences = (
+				A3D844F5A8FC89CDC816247B /* XCRemoteSwiftPackageReference "liveview-client-swiftui" */,
+				0DC8023C6868B78C724B6CEE /* XCRemoteSwiftPackageReference "liveview-native-live-form" */,
+			);
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				AA07807E2FEEE5A8804063E5 /* LiveNxIREE */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		7288EE5E619E83B96AB819F8 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				125165EBA8D40490F0AABE88 /* Assets.xcassets in Resources */,
+				82539B66B2DD23CF4560F655 /* Preview Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		D43BFCA900A98D1510808FD6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				00DE67B4B700BD53A488A8D1 /* ConnectingView.swift in Sources */,
+				137E19B83B668B9C3130A3D7 /* ContentView.swift in Sources */,
+				0A6CE5F5167F6157FF061569 /* DisconnectedView.swift in Sources */,
+				E8ABDB597CE60B7A14F06131 /* ErrorView.swift in Sources */,
+				019462C5C187024761226CEE /* LiveNxIREE.swift in Sources */,
+				BFA36AAE5D8350C95692758F /* ReconnectingView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		50F08683FEFFE29E081EA285 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CURRENT_PROJECT_VERSION = 1.0;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = LiveNxIREE;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.example.LiveNxIREE;
+				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.0;
+				TVOS_DEPLOYMENT_TARGET = 16.0;
+				WATCHOS_DEPLOYMENT_TARGET = 9.0;
+			};
+			name = Debug;
+		};
+		556320541024795EE191F9E8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				IPHONEOS_DEPLOYMENT_TARGET = 17.3;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.LiveNxIREE;
+				PRODUCT_NAME = LiveNxIREE;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Release;
+		};
+		5B0E672056F80B1EDCDCE967 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				IPHONEOS_DEPLOYMENT_TARGET = 17.3;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.LiveNxIREE;
+				PRODUCT_NAME = LiveNxIREE;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Debug;
+		};
+		8C440400EDB666B00EB29220 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CURRENT_PROJECT_VERSION = 1.0;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = LiveNxIREE;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.example.LiveNxIREE;
+				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.0;
+				TVOS_DEPLOYMENT_TARGET = 16.0;
+				WATCHOS_DEPLOYMENT_TARGET = 9.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		2FBD16D6DFFB71B77D516DD7 /* Build configuration list for PBXNativeTarget "LiveNxIREE" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5B0E672056F80B1EDCDCE967 /* Debug */,
+				556320541024795EE191F9E8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		DC9D780C26DB6DF5A37DBCB4 /* Build configuration list for PBXProject "LiveNxIREE" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				50F08683FEFFE29E081EA285 /* Debug */,
+				8C440400EDB666B00EB29220 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		0DC8023C6868B78C724B6CEE /* XCRemoteSwiftPackageReference "liveview-native-live-form" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/liveview-native/liveview-native-live-form";
+			requirement = {
+				branch = "addons-macro";
+				kind = branch;
+			};
+		};
+		A3D844F5A8FC89CDC816247B /* XCRemoteSwiftPackageReference "liveview-client-swiftui" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/liveview-native/liveview-client-swiftui";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		20E5CDCF6B54971957E37C14 /* LiveViewNativeLiveForm */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0DC8023C6868B78C724B6CEE /* XCRemoteSwiftPackageReference "liveview-native-live-form" */;
+			productName = LiveViewNativeLiveForm;
+		};
+		6767E5600DE50B2F89C488A9 /* LiveViewNative */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A3D844F5A8FC89CDC816247B /* XCRemoteSwiftPackageReference "liveview-client-swiftui" */;
+			productName = LiveViewNative;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 50EB616941645334D59C0D4C /* Project object */;
+}

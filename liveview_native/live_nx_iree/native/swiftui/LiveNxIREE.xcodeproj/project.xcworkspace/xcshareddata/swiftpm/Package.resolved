@@ -1,0 +1,114 @@
+{
+  "originHash" : "40c624742c4911f585713dd301d0014dd51b190950943fd955b350b4e452df97",
+  "pins" : [
+    {
+      "identity" : "liveview-client-swiftui",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/liveview-native/liveview-client-swiftui",
+      "state" : {
+        "branch" : "main",
+        "revision" : "9e22543dccaf82184d22cf6837d2a7e1875f480b"
+      }
+    },
+    {
+      "identity" : "liveview-native-core-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/liveview-native/liveview-native-core-swift.git",
+      "state" : {
+        "revision" : "339594b395938e38f1fb2216a31c8791030ec9ba",
+        "version" : "0.2.1"
+      }
+    },
+    {
+      "identity" : "liveview-native-live-form",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/liveview-native/liveview-native-live-form",
+      "state" : {
+        "branch" : "addons-macro",
+        "revision" : "d2caa2d156bdaae6da49aeae176358c192d76892"
+      }
+    },
+    {
+      "identity" : "swift-argument-parser",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-argument-parser",
+      "state" : {
+        "revision" : "41982a3656a71c768319979febd796c6fd111d5c",
+        "version" : "1.5.0"
+      }
+    },
+    {
+      "identity" : "swift-async-algorithms",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-async-algorithms",
+      "state" : {
+        "revision" : "9cfed92b026c524674ed869a4ff2dcfdeedf8a2a",
+        "version" : "0.1.0"
+      }
+    },
+    {
+      "identity" : "swift-case-paths",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/pointfreeco/swift-case-paths",
+      "state" : {
+        "revision" : "12bc5b9191b62ee62cafecbfed953fbb1e1554cd",
+        "version" : "1.5.2"
+      }
+    },
+    {
+      "identity" : "swift-collections",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-collections.git",
+      "state" : {
+        "revision" : "3d2dc41a01f9e49d84f0a3925fb858bed64f702d",
+        "version" : "1.1.2"
+      }
+    },
+    {
+      "identity" : "swift-parsing",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/pointfreeco/swift-parsing",
+      "state" : {
+        "revision" : "a0e7d73f462c1c38c59dc40a3969ac40cea42950",
+        "version" : "0.13.0"
+      }
+    },
+    {
+      "identity" : "swift-syntax",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-syntax.git",
+      "state" : {
+        "revision" : "64889f0c732f210a935a0ad7cda38f77f876262d",
+        "version" : "509.1.1"
+      }
+    },
+    {
+      "identity" : "swiftphoenixclient",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/davidstump/SwiftPhoenixClient.git",
+      "state" : {
+        "revision" : "588bf6baab5d049752748e19a4bff32421ea40ec",
+        "version" : "5.3.2"
+      }
+    },
+    {
+      "identity" : "swiftsoup",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/scinfu/SwiftSoup.git",
+      "state" : {
+        "revision" : "028487d4a8a291b2fe1b4392b5425b6172056148",
+        "version" : "2.7.2"
+      }
+    },
+    {
+      "identity" : "xctest-dynamic-overlay",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/pointfreeco/xctest-dynamic-overlay",
+      "state" : {
+        "revision" : "6f30bdba373bbd7fbfe241dddd732651f2fbd1e2",
+        "version" : "1.1.2"
+      }
+    }
+  ],
+  "version" : 3
+}
