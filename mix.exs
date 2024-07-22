@@ -1,7 +1,7 @@
 defmodule NxIREE.MixProject do
   use Mix.Project
 
-  @version "0.0.1-pre.2"
+  @version "0.0.1-pre.3"
 
   def project do
     n_jobs = to_string(max(System.schedulers_online() - 2, 1))
@@ -48,6 +48,13 @@ defmodule NxIREE.MixProject do
       {:elixir_make, "~> 0.6", runtime: false},
       {:nx, "~> 0.7"}
     ]
+  end
+
+  def github_release_path(file) do
+    Path.join(
+      "https://github.com/elixir-nx/nx_iree/releases/download/v#{@version}/",
+      file
+    )
   end
 
   defp version(_args) do
@@ -216,7 +223,7 @@ defmodule NxIREE.MixProject do
 
     download!(
       "NxIREE NIFs",
-      "https://github.com/elixir-nx/nx_iree/releases/download/v#{@version}/#{source_tar_path}",
+      github_release_path(source_tar_path),
       zip_name
     )
 
@@ -248,7 +255,7 @@ defmodule NxIREE.MixProject do
     end
   end
 
-  defp download!(name, url, dest) do
+  def download!(name, url, dest) do
     assert_network_tool!()
 
     case download(name, url, dest) do

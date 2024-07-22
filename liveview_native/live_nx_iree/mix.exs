@@ -66,7 +66,8 @@ defmodule LiveNxIREE.MixProject do
       {:live_view_native_swiftui,
        branch: "main", override: true, github: "liveview-native/liveview-client-swiftui"},
       {:live_view_native_live_form,
-       branch: "main", override: true, github: "liveview-native/liveview-native-live-form"}
+       branch: "main", override: true, github: "liveview-native/liveview-native-live-form"},
+      {:nx_iree, path: "../.."}
     ]
   end
 
