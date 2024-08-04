@@ -46,7 +46,8 @@ defmodule NxIREE.MixProject do
   defp deps do
     [
       {:elixir_make, "~> 0.6", runtime: false},
-      {:nx, "~> 0.7"}
+      {:nx, github: "elixir-nx/nx", sparse: "nx", override: true},
+      {:exla, github: "elixir-nx/nx", sparse: "exla"}
     ]
   end
 
