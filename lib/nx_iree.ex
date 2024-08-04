@@ -30,10 +30,11 @@ defmodule NxIREE do
           Path.join(:code.priv_dir(:nx_iree), "iree-compile"),
           flags ++ [tmpfile]
         )
+        |> dbg()
 
       %NxIREE.Module{bytecode: output, compilation_flags: flags, mlir_module: mlir_module}
-    after
-      File.rm(tmpfile)
+      # after
+      #   File.rm(tmpfile)
     end
   end
 
