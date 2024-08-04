@@ -6,13 +6,30 @@ defmodule NxIREE.Compiler do
   @behaviour Nx.Defn.Compiler
 
   @impl true
-  def __compile__(key, vars, fun, opts) do
-    {iree_flags, opts} = Keyword.pop(opts, :iree_flags, [])
-    mlir_module = EXLA.to_mlir_module(fun, vars, opts)
+  def __compile__(key, vars, _fun, opts) do
+    {iree_compiler_flags, opts} = Keyword.pop(opts, :iree_compiler_flags, nil)
+    {iree_runtime_options, opts} = Keyword.pop(opts, :iree_runtime_options, [])
 
-    bytecode = NxIREE.compile(mlir_module, iree_flags)
+    unless is_list(iree_compiler_flags) do
+      raise "missing :iree_compiler_flags option"
+    end
 
-    fn [inputs] -> NxIREE.call(bytecode, inputs) end
+    mlir_module = EXLA.to_mlir_module(key, vars, opts)
+
+    bytecode = NxIREE.compile(mlir_module, iree_compiler_flags)
+
+    fn [inputs] ->
+      {:ok, results} =
+        NxIREE.call(
+          bytecode,
+          Enum.map(inputs, fn f ->
+            f.()
+          end),
+          iree_runtime_options
+        )
+
+      results
+    end
   end
 
   @impl true
