@@ -33,7 +33,8 @@ defmodule NxIREE do
         |> dbg()
 
       %NxIREE.Module{bytecode: output, compilation_flags: flags, mlir_module: mlir_module}
-      # after
+    after
+      :ok
       #   File.rm(tmpfile)
     end
   end
