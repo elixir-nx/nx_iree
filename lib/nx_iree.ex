@@ -22,12 +22,13 @@ defmodule NxIREE do
   def compile(mlir_module, flags \\ []) do
     {:ok, tmpfile} = create_temp_file(mlir_module)
 
-    dbg(tmpfile)
+    compiler_path = Path.join(:code.priv_dir(:nx_iree), "iree-compile")
+    dbg({compiler_path, flags ++ tmpfile})
 
     try do
       {output, 0} =
         System.cmd(
-          Path.join(:code.priv_dir(:nx_iree), "iree-compile"),
+          compiler_path,
           flags ++ [tmpfile]
         )
         |> dbg()
