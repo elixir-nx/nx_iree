@@ -67,8 +67,8 @@ defmodule NxIREE.MixProject do
   end
 
   defp nx_iree_config() do
-    version = System.get_env("NX_IREE_VERSION", "20240604.914")
-    tag = System.get_env("NX_IREE_GIT_REV", "candidate-20240604.914")
+    version = System.get_env("NX_IREE_VERSION", "20240804.975")
+    tag = System.get_env("NX_IREE_GIT_REV", "candidate-20240804.975")
 
     env_dir = System.get_env("NX_IREE_COMPILER_DIR")
 
