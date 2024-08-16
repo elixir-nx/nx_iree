@@ -60,7 +60,8 @@ defmodule NxIREE.MixProject do
 
     if nx_iree_config().use_precompiled and not File.exists?(nx_iree_config().nx_iree_so_path) do
       # download_precompiled_nx_iree_lib()
-      nil
+      # nil
+      :ok
     else
       :ok
     end
