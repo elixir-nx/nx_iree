@@ -11,6 +11,7 @@ defmodule NxIREE.Compiler do
 
     {iree_compiler_flags, opts} = Keyword.pop(opts, :iree_compiler_flags, nil)
     {iree_runtime_options, opts} = Keyword.pop(opts, :iree_runtime_options, [])
+    {output_mode, opts} = Keyword.pop(opts, :output_mode, nil)
 
     unless is_list(iree_compiler_flags) do
       raise "missing :iree_compiler_flags option"
@@ -20,22 +21,28 @@ defmodule NxIREE.Compiler do
 
     bytecode = NxIREE.compile(mlir_module, iree_compiler_flags)
 
-    fn [inputs] ->
-      {:ok, results} =
-        NxIREE.call(
-          bytecode,
-          Enum.map(inputs, fn f ->
-            f.()
-          end),
-          iree_runtime_options
-        )
+    if output_mode == :bytecode do
+      fn _ ->
+        [bytecode]
+      end
+    else
+      fn [inputs] ->
+        {:ok, results} =
+          NxIREE.call(
+            bytecode,
+            Enum.map(inputs, fn f ->
+              f.()
+            end),
+            iree_runtime_options
+          )
 
-      {res, []} =
-        Nx.Defn.Composite.traverse(output_container, Enum.reverse(results), fn _, [r | acc] ->
-          {r, acc}
-        end)
+        {res, []} =
+          Nx.Defn.Composite.traverse(output_container, Enum.reverse(results), fn _, [r | acc] ->
+            {r, acc}
+          end)
 
-      [res]
+        [res]
+      end
     end
   end
 
