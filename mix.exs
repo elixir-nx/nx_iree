@@ -1,7 +1,7 @@
 defmodule NxIREE.MixProject do
   use Mix.Project
 
-  @version "0.0.1-pre.2"
+  @version "0.0.1-pre.4"
 
   def project do
     n_jobs = to_string(max(System.schedulers_online() - 2, 1))
@@ -46,7 +46,8 @@ defmodule NxIREE.MixProject do
   defp deps do
     [
       {:elixir_make, "~> 0.6", runtime: false},
-      {:nx, "~> 0.7"}
+      {:exla, github: "elixir-nx/nx", sparse: "exla"},
+      {:nx, github: "elixir-nx/nx", sparse: "nx", override: true}
     ]
   end
 
@@ -65,8 +66,8 @@ defmodule NxIREE.MixProject do
   end
 
   defp nx_iree_config() do
-    version = System.get_env("NX_IREE_VERSION", "20240604.914")
-    tag = System.get_env("NX_IREE_GIT_REV", "candidate-20240604.914")
+    version = System.get_env("NX_IREE_VERSION", "20240815.986")
+    tag = System.get_env("NX_IREE_GIT_REV", "candidate-20240815.986")
 
     env_dir = System.get_env("NX_IREE_COMPILER_DIR")
 
@@ -109,7 +110,9 @@ defmodule NxIREE.MixProject do
       File.rm_rf(cache_dir)
     end
 
-    if File.dir?(nx_iree_config.dir) do
+    priv_path = Path.join(Mix.Project.app_path(), "priv")
+
+    if File.dir?(nx_iree_config.dir) and File.exists?(Path.join(priv_path, "iree-compile")) do
       :ok
     else
       download_and_unzip_iree_release(cache_dir, nx_iree_config)
@@ -136,11 +139,11 @@ defmodule NxIREE.MixProject do
       url =
         case {os, arch} do
           {{:unix, :linux}, arch} ->
-            "https://github.com/iree-org/iree/releases/download/candidate-#{nx_iree_config.version}/iree_compiler-#{nx_iree_config.version}-cp310-cp310-manylinux_2_27_#{arch}.manylinux_2_28_#{arch}.whl"
+            "https://github.com/iree-org/iree/releases/download/#{nx_iree_config.tag}/iree_compiler-#{nx_iree_config.version}-cp310-cp310-manylinux_2_27_#{arch}.manylinux_2_28_#{arch}.whl"
 
           {{:unix, :darwin}, _} ->
             # MacOS
-            "https://github.com/iree-org/iree/releases/download/candidate-#{nx_iree_config.version}/iree_compiler-#{nx_iree_config.version}-cp311-cp311-macosx_13_0_universal2.whl"
+            "https://github.com/iree-org/iree/releases/download/#{nx_iree_config.tag}/iree_compiler-#{nx_iree_config.version}-cp311-cp311-macosx_13_0_universal2.whl"
 
           os ->
             Mix.raise("OS #{inspect(os)} is not supported")
