@@ -59,9 +59,7 @@ defmodule NxIREE.MixProject do
     :ok = download_and_unzip_iree_release(args)
 
     if nx_iree_config().use_precompiled and not File.exists?(nx_iree_config().nx_iree_so_path) do
-      # download_precompiled_nx_iree_lib()
-      # nil
-      :ok
+      download_precompiled_nx_iree_lib()
     else
       :ok
     end
