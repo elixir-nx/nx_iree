@@ -6,7 +6,9 @@ defmodule NxIREE.Compiler do
   @behaviour Nx.Defn.Compiler
 
   @impl true
-  def __compile__(key, vars, _fun, opts) do
+  def __compile__(key, vars, fun, opts) do
+    output_container = fun.(vars)
+
     {iree_compiler_flags, opts} = Keyword.pop(opts, :iree_compiler_flags, nil)
     {iree_runtime_options, opts} = Keyword.pop(opts, :iree_runtime_options, [])
 
@@ -28,7 +30,12 @@ defmodule NxIREE.Compiler do
           iree_runtime_options
         )
 
-      results
+      {res, []} =
+        Nx.Defn.Composite.traverse(output_container, Enum.reverse(results), fn _, [r | acc] ->
+          {r, acc}
+        end)
+
+      [res]
     end
   end
 
@@ -38,7 +45,7 @@ defmodule NxIREE.Compiler do
   end
 
   @impl true
-  def __stream__(key, input, acc, vars, fun, args, opts) do
+  def __stream__(_key, _input, _acc, _vars, _fun, _args, _opts) do
     raise "__stream__ not supported yet in NxIREE"
   end
 

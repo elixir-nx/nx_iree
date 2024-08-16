@@ -11,6 +11,8 @@ IREE_REPO ?= https://github.com/iree-org/iree
 IREE_NS = iree-$(IREE_GIT_REV)
 NX_IREE_SOURCE_DIR ?= $(TEMP)/nx_iree/$(IREE_NS)
 
+PRIV_DIR = $(MIX_APP_PATH)/priv
+
 # default rule for elixir_make
 ifeq ($(NX_IREE_PREFER_PRECOMPILED), true)
 all: nx_iree
@@ -181,6 +183,7 @@ $(NX_IREE_CACHE_SO):
 ifdef DEBUG
 	@echo "Using precompiled libnx_iree.so"
 endif
+
 else
 
 nx_iree: $(NX_IREE__IREE_RUNTIME_INCLUDE_PATH) $(NX_IREE_SO)
@@ -190,7 +193,7 @@ $(NX_IREE_CACHE_SO): $(OBJECTS)
 endif
 
 $(NX_IREE_SO): $(NX_IREE_CACHE_SO)
-	@ mkdir -p $(CWD_RELATIVE_TO_PRIV_PATH)
+	@mkdir -p $(PRIV_DIR)
 	@ if [ "${MIX_BUILD_EMBEDDED}" = "true" ]; then \
 		cp -a $(abspath $(NX_IREE_RUNTIME_LIB)) $(NX_IREE_LIB_DIR) ; \
 		cp -a $(abspath $(NX_IREE_CACHE_SO)) $(NX_IREE_SO) ; \
