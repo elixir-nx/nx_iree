@@ -35,7 +35,7 @@ IREE_CMAKE_CONFIG ?= Release
 
 IREE_BUILD_TARGET ?= host
 
-BUILD_TARGET_FLAGS = -S cmake
+BUILD_TARGET_FLAGS = -S $(abspath cmake)
 
 # flags for xcode 15.4
 ifeq ($(IREE_BUILD_TARGET), host)
