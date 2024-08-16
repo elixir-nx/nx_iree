@@ -100,7 +100,6 @@ install_runtime: iree_host $(IREE_INSTALL_DIR)
 CMAKE_SOURCES = cmake/src/runtime.cc cmake/src/runtime.h
 
 $(IREE_INSTALL_DIR): $(NX_IREE_SOURCE_DIR) $(CMAKE_SOURCES)
-	which cmake
 	cmake -G Ninja -B $(IREE_CMAKE_BUILD_DIR) \
 		-DCMAKE_BUILD_TYPE=$(IREE_CMAKE_CONFIG)\
 		-DIREE_BUILD_COMPILER=OFF\
