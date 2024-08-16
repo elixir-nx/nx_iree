@@ -97,7 +97,7 @@ endif
 install_runtime: iree_host $(IREE_INSTALL_DIR)
 
 
-CMAKE_SOURCES = cmake/src/runtime.cc cmake/src/runtime.h
+CMAKE_SOURCES = $(abspath cmake/src/runtime.cc) $(abspath cmake/src/runtime.h)
 
 $(IREE_INSTALL_DIR): $(NX_IREE_SOURCE_DIR) $(CMAKE_SOURCES)
 	cmake -G Ninja -B $(IREE_CMAKE_BUILD_DIR) \
@@ -107,6 +107,7 @@ $(IREE_INSTALL_DIR): $(NX_IREE_SOURCE_DIR) $(CMAKE_SOURCES)
 		-DIREE_RUNTIME_INCLUDE_PATH=$(IREE_RUNTIME_INCLUDE_PATH)\
 		-DNX_IREE_SOURCE_DIR=$(NX_IREE_SOURCE_DIR) \
 		$(BUILD_TARGET_FLAGS)
+
 	cmake --build $(IREE_CMAKE_BUILD_DIR) --config $(IREE_CMAKE_CONFIG)
 	cmake --install $(IREE_CMAKE_BUILD_DIR) --config $(IREE_CMAKE_CONFIG) --prefix $(IREE_INSTALL_DIR)
 
