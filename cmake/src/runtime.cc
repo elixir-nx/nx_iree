@@ -28,6 +28,7 @@ iree::runtime::Device::~Device() {
 
 iree::runtime::IREETensor::IREETensor(iree_hal_buffer_view_t *buffer_view, iree_hal_element_type_t type) : buffer_view(buffer_view), type(type) {
   size = iree_hal_buffer_view_byte_length(buffer_view);
+  // TODO: fill in dim metadata
 }
 
 iree::runtime::IREETensor::IREETensor(void *data, size_t size, std::vector<int64_t> in_dims, iree_hal_element_type_t type) : size(size), type(type) {
@@ -41,6 +42,55 @@ iree::runtime::IREETensor::IREETensor(void *data, size_t size, std::vector<int64
   std::memcpy(this->data, data, size);
 
   this->buffer_view = nullptr;
+}
+
+iree::runtime::IREETensor::IREETensor(char *buffer) {
+  size_t offset = 0;
+
+  // Deserialize 'type'
+  std::memcpy(&type, buffer + offset, sizeof(type));
+  offset += sizeof(type);
+
+  // Deserialize 'size'
+  std::memcpy(&size, buffer + offset, sizeof(size));
+  offset += sizeof(size);
+
+  // Allocate memory and deserialize 'data'
+  data = operator new(size);  // Allocate raw memory
+  std::memcpy(data, buffer + offset, size);
+  offset += size;
+
+  // Deserialize 'dims'
+  size_t num_dims;
+  std::memcpy(&num_dims, buffer + offset, sizeof(num_dims));
+  offset += sizeof(num_dims);
+  dims.resize(num_dims);
+  std::memcpy(dims.data(), buffer + offset, num_dims * sizeof(iree_hal_dim_t));
+
+  this->buffer_view = nullptr;
+}
+
+std::vector<char> *iree::runtime::IREETensor::serialize() {
+  auto buffer = new std::vector<char>();
+
+  // Serialize 'type'
+  size_t type_size = sizeof(type);
+  buffer->insert(buffer->end(), reinterpret_cast<const char *>(&type), reinterpret_cast<const char *>(&type) + type_size);
+
+  // Serialize 'size'
+  size_t size_size = sizeof(size);
+  buffer->insert(buffer->end(), reinterpret_cast<const char *>(&size), reinterpret_cast<const char *>(&size) + size_size);
+
+  // Serialize 'data'
+  buffer->insert(buffer->end(), reinterpret_cast<const char *>(data), reinterpret_cast<const char *>(data) + size);
+
+  // Serialize 'dims'
+  size_t dims_size = sizeof(iree_hal_dim_t) * dims.size();
+  size_t num_dims = dims.size();
+  buffer->insert(buffer->end(), reinterpret_cast<const char *>(&num_dims), reinterpret_cast<const char *>(&num_dims) + sizeof(num_dims));
+  buffer->insert(buffer->end(), reinterpret_cast<const char *>(dims.data()), reinterpret_cast<const char *>(dims.data()) + dims_size);
+
+  return buffer;
 }
 
 iree_vm_instance_t *create_instance() {

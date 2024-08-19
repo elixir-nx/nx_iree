@@ -410,6 +410,46 @@ DECLARE_NIF(allocate_buffer) {
   return ok(env, make<iree::runtime::IREETensor*>(env, input));
 }
 
+DECLARE_NIF(serialize_tensor) {
+  if (argc != 1) {
+    return error(env, "invalid number of arguments");
+  }
+
+  iree::runtime::IREETensor** input;
+
+  if (!get<iree::runtime::IREETensor*>(env, argv[0], input)) {
+    return error(env, "invalid input");
+  }
+
+  std::vector<char>* serialized = (*input)->serialize();
+
+  ErlNifBinary binary;
+
+  if (!enif_alloc_binary(serialized->size(), &binary)) {
+    return error(env, "unable to allocate binary");
+  }
+
+  std::memcpy(binary.data, serialized->data(), serialized->size());
+
+  return ok(env, enif_make_binary(env, &binary));
+}
+
+DECLARE_NIF(deserialize_tensor) {
+  if (argc != 1) {
+    return error(env, "invalid number of arguments");
+  }
+
+  ErlNifBinary input;
+
+  if (!enif_inspect_binary(env, argv[0], &input)) {
+    return error(env, "invalid input");
+  }
+
+  auto tensor = new iree::runtime::IREETensor(reinterpret_cast<char*>(input.data));
+
+  return ok(env, make<iree::runtime::IREETensor*>(env, tensor));
+}
+
 DECLARE_NIF(call_nif) {
   iree_vm_instance_t** instance;
   iree_hal_device_t** device;
@@ -463,6 +503,8 @@ static ErlNifFunc funcs[] = {
     {"list_devices", 2, list_devices},
     {"list_drivers", 1, list_drivers},
     {"allocate_buffer", 4, allocate_buffer},
+    {"serialize_tensor", 1, serialize_tensor},
+    {"deserialize_tensor", 1, deserialize_tensor},
     {"read_buffer", 3, read_buffer_nif},
     {"call_io", 5, call_nif, ERL_NIF_DIRTY_JOB_IO_BOUND},
     {"call_cpu", 5, call_nif, ERL_NIF_DIRTY_JOB_CPU_BOUND}};
