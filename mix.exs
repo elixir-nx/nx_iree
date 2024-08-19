@@ -1,7 +1,12 @@
+# Force NxIREE.MixHelpers to be available before the app is compiled
+Code.eval_file("./lib/nx_iree/mix_helpers.exs")
+
 defmodule NxIREE.MixProject do
   use Mix.Project
 
-  @version "0.0.1-pre.4"
+  @version File.read!(Path.join([__DIR__, "priv", "VERSION"]))
+
+  import NxIREE.MixHelpers, only: [download!: 3, github_release_path: 1]
 
   def project do
     n_jobs = to_string(max(System.schedulers_online() - 2, 1))
@@ -49,20 +54,6 @@ defmodule NxIREE.MixProject do
       {:exla, github: "elixir-nx/nx", sparse: "exla"},
       {:nx, github: "elixir-nx/nx", sparse: "nx", override: true}
     ]
-  end
-
-  def github_release_path(file) do
-    Path.join(
-      "https://github.com/elixir-nx/nx_iree/releases/download/v#{@version}/",
-      file
-    )
-  end
-
-  def github_release_path(file) do
-    Path.join(
-      "https://github.com/elixir-nx/nx_iree/releases/download/v#{@version}/",
-      file
-    )
   end
 
   defp version(_args) do
@@ -258,49 +249,6 @@ defmodule NxIREE.MixProject do
 
     :ok
   end
-
-  defp assert_network_tool!() do
-    unless network_tool() do
-      raise "expected either curl or wget to be available in your system, but neither was found"
-    end
-  end
-
-  def download!(name, url, dest) do
-    assert_network_tool!()
-
-    case download(name, url, dest) do
-      :ok ->
-        :ok
-
-      _ ->
-        raise "unable to download iree from #{url}"
-    end
-  end
-
-  defp download(name, url, dest) do
-    {command, args} =
-      case network_tool() do
-        :curl -> {"curl", ["--fail", "-L", url, "-o", dest]}
-        :wget -> {"wget", ["-O", dest, url]}
-      end
-
-    IO.puts("Downloading #{name} from #{url}")
-
-    case System.cmd(command, args) do
-      {_, 0} -> :ok
-      _ -> :error
-    end
-  end
-
-  defp network_tool() do
-    cond do
-      executable_exists?("curl") -> :curl
-      executable_exists?("wget") -> :wget
-      true -> nil
-    end
-  end
-
-  defp executable_exists?(name), do: not is_nil(System.find_executable(name))
 
   # Returns `path` relative to the `from` directory.
   defp relative_to(path, from) do

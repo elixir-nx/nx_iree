@@ -46,9 +46,21 @@ defmodule Mix.Tasks.NxIree.NativeDownload do
       {os, arch} -> raise "unsupported host: #{inspect(os)} (#{arch})"
     end
 
-    file = "nx_iree-Darwin-arm64-#{platform}.tar.gz"
+    file = "nx_iree-embedded-macos-#{platform}.tar.gz"
 
-    url = LiveNxIREE.MixProject.github_release_path(file)
-    :ok = LiveNxIREE.MixProject.download!("Native NxIREE library (#{platform})", url, destination)
+    downloaded_file =
+      if File.dir?(destination), do: Path.join(destination, file), else: destination
+
+    url = NxIREE.MixHelpers.github_release_path(file)
+    :ok = NxIREE.MixHelpers.download!("Native NxIREE library (#{platform})", url, downloaded_file)
+
+    parent_dir = Path.dirname(downloaded_file)
+
+    dbg({downloaded_file, parent_dir})
+
+    :ok =
+      downloaded_file
+      |> String.to_charlist()
+      |> :erl_tar.extract([:compressed, cwd: String.to_charlist(parent_dir)])
   end
 end
