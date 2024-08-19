@@ -11,6 +11,8 @@ IREE_REPO ?= https://github.com/iree-org/iree
 IREE_NS = iree-$(IREE_GIT_REV)
 NX_IREE_SOURCE_DIR ?= $(TEMP)/nx_iree/$(IREE_NS)
 
+PRIV_DIR = $(MIX_APP_PATH)/priv
+
 # default rule for elixir_make
 ifeq ($(NX_IREE_PREFER_PRECOMPILED), true)
 all: nx_iree
@@ -33,7 +35,7 @@ IREE_CMAKE_CONFIG ?= Release
 
 IREE_BUILD_TARGET ?= host
 
-BUILD_TARGET_FLAGS = -S cmake
+BUILD_TARGET_FLAGS = -S $(abspath cmake)
 
 # flags for xcode 15.4
 ifeq ($(IREE_BUILD_TARGET), host)
@@ -95,7 +97,7 @@ endif
 install_runtime: iree_host $(IREE_INSTALL_DIR)
 
 
-CMAKE_SOURCES = cmake/src/runtime.cc cmake/src/runtime.h
+CMAKE_SOURCES = $(abspath cmake/src/runtime.cc) $(abspath cmake/src/runtime.h)
 
 $(IREE_INSTALL_DIR): $(NX_IREE_SOURCE_DIR) $(CMAKE_SOURCES)
 	cmake -G Ninja -B $(IREE_CMAKE_BUILD_DIR) \
@@ -105,6 +107,7 @@ $(IREE_INSTALL_DIR): $(NX_IREE_SOURCE_DIR) $(CMAKE_SOURCES)
 		-DIREE_RUNTIME_INCLUDE_PATH=$(IREE_RUNTIME_INCLUDE_PATH)\
 		-DNX_IREE_SOURCE_DIR=$(NX_IREE_SOURCE_DIR) \
 		$(BUILD_TARGET_FLAGS)
+
 	cmake --build $(IREE_CMAKE_BUILD_DIR) --config $(IREE_CMAKE_CONFIG)
 	cmake --install $(IREE_CMAKE_BUILD_DIR) --config $(IREE_CMAKE_CONFIG) --prefix $(IREE_INSTALL_DIR)
 
@@ -181,6 +184,7 @@ $(NX_IREE_CACHE_SO):
 ifdef DEBUG
 	@echo "Using precompiled libnx_iree.so"
 endif
+
 else
 
 nx_iree: $(NX_IREE__IREE_RUNTIME_INCLUDE_PATH) $(NX_IREE_SO)
@@ -190,7 +194,7 @@ $(NX_IREE_CACHE_SO): $(OBJECTS)
 endif
 
 $(NX_IREE_SO): $(NX_IREE_CACHE_SO)
-	@ mkdir -p $(MIX_APP_PATH)/priv
+	@mkdir -p $(PRIV_DIR)
 	@ if [ "${MIX_BUILD_EMBEDDED}" = "true" ]; then \
 		cp -a $(abspath $(NX_IREE_RUNTIME_LIB)) $(NX_IREE_LIB_DIR) ; \
 		cp -a $(abspath $(NX_IREE_CACHE_SO)) $(NX_IREE_SO) ; \

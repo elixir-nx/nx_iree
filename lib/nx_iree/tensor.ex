@@ -59,7 +59,7 @@ defmodule NxIREE.Tensor do
 
   @impl true
   def from_binary(out, binary, opts) do
-    device_uri = opts[:device]
+    device_uri = opts[:device] || "local-sync://default"
 
     device_ref =
       case NxIREE.Device.get(device_uri) do
