@@ -6,8 +6,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/liveview-native/liveview-client-swiftui",
       "state" : {
-        "branch" : "main",
-        "revision" : "9e22543dccaf82184d22cf6837d2a7e1875f480b"
+        "revision" : "29cce9d10519ed46b11b658c40d0c641532f9389",
+        "version" : "0.3.0-rc.4"
       }
     },
     {
@@ -24,8 +24,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/liveview-native/liveview-native-live-form",
       "state" : {
-        "branch" : "addons-macro",
-        "revision" : "d2caa2d156bdaae6da49aeae176358c192d76892"
+        "branch" : "main",
+        "revision" : "14ec81512f4b39bfaf841a9e0dc537dc8aa3f31b"
       }
     },
     {
@@ -76,7 +76,7 @@
     {
       "identity" : "swift-syntax",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-syntax.git",
+      "location" : "https://github.com/swiftlang/swift-syntax.git",
       "state" : {
         "revision" : "64889f0c732f210a935a0ad7cda38f77f876262d",
         "version" : "509.1.1"
