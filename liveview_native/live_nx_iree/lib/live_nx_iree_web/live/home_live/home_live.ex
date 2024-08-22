@@ -15,7 +15,7 @@ defmodule LiveNxIREEWeb.HomeLive do
 
     dbg(self())
 
-    socket = assign(socket, bytecode: nil, function_signature: nil)
+    socket = assign(socket, bytecode: nil, function_signature: nil, device: nil)
 
     {:ok, socket}
   end
@@ -43,7 +43,7 @@ defmodule LiveNxIREEWeb.HomeLive do
   # end
 
   @impl true
-  def handle_info({:nx, :execute, function, input_templates, target_device}, socket) do
+  def handle_info({:nx, :execute, function, input_templates, target_device, reply_to_pid}, socket) do
     fun =
       case function do
         {m, f, a} ->
@@ -55,10 +55,13 @@ defmodule LiveNxIREEWeb.HomeLive do
           """
       end
 
-    backend_flag =
+    {backend_flag, runtime_device} =
       case target_device do
-        :metal -> "--iree-hal-target-backends=metal-spirv"
-        :cpu -> "--iree-hal-target-backends=llvm-cpu"
+        :metal ->
+          {"--iree-hal-target-backends=metal-spirv", "metal://default"}
+
+        :cpu ->
+          {"--iree-hal-target-backends=llvm-cpu", "local-sync://default"}
       end
 
     compiler_flags = [
@@ -75,8 +78,17 @@ defmodule LiveNxIREEWeb.HomeLive do
       |> assign(:bytecode, Base.encode64(bytecode))
       |> assign(:output_container, output_container)
       |> assign(:function_signature, get_signature(function, input_templates, output_container))
+      |> assign(:device, runtime_device)
+      |> assign(:reply_to_pid, reply_to_pid)
 
     {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("nx-executed", params, socket) do
+    send(socket.assigns.reply_to_pid, {:nx, :executed, params})
+
+    {:noreply, assign(socket, :reply_to_pid, nil)}
   end
 
   defp get_signature({mod, fun, _a}, input_templates, output_container) do

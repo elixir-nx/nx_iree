@@ -1,1 +1,1 @@
-<NxFunction signature={@function_signature} bytecode={@bytecode}/>
+<NxFunction on-execution="nx-executed" signature={@function_signature} bytecode={@bytecode} device={@device} />

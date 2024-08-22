@@ -19,7 +19,7 @@ defmodule LiveNxIREE.MixProject do
   def application do
     [
       mod: {LiveNxIREE.Application, []},
-      extra_applications: [:logger, :runtime_tools]
+      extra_applications: [:logger, :runtime_tools, :observer]
     ]
   end
 
