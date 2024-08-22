@@ -1,1 +1,1 @@
-<Text>Hello, World</Text>
+<NxFunction signature={@function_signature} bytecode={@bytecode}/>

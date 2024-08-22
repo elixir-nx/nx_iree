@@ -9,7 +9,7 @@ import Config
 
 config :live_nx_iree,
   namespace: LiveNxIREE,
-  ecto_repos: [LiveNxIREE.Repo],
+  ecto_repos: [],
   generators: [timestamp_type: :utc_datetime]
 
 # Configures the endpoint

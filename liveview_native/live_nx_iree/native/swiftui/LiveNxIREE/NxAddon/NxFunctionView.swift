@@ -8,10 +8,16 @@
 import SwiftUI
 import LiveViewNative
 
+@LiveElement
 struct NxFunctionView<Root: RootRegistry>: View {
+    @_documentation(visibility: public)
+    @LiveAttribute("bytecode") private var bytecode: String? = nil
+    @LiveAttribute("signature") private var signature: String? = nil
+    
     var body: some View {
-        Text("NxFunction Component")
-            .padding()
+        if signature != nil {
+            Text(signature!)
+                .padding()
+        }
     }
 }
-

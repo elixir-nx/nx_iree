@@ -9,7 +9,7 @@ defmodule LiveNxIREE.Application do
   def start(_type, _args) do
     children = [
       LiveNxIREEWeb.Telemetry,
-      LiveNxIREE.Repo,
+      # LiveNxIREE.Repo,
       {DNSCluster, query: Application.get_env(:live_nx_iree, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: LiveNxIREE.PubSub},
       # Start the Finch HTTP client for sending emails
