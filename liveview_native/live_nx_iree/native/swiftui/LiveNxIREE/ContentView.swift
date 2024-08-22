@@ -15,7 +15,8 @@ struct ContentView: View {
                 production: URL(string: "https://example.com")!
             ),
             addons: [
-                .liveForm
+                .liveForm,
+                .nxAddon
             ]
         ) {
             ConnectingView()
