@@ -354,7 +354,7 @@ call(iree_vm_instance_t *instance, iree_hal_device_t *device, std::string driver
     const iree_hal_dim_t *out_shape = iree_hal_buffer_view_shape_dims(output_buffer_view);
     iree_hal_element_type_t out_type = iree_hal_buffer_view_element_type(output_buffer_view);
 
-    auto tensor = new iree::runtime::IREETensor(output_buffer_view, out_type);
+    auto tensor = new iree::runtime::IREETensor(output_buffer_view, out_type, device);
     tensor->dims = std::vector<iree_hal_dim_t>();
     for (int j = 0; j < out_shape_rank; j++) {
       tensor->dims.push_back(out_shape[j]);
