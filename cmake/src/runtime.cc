@@ -26,7 +26,7 @@ iree::runtime::Device::~Device() {
   }
 }
 
-iree::runtime::IREETensor::IREETensor(iree_hal_buffer_view_t *buffer_view, iree_hal_element_type_t type) : buffer_view(buffer_view), type(type) {
+iree::runtime::IREETensor::IREETensor(iree_hal_buffer_view_t *buffer_view, iree_hal_element_type_t type, iree_hal_device_t *device) : buffer_view(buffer_view), type(type), device(device) {
   size = iree_hal_buffer_view_byte_length(buffer_view);
   // TODO: fill in dim metadata
 }
@@ -81,6 +81,19 @@ std::vector<char> *iree::runtime::IREETensor::serialize() {
   size_t size_size = sizeof(size);
   buffer->insert(buffer->end(), reinterpret_cast<const char *>(&size), reinterpret_cast<const char *>(&size) + size_size);
 
+  if (data == nullptr) {
+    data = std::malloc(size);
+
+    if (data == nullptr) {
+      return nullptr;
+    }
+
+    auto status = read_buffer(device, buffer_view, data, size);
+
+    if (!iree_status_is_ok(status)) {
+      return nullptr;
+    }
+  }
   // Serialize 'data'
   buffer->insert(buffer->end(), reinterpret_cast<const char *>(data), reinterpret_cast<const char *>(data) + size);
 

@@ -21,6 +21,7 @@
 #include "iree/hal/fence.h"
 #include "iree/hal/file.h"
 #include "iree/hal/pipeline_layout.h"
+#include "iree/hal/queue.h"
 #include "iree/hal/resource.h"
 #include "iree/hal/semaphore.h"
 
@@ -153,32 +154,6 @@ enum iree_hal_semaphore_compatibility_bits_t {
       IREE_HAL_SEMAPHORE_COMPATIBILITY_DEVICE_SIGNAL,
 };
 typedef uint32_t iree_hal_semaphore_compatibility_t;
-
-// A single batch of command buffers submitted to a device queue.
-// All of the wait semaphores must reach or exceed the given payload value prior
-// to the batch beginning execution. Each command buffer begins execution in the
-// order it is present in the list, though note that the command buffers
-// execute concurrently and require internal synchronization via events if there
-// are any dependencies between them. Only after all command buffers have
-// completed will the signal semaphores be updated to the provided payload
-// values.
-//
-// Matches Vulkan's VkSubmitInfo:
-// https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkSubmitInfo.html
-// Note that as the HAL only models timeline semaphores we take the payload
-// values directly in this struct; see:
-// https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkTimelineSemaphoreSubmitInfo.html
-typedef struct iree_hal_submission_batch_t {
-  // Semaphores to wait on prior to executing any command buffer.
-  iree_hal_semaphore_list_t wait_semaphores;
-
-  // Command buffers to execute, in order.
-  iree_host_size_t command_buffer_count;
-  iree_hal_command_buffer_t* const* command_buffers;
-
-  // Semaphores to signal once all command buffers have completed execution.
-  iree_hal_semaphore_list_t signal_semaphores;
-} iree_hal_submission_batch_t;
 
 // Defines how a multi-wait operation treats the results of multiple semaphores.
 typedef enum iree_hal_wait_mode_e {
@@ -395,6 +370,11 @@ IREE_API_EXPORT iree_status_t iree_hal_device_queue_write(
 // placed on to the same queue. Note that the exact hashing function is
 // implementation dependent.
 //
+// A list of binding tables matching the list of command buffers must be
+// provided if any command buffer has indirect bindings and may otherwise be
+// NULL. The binding table contents will be captured during the call and need
+// not persist after the call returns.
+//
 // The submission behavior matches Vulkan's vkQueueSubmit, with each submission
 // executing its command buffers in the order they are defined but allowing the
 // command buffers to complete out-of-order. See:
@@ -404,7 +384,8 @@ IREE_API_EXPORT iree_status_t iree_hal_device_queue_execute(
     const iree_hal_semaphore_list_t wait_semaphore_list,
     const iree_hal_semaphore_list_t signal_semaphore_list,
     iree_host_size_t command_buffer_count,
-    iree_hal_command_buffer_t* const* command_buffers);
+    iree_hal_command_buffer_t* const* command_buffers,
+    iree_hal_buffer_binding_table_t const* binding_tables);
 
 // Enqueues a barrier waiting for |wait_semaphore_list| and signaling
 // |signal_semaphore_list| when reached.
@@ -550,8 +531,9 @@ typedef struct iree_hal_device_vtable_t {
       const iree_hal_descriptor_set_layout_binding_t* bindings,
       iree_hal_descriptor_set_layout_t** out_descriptor_set_layout);
 
-  iree_status_t(IREE_API_PTR* create_event)(iree_hal_device_t* device,
-                                            iree_hal_event_t** out_event);
+  iree_status_t(IREE_API_PTR* create_event)(
+      iree_hal_device_t* device, iree_hal_queue_affinity_t queue_affinity,
+      iree_hal_event_flags_t flags, iree_hal_event_t** out_event);
 
   iree_status_t(IREE_API_PTR* create_executable_cache)(
       iree_hal_device_t* device, iree_string_view_t identifier,
@@ -570,7 +552,7 @@ typedef struct iree_hal_device_vtable_t {
 
   iree_status_t(IREE_API_PTR* create_semaphore)(
       iree_hal_device_t* device, uint64_t initial_value,
-      iree_hal_semaphore_t** out_semaphore);
+      iree_hal_semaphore_flags_t flags, iree_hal_semaphore_t** out_semaphore);
 
   iree_hal_semaphore_compatibility_t(
       IREE_API_PTR* query_semaphore_compatibility)(
@@ -611,7 +593,8 @@ typedef struct iree_hal_device_vtable_t {
       const iree_hal_semaphore_list_t wait_semaphore_list,
       const iree_hal_semaphore_list_t signal_semaphore_list,
       iree_host_size_t command_buffer_count,
-      iree_hal_command_buffer_t* const* command_buffers);
+      iree_hal_command_buffer_t* const* command_buffers,
+      iree_hal_buffer_binding_table_t const* binding_tables);
 
   iree_status_t(IREE_API_PTR* queue_flush)(
       iree_hal_device_t* device, iree_hal_queue_affinity_t queue_affinity);

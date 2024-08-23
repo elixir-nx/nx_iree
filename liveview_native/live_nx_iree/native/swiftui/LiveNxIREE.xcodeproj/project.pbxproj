@@ -12,13 +12,6 @@
 		0A6CE5F5167F6157FF061569 /* DisconnectedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D488732A3104CEE004CB7B42 /* DisconnectedView.swift */; };
 		125165EBA8D40490F0AABE88 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 51F3B59B97B70D891071B6C4 /* Assets.xcassets */; };
 		137E19B83B668B9C3130A3D7 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7955FA5760A1DB1E827049B /* ContentView.swift */; };
-		373237312C7861AC009D1652 /* libnx_iree_runtime.so in Frameworks */ = {isa = PBXBuildFile; fileRef = 373237212C7861AC009D1652 /* libnx_iree_runtime.so */; };
-		373237322C7861AC009D1652 /* libnx_iree_runtime.so in Frameworks */ = {isa = PBXBuildFile; fileRef = 373237232C7861AC009D1652 /* libnx_iree_runtime.so */; };
-		373237332C7861AC009D1652 /* libnx_iree_runtime.so in Frameworks */ = {isa = PBXBuildFile; fileRef = 373237252C7861AC009D1652 /* libnx_iree_runtime.so */; };
-		373237342C7861AC009D1652 /* libnx_iree_runtime.so in Frameworks */ = {isa = PBXBuildFile; fileRef = 373237272C7861AC009D1652 /* libnx_iree_runtime.so */; };
-		373237352C7861AC009D1652 /* libnx_iree_runtime.so in Frameworks */ = {isa = PBXBuildFile; fileRef = 373237292C7861AC009D1652 /* libnx_iree_runtime.so */; };
-		373237362C7861AC009D1652 /* libnx_iree_runtime.so in Frameworks */ = {isa = PBXBuildFile; fileRef = 3732372B2C7861AC009D1652 /* libnx_iree_runtime.so */; };
-		373237372C7861AC009D1652 /* libnx_iree_runtime.so in Frameworks */ = {isa = PBXBuildFile; fileRef = 3732372D2C7861AC009D1652 /* libnx_iree_runtime.so */; };
 		373496882C7707DE00FD2E6F /* NxAddon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 373496872C7707DE00FD2E6F /* NxAddon.swift */; };
 		3734968B2C77081100FD2E6F /* NxFunctionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3734968A2C77081100FD2E6F /* NxFunctionView.swift */; };
 		379E276B2C76D40900624AA7 /* nx_iree.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 379E276A2C76D40900624AA7 /* nx_iree.cpp */; };
@@ -395,6 +388,13 @@
 		373237292C7861AC009D1652 /* libnx_iree_runtime.so */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libnx_iree_runtime.so; sourceTree = "<group>"; };
 		3732372B2C7861AC009D1652 /* libnx_iree_runtime.so */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libnx_iree_runtime.so; sourceTree = "<group>"; };
 		3732372D2C7861AC009D1652 /* libnx_iree_runtime.so */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libnx_iree_runtime.so; sourceTree = "<group>"; };
+		373237392C786921009D1652 /* libnx_iree_runtime.so */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libnx_iree_runtime.so; sourceTree = "<group>"; };
+		3732373B2C786921009D1652 /* libnx_iree_runtime.so */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libnx_iree_runtime.so; sourceTree = "<group>"; };
+		3732373D2C786921009D1652 /* libnx_iree_runtime.so */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libnx_iree_runtime.so; sourceTree = "<group>"; };
+		3732373F2C786921009D1652 /* libnx_iree_runtime.so */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libnx_iree_runtime.so; sourceTree = "<group>"; };
+		373237412C786921009D1652 /* libnx_iree_runtime.so */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libnx_iree_runtime.so; sourceTree = "<group>"; };
+		373237432C786921009D1652 /* libnx_iree_runtime.so */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libnx_iree_runtime.so; sourceTree = "<group>"; };
+		373237452C786921009D1652 /* libnx_iree_runtime.so */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libnx_iree_runtime.so; sourceTree = "<group>"; };
 		373496872C7707DE00FD2E6F /* NxAddon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NxAddon.swift; sourceTree = "<group>"; };
 		3734968A2C77081100FD2E6F /* NxFunctionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NxFunctionView.swift; sourceTree = "<group>"; };
 		379E27672C76D25900624AA7 /* LiveNxIREE-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "LiveNxIREE-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -415,13 +415,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				373237372C7861AC009D1652 /* libnx_iree_runtime.so in Frameworks */,
-				373237312C7861AC009D1652 /* libnx_iree_runtime.so in Frameworks */,
-				373237362C7861AC009D1652 /* libnx_iree_runtime.so in Frameworks */,
-				373237322C7861AC009D1652 /* libnx_iree_runtime.so in Frameworks */,
-				373237332C7861AC009D1652 /* libnx_iree_runtime.so in Frameworks */,
-				373237352C7861AC009D1652 /* libnx_iree_runtime.so in Frameworks */,
-				373237342C7861AC009D1652 /* libnx_iree_runtime.so in Frameworks */,
 				459F92DE90F9275614EDC9F7 /* LiveViewNative in Frameworks */,
 				E4C8EE2081B99D0A468A7913 /* LiveViewNativeLiveForm in Frameworks */,
 			);
@@ -1413,6 +1406,83 @@
 			path = nx_iree;
 			sourceTree = "<group>";
 		};
+		373237382C786921009D1652 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				3732373C2C786921009D1652 /* host */,
+				373237422C786921009D1652 /* ios */,
+				3732373A2C786921009D1652 /* ios_simulator */,
+				373237462C786921009D1652 /* tvos */,
+				3732373E2C786921009D1652 /* tvos_simulator */,
+				373237442C786921009D1652 /* visionos */,
+				373237402C786921009D1652 /* visionos_simulator */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		3732373A2C786921009D1652 /* ios_simulator */ = {
+			isa = PBXGroup;
+			children = (
+				373237392C786921009D1652 /* libnx_iree_runtime.so */,
+			);
+			name = ios_simulator;
+			path = LiveNxIREE/nx_iree/lib/ios_simulator;
+			sourceTree = "<group>";
+		};
+		3732373C2C786921009D1652 /* host */ = {
+			isa = PBXGroup;
+			children = (
+				3732373B2C786921009D1652 /* libnx_iree_runtime.so */,
+			);
+			name = host;
+			path = LiveNxIREE/nx_iree/lib/host;
+			sourceTree = "<group>";
+		};
+		3732373E2C786921009D1652 /* tvos_simulator */ = {
+			isa = PBXGroup;
+			children = (
+				3732373D2C786921009D1652 /* libnx_iree_runtime.so */,
+			);
+			name = tvos_simulator;
+			path = LiveNxIREE/nx_iree/lib/tvos_simulator;
+			sourceTree = "<group>";
+		};
+		373237402C786921009D1652 /* visionos_simulator */ = {
+			isa = PBXGroup;
+			children = (
+				3732373F2C786921009D1652 /* libnx_iree_runtime.so */,
+			);
+			name = visionos_simulator;
+			path = LiveNxIREE/nx_iree/lib/visionos_simulator;
+			sourceTree = "<group>";
+		};
+		373237422C786921009D1652 /* ios */ = {
+			isa = PBXGroup;
+			children = (
+				373237412C786921009D1652 /* libnx_iree_runtime.so */,
+			);
+			name = ios;
+			path = LiveNxIREE/nx_iree/lib/ios;
+			sourceTree = "<group>";
+		};
+		373237442C786921009D1652 /* visionos */ = {
+			isa = PBXGroup;
+			children = (
+				373237432C786921009D1652 /* libnx_iree_runtime.so */,
+			);
+			name = visionos;
+			path = LiveNxIREE/nx_iree/lib/visionos;
+			sourceTree = "<group>";
+		};
+		373237462C786921009D1652 /* tvos */ = {
+			isa = PBXGroup;
+			children = (
+				373237452C786921009D1652 /* libnx_iree_runtime.so */,
+			);
+			name = tvos;
+			path = LiveNxIREE/nx_iree/lib/tvos;
+			sourceTree = "<group>";
+		};
 		373496892C7707F700FD2E6F /* NxAddon */ = {
 			isa = PBXGroup;
 			children = (
@@ -1443,6 +1513,7 @@
 			children = (
 				2F2E8465248E555C831C9B55 /* LiveNxIREE */,
 				6CF8FEA143D447C31948C8CB /* Products */,
+				373237382C786921009D1652 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};

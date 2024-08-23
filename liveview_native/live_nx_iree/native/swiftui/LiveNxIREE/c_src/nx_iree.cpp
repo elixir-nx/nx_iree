@@ -10,6 +10,7 @@
 
 #include <string>
 #include <vector>
+#include <iostream>
 
 int nx_iree_initialize(iree_vm_instance_t* vm_instance, iree_hal_driver_registry_t* driver_registry, char* error_message) {
     vm_instance = create_instance();
@@ -49,7 +50,7 @@ char** nx_iree_call(iree_vm_instance_t* vm_instance, iree_hal_device_t* device, 
     // driver name is hardcoded because there is only a check for CUDA
     auto [status, optional_result] = call(vm_instance, device, "not_cuda", bytecode, static_cast<size_t>(bytecode_size), inputs);
         
-    if (!is_ok(status)) {
+    if (!is_ok(status) || !optional_result.has_value()) {
         std::string msg = get_status_message(status);
         strncpy(error_message, msg.c_str(), msg.length());
         return nullptr;
@@ -57,9 +58,14 @@ char** nx_iree_call(iree_vm_instance_t* vm_instance, iree_hal_device_t* device, 
     
     auto serialized_outputs = new char*[num_outputs];
     
-    auto result = optional_result.value();
+    std::vector<iree::runtime::IREETensor *> result = optional_result.value();
     for (size_t i = 0; i < num_outputs; i++) {
-        std::vector<char> *serialized = result[i]->serialize();
+        iree::runtime::IREETensor *tensor = result[i];
+        std::cout << "Tensor: " << tensor;
+        if (tensor == nullptr) {
+            std::cout << "Failed output allocation at index " << i << "\n";
+        }
+        std::vector<char> *serialized = tensor->serialize();
         serialized_outputs[i] = new char[serialized->size()];
         memcpy(serialized_outputs[i], serialized->data(), serialized->size());
     }
