@@ -18,6 +18,13 @@ struct NxFunctionView<Root: RootRegistry>: View {
     @LiveAttribute("num-outputs") private var numOutputs: Int? = nil
     @Event("on-execution", type: "change") private var change
     
+    @LiveElementIgnored
+    private var vmInstance: UnsafePointer<iree_vm_instance_t>? = nil
+    
+    init() {
+        vmInstance = nx_iree_create_instance()
+    }
+    
     var body: some View {
         VStack {
             if signature != nil {
@@ -115,43 +122,48 @@ struct NxFunctionView<Root: RootRegistry>: View {
     private func run() {
         if bytecode != nil,
            deviceURI != nil,
-           globalVmInstance != nil,
-           globalDriverRegistry != nil,
+           vmInstance != nil,
            serializedInputs != nil,
            let (bytecodeSize, bytecodePointer) = convertBase64StringToBytecode(bytecode!),
            let inputs = convertToCStringArray(from: serializedInputs!) {
             let deviceURIcstr = strdup(deviceURI!)
-            let device = nx_iree_create_device(globalDriverRegistry!, UnsafePointer(deviceURIcstr)!)
+            let device = nx_iree_create_device(UnsafePointer(deviceURIcstr)!)
             deviceURIcstr?.deallocate()
             
-            let serializedOutputs: UnsafePointer<UnsafePointer<CChar>>? = nil
             let errorMessage = UnsafeMutablePointer<CChar>.allocate(capacity: 256)
             
             print("Executing function \(signature ?? "None") on device: \(deviceURI ?? "None")")
 
-            let result = nx_iree_call(
-                globalVmInstance!,
-                device,
+            let serializedOutputs = nx_iree_call(
+                vmInstance!,
+                device!,
                 bytecodeSize,
                 bytecodePointer!,
                 UInt64(serializedInputs!.count),
                 inputs,
                 UInt64(numOutputs!),
-                serializedOutputs!,
                 errorMessage)
             
-            if result != 0 {
-                print(errorMessage)
+            if serializedOutputs == nil {
+                let errorString = String(cString: errorMessage)
+                print("Failed execution with error: \(errorString)")
                 return
             }
             
             for i in 0..<serializedInputs!.count {
                 inputs[i].deallocate()
-           }
+            }
             inputs.deallocate()
+            
+            print("Finished executing. Preparing to send results back.")
+            print("outputs: \(serializedOutputs)")
+            print("numOutputs: \(numOutputs)")
             
             change(value: base64EncodedStrings(from: serializedOutputs!, count: numOutputs!))
         } else {
+            print("vm: \(vmInstance)")
+            print("deviceURI: \(deviceURI)")
+            print("bytecode: \(bytecode)")
             print("IREE components are not initialized.")
         }
    }

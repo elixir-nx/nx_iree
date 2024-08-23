@@ -65,10 +65,10 @@ defmodule LiveNxIREEWeb.HomeLive do
     {backend_flag, runtime_device} =
       case target_device do
         :metal ->
-          {"--iree-hal-target-backends=metal-spirv", "metal://default"}
+          {"--iree-hal-target-backends=metal-spirv", "metal://"}
 
         :cpu ->
-          {"--iree-hal-target-backends=llvm-cpu", "local-sync://default"}
+          {"--iree-hal-target-backends=llvm-cpu", "local-sync://"}
       end
 
     compiler_flags = [
@@ -104,7 +104,7 @@ defmodule LiveNxIREEWeb.HomeLive do
 
       {:ok, serialized} = NxIREE.Native.serialize_tensor(tensor.data.ref)
 
-      serialized
+      Base.encode64(serialized)
     end)
   end
 

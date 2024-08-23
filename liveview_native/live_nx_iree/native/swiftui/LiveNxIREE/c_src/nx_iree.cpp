@@ -28,11 +28,18 @@ int nx_iree_initialize(iree_vm_instance_t* vm_instance, iree_hal_driver_registry
     return 0;
 }
 
-iree_hal_device_t* nx_iree_create_device(iree_hal_driver_registry_t* registry, char* device_uri) {
-    return create_device(registry, std::string(device_uri));
+iree_hal_device_t* nx_iree_create_device(char* device_uri) {
+    iree_hal_driver_registry_t* driver_registry = get_driver_registry();
+    register_all_drivers(driver_registry);
+    
+    return create_device(driver_registry, std::string(device_uri));
 }
 
-int nx_iree_call(iree_vm_instance_t* vm_instance, iree_hal_device_t* device, uint64_t bytecode_size, unsigned char* bytecode, uint64_t num_inputs, char** serialized_inputs, uint64_t num_outputs, char** serialized_outputs, char* error_message) {
+iree_vm_instance_t* nx_iree_create_instance() {
+    return create_instance();
+}
+
+char** nx_iree_call(iree_vm_instance_t* vm_instance, iree_hal_device_t* device, uint64_t bytecode_size, unsigned char* bytecode, uint64_t num_inputs, char** serialized_inputs, uint64_t num_outputs, char* error_message) {
     std::vector<iree::runtime::IREETensor*> inputs;
     
     for (size_t i = 0; i < num_inputs; i++) {
@@ -43,15 +50,12 @@ int nx_iree_call(iree_vm_instance_t* vm_instance, iree_hal_device_t* device, uin
     auto [status, optional_result] = call(vm_instance, device, "not_cuda", bytecode, static_cast<size_t>(bytecode_size), inputs);
         
     if (!is_ok(status)) {
-        if (error_message) {
-            std::string msg = get_status_message(status);
-            strncpy(error_message, msg.c_str(), msg.length());
-        }
-        
-        return 1;
+        std::string msg = get_status_message(status);
+        strncpy(error_message, msg.c_str(), msg.length());
+        return nullptr;
     }
     
-    serialized_outputs = new char*[num_outputs];
+    auto serialized_outputs = new char*[num_outputs];
     
     auto result = optional_result.value();
     for (size_t i = 0; i < num_outputs; i++) {
@@ -60,6 +64,6 @@ int nx_iree_call(iree_vm_instance_t* vm_instance, iree_hal_device_t* device, uin
         memcpy(serialized_outputs[i], serialized->data(), serialized->size());
     }
     
-    return 0;
+    return serialized_outputs;
 }
 

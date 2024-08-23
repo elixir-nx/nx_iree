@@ -16,7 +16,7 @@ jobs:
       MIX_ENV: prod
       NX_IREE_PREFER_PRECOMPILED: false
       NX_IREE_SOURCE_DIR: ./build-cache/iree
-      IREE_GIT_REV: candidate-20240604.914
+      IREE_GIT_REV: candidate-20240822.993
     strategy:
       fail-fast: true
       matrix:

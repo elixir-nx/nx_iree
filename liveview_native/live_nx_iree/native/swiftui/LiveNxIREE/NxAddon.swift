@@ -9,34 +9,24 @@ import LiveViewNative
 import SwiftUI
 
 class iree_vm_instance_t {}
-class iree_hal_driver_registry_t {}
 class iree_hal_device_t {}
 
-var globalVmInstance: UnsafeMutablePointer<iree_vm_instance_t>?
-var globalDriverRegistry: UnsafeMutablePointer<iree_hal_driver_registry_t>?
-
-@_silgen_name("nx_iree_initialize")
-func nx_iree_initialize(
-    _ vm_instance: UnsafeMutablePointer<iree_vm_instance_t>,
-    _ driver_registry: UnsafeMutablePointer<iree_hal_driver_registry_t>,
-    _ error_message: UnsafeMutablePointer<CChar>) -> Int
+@_silgen_name("nx_iree_create_instance")
+func nx_iree_create_instance() -> UnsafePointer<iree_vm_instance_t>?
 
 @_silgen_name("nx_iree_create_device")
-func nx_iree_create_device(
-    _ driver_registry: UnsafeMutablePointer<iree_hal_driver_registry_t>,
-    _ name: UnsafePointer<CChar>) -> UnsafeMutablePointer<iree_hal_device_t>
+func nx_iree_create_device(_ name: UnsafePointer<CChar>) -> UnsafePointer<iree_hal_device_t>?
 
 @_silgen_name("nx_iree_call")
 func nx_iree_call(
-    _ vm_instance: UnsafeMutablePointer<iree_vm_instance_t>,
-    _ device: UnsafeMutablePointer<iree_hal_device_t>,
+    _ vm_instance: UnsafePointer<iree_vm_instance_t>,
+    _ device: UnsafePointer<iree_hal_device_t>,
     _ bytecode_size: UInt64,
     _ bytecode: UnsafePointer<CUnsignedChar>,
     _ num_inputs: UInt64,
     _ serialized_inputs: UnsafePointer<UnsafePointer<CChar>>,
     _ num_outputs: UInt64,
-    _ serialized_outputs: UnsafePointer<UnsafePointer<CChar>>,
-    _ error_message: UnsafeMutablePointer<CChar>) -> Int
+    _ error_message: UnsafeMutablePointer<CChar>) -> UnsafePointer<UnsafePointer<CChar>>?
 
 
 
