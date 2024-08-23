@@ -74,7 +74,7 @@ class IREETensor {
 
 iree_vm_instance_t* create_instance();
 iree_hal_driver_registry_t* get_driver_registry();
-iree_hal_device_t* create_device(const std::string& device_uri);
+iree_hal_device_t* create_device(iree_hal_driver_registry_t *registry, const std::string& device_uri);
 
 std::pair<iree_status_t, std::optional<std::vector<iree::runtime::IREETensor*>>>
 call(iree_vm_instance_t* i, iree_hal_device_t*, std::string, unsigned char*, size_t, std::vector<iree::runtime::IREETensor*>);

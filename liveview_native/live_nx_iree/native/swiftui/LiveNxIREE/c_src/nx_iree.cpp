@@ -6,21 +6,17 @@
 //
 
 #include "nx_iree.h"
+#include <nx_iree/runtime.h>
 
 #include <string>
 #include <vector>
 
-int func(int x) {
-    return x;
-}
-
-/*
-int nx_iree_initialize(iree_vm_instance_t* vm_instance, iree_hal_driver_registry_t* driver_registry, iree_hal_device_t* device, char* device_uri, char* error_message) {
+int nx_iree_initialize(iree_vm_instance_t* vm_instance, iree_hal_driver_registry_t* driver_registry, char* error_message) {
     vm_instance = create_instance();
     driver_registry = get_driver_registry();
     auto status = register_all_drivers(driver_registry);
     
-    if (!is_ok(status)) {
+    if (!is_ok(status) && !iree_status_is_already_exists(status)) {
         if (error_message) {
             std::string msg = get_status_message(status);
             strncpy(error_message, msg.c_str(), msg.length());
@@ -29,16 +25,11 @@ int nx_iree_initialize(iree_vm_instance_t* vm_instance, iree_hal_driver_registry
         return 1;
     }
     
-    
-    device = create_device(std::string(device_uri));
-    
-    if (!device) {
-        const char* msg = "Unable to initialize device\0";
-        strncpy(error_message, msg, strlen(msg));
-        return 1;
-    }
-    
     return 0;
+}
+
+iree_hal_device_t* nx_iree_create_device(iree_hal_driver_registry_t* registry, char* device_uri) {
+    return create_device(registry, std::string(device_uri));
 }
 
 int nx_iree_call(iree_vm_instance_t* vm_instance, iree_hal_device_t* device, uint64_t bytecode_size, unsigned char* bytecode, uint64_t num_inputs, char** serialized_inputs, uint64_t num_outputs, char** serialized_outputs, char* error_message) {
@@ -72,5 +63,3 @@ int nx_iree_call(iree_vm_instance_t* vm_instance, iree_hal_device_t* device, uin
     return 0;
 }
 
-}
-*/

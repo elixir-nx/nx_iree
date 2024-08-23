@@ -13,7 +13,7 @@ struct NxFunctionView<Root: RootRegistry>: View {
     @_documentation(visibility: public)
     @LiveAttribute("bytecode") private var bytecode: String? = nil
     @LiveAttribute("signature") private var signature: String? = nil
-    @LiveAttribute("device") private var device: String? = nil
+    @LiveAttribute("device") private var deviceURI: String? = nil
     @LiveAttribute("trigger") private var trigger: Bool = false
     @Event("on-execution", type: "change") private var change
     
@@ -36,9 +36,15 @@ struct NxFunctionView<Root: RootRegistry>: View {
         if bytecode == nil {
             return
         }
-       // Custom logic that should run when execute is set to true
-       print("Executing function \(signature ?? "None") on device: \(device ?? "None")")
         
-       change(value: "Sending something back")
+        if let vmInstance = globalVmInstance,
+           let driverRegistry = globalDriverRegistry {
+            print("Executing function \(signature ?? "None") on device: \(deviceURI ?? "None")")            
+            change(value: "Sending something back")
+        } else {
+            print("vm instance: \(globalVmInstance)")
+            print("driver registry: \(globalDriverRegistry)")
+            print("IREE components are not initialized.")
+        }
    }
 }
