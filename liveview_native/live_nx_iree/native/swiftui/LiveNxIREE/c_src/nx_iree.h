@@ -17,7 +17,7 @@ extern "C" {
 
 iree_vm_instance_t* nx_iree_create_instance();
 iree_hal_device_t* nx_iree_create_device(char* device_uri);
-char** nx_iree_call(iree_vm_instance_t* vm_instance, iree_hal_device_t* device, uint64_t bytecode_size, unsigned char* bytecode, uint64_t num_inputs, char** serialized_inputs, uint64_t num_outputs, char* error_message);
+char** nx_iree_call(iree_vm_instance_t* vm_instance, iree_hal_device_t* device, uint64_t bytecode_size, unsigned char* bytecode, uint64_t num_inputs, char** serialized_inputs, uint64_t num_outputs, char* error_message, uint64_t* output_byte_sizes);
 
 
 #ifdef __cplusplus

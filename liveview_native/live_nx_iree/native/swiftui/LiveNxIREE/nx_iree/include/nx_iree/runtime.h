@@ -41,9 +41,10 @@ class IREETensor {
   std::vector<iree_hal_dim_t> dims;
   iree_hal_element_type_t type;
   iree_hal_buffer_view_t* buffer_view;
+  iree_hal_device_t* device;
 
   IREETensor(char* serialized_data);
-  IREETensor(iree_hal_buffer_view_t* buffer_view, iree_hal_element_type_t type);
+  IREETensor(iree_hal_buffer_view_t* buffer_view, iree_hal_element_type_t type, iree_hal_device_t* device);
   IREETensor(void* data, size_t size, std::vector<int64_t> in_dims, iree_hal_element_type_t type);
 
   // Destructor

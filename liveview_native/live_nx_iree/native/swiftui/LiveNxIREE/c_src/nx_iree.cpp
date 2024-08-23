@@ -40,7 +40,7 @@ iree_vm_instance_t* nx_iree_create_instance() {
     return create_instance();
 }
 
-char** nx_iree_call(iree_vm_instance_t* vm_instance, iree_hal_device_t* device, uint64_t bytecode_size, unsigned char* bytecode, uint64_t num_inputs, char** serialized_inputs, uint64_t num_outputs, char* error_message) {
+char** nx_iree_call(iree_vm_instance_t* vm_instance, iree_hal_device_t* device, uint64_t bytecode_size, unsigned char* bytecode, uint64_t num_inputs, char** serialized_inputs, uint64_t num_outputs, char* error_message, uint64_t* output_byte_sizes) {
     std::vector<iree::runtime::IREETensor*> inputs;
     
     for (size_t i = 0; i < num_inputs; i++) {
@@ -68,6 +68,7 @@ char** nx_iree_call(iree_vm_instance_t* vm_instance, iree_hal_device_t* device, 
         std::vector<char> *serialized = tensor->serialize();
         serialized_outputs[i] = new char[serialized->size()];
         memcpy(serialized_outputs[i], serialized->data(), serialized->size());
+        output_byte_sizes[i] = serialized->size();
     }
     
     return serialized_outputs;

@@ -26,7 +26,9 @@ func nx_iree_call(
     _ num_inputs: UInt64,
     _ serialized_inputs: UnsafePointer<UnsafePointer<CChar>>,
     _ num_outputs: UInt64,
-    _ error_message: UnsafeMutablePointer<CChar>) -> UnsafePointer<UnsafePointer<CChar>>?
+    _ error_message: UnsafeMutablePointer<CChar>,
+    _ output_byte_sizes: UnsafeMutablePointer<UInt64>
+) -> UnsafePointer<UnsafePointer<CChar>>?
 
 
 

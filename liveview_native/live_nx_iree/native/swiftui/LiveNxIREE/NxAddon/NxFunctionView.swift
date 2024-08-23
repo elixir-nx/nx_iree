@@ -98,26 +98,27 @@ struct NxFunctionView<Root: RootRegistry>: View {
         return UnsafePointer(cStringsPointer)
     }
     
-    private func base64EncodedStrings(from serializedOutputs: UnsafePointer<UnsafePointer<CChar>>, count: Int) -> [String] {
-        // Convert UnsafePointer to a Swift array of UnsafePointer<CChar>
-        let cStringPointers = Array(UnsafeBufferPointer(start: serializedOutputs, count: count))
-        
+    private func base64EncodedStrings(
+        from serializedOutputs: UnsafePointer<UnsafePointer<CChar>>,
+        sizes: UnsafeMutablePointer<UInt64>,
+        count: Int) -> [String] {
         var base64Strings: [String] = []
-        
-        for cStringPointer in cStringPointers {
-            // Convert each C string to a Swift String
-            let string = String(cString: cStringPointer)
-            
-            // Encode the string to Base64
-            if let data = string.data(using: .utf8) {
-                let base64String = data.base64EncodedString()
-                base64Strings.append(base64String)
-            }
+
+        for i in 0..<count {
+            let cStringPointer = serializedOutputs.advanced(by: i).pointee
+            let size = Int(sizes[i])  // Convert UInt64 to Int
+
+            // Create a Data object from the raw bytes
+            let data = Data(bytes: cStringPointer, count: size)
+
+            // Encode the Data to Base64
+            let base64String = data.base64EncodedString()
+            print("base64String: \(base64String)")
+            base64Strings.append(base64String)
         }
-        
+
         return base64Strings
     }
-
     
     private func run() {
         if bytecode != nil,
@@ -133,6 +134,8 @@ struct NxFunctionView<Root: RootRegistry>: View {
             let errorMessage = UnsafeMutablePointer<CChar>.allocate(capacity: 256)
             
             print("Executing function \(signature ?? "None") on device: \(deviceURI ?? "None")")
+            
+            let outputByteSizes = UnsafeMutablePointer<UInt64>.allocate(capacity: numOutputs!)
 
             let serializedOutputs = nx_iree_call(
                 vmInstance!,
@@ -142,7 +145,9 @@ struct NxFunctionView<Root: RootRegistry>: View {
                 UInt64(serializedInputs!.count),
                 inputs,
                 UInt64(numOutputs!),
-                errorMessage)
+                errorMessage,
+                outputByteSizes
+            )
             
             if serializedOutputs == nil {
                 let errorString = String(cString: errorMessage)
@@ -159,7 +164,7 @@ struct NxFunctionView<Root: RootRegistry>: View {
             print("outputs: \(serializedOutputs)")
             print("numOutputs: \(numOutputs)")
             
-            change(value: base64EncodedStrings(from: serializedOutputs!, count: numOutputs!))
+            change(value: base64EncodedStrings(from: serializedOutputs!, sizes: outputByteSizes, count: numOutputs!))
         } else {
             print("vm: \(vmInstance)")
             print("deviceURI: \(deviceURI)")
