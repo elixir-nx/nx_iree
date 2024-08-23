@@ -20,6 +20,8 @@ if System.get_env("PHX_SERVER") do
   config :live_nx_iree, LiveNxIREEWeb.Endpoint, server: true
 end
 
+config :nx, :default_backend, NxIREE.Tensor
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||

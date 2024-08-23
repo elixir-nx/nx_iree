@@ -15,7 +15,14 @@ defmodule LiveNxIREEWeb.HomeLive do
 
     dbg(self())
 
-    socket = assign(socket, bytecode: nil, function_signature: nil, device: nil)
+    socket =
+      assign(socket,
+        bytecode: nil,
+        function_signature: nil,
+        device: nil,
+        inputs: nil,
+        num_outputs: nil
+      )
 
     {:ok, socket}
   end
@@ -43,7 +50,7 @@ defmodule LiveNxIREEWeb.HomeLive do
   # end
 
   @impl true
-  def handle_info({:nx, :execute, function, input_templates, target_device, reply_to_pid}, socket) do
+  def handle_info({:nx, :execute, function, inputs, target_device, reply_to_pid}, socket) do
     fun =
       case function do
         {m, f, a} ->
@@ -71,17 +78,34 @@ defmodule LiveNxIREEWeb.HomeLive do
     ]
 
     {:ok, %{bytecode: %NxIREE.Module{bytecode: bytecode}, output_container: output_container}} =
-      NxIREE.Compiler.to_bytecode(fun, input_templates, iree_compiler_flags: compiler_flags)
+      NxIREE.Compiler.to_bytecode(fun, inputs, iree_compiler_flags: compiler_flags)
+
+    {_, num_outputs} =
+      Nx.Defn.Composite.traverse(output_container, 0, fn node, acc -> {node, acc + 1} end)
 
     socket =
       socket
       |> assign(:bytecode, Base.encode64(bytecode))
       |> assign(:output_container, output_container)
-      |> assign(:function_signature, get_signature(function, input_templates, output_container))
+      |> assign(:function_signature, get_signature(function, inputs, output_container))
       |> assign(:device, runtime_device)
       |> assign(:reply_to_pid, reply_to_pid)
+      |> assign(:inputs, serialize_inputs(inputs))
+      |> assign(:num_outputs, num_outputs)
 
     {:noreply, socket}
+  end
+
+  defp serialize_inputs(inputs) do
+    List.wrap(inputs)
+    |> Nx.Defn.Composite.flatten_list()
+    |> Enum.map(fn tensor ->
+      tensor = Nx.to_tensor(tensor)
+
+      {:ok, serialized} = NxIREE.Native.serialize_tensor(tensor.data.ref)
+
+      serialized
+    end)
   end
 
   @impl true

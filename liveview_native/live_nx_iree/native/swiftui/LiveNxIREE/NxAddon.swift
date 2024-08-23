@@ -24,7 +24,7 @@ func nx_iree_initialize(
 @_silgen_name("nx_iree_create_device")
 func nx_iree_create_device(
     _ driver_registry: UnsafeMutablePointer<iree_hal_driver_registry_t>,
-    _ name: UnsafePointer<Int8>) -> UnsafeMutablePointer<iree_hal_device_t>
+    _ name: UnsafePointer<CChar>) -> UnsafeMutablePointer<iree_hal_device_t>
 
 @_silgen_name("nx_iree_call")
 func nx_iree_call(
