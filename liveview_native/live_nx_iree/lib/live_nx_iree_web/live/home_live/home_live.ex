@@ -19,9 +19,10 @@ defmodule LiveNxIREEWeb.HomeLive do
       assign(socket,
         bytecode: nil,
         function_signature: nil,
-        device: nil,
+        device_uri: nil,
         inputs: nil,
-        num_outputs: nil
+        num_outputs: nil,
+        available_devices: []
       )
 
     {:ok, socket}
@@ -38,23 +39,18 @@ defmodule LiveNxIREEWeb.HomeLive do
     |> assign(:home, nil)
   end
 
-  # def handle_info({:nx, :execute, function, input_templates}, socket) do
-  #   socket =
-  #     assign(
-  #       socket,
-  #       :bytecode,
-  #       Base.encode64(inspect({:nx, :execute, function, input_templates}))
-  #     )
-
-  #   {:noreply, socket}
-  # end
-
   @impl true
-  def handle_info({:nx, :execute, function, inputs, target_device, reply_to_pid}, socket) do
+  def handle_info(
+        {:nx, :execute, function, inputs, target_device_and_platform, reply_to_pid},
+        socket
+      ) do
     fun =
       case function do
         {m, f, a} ->
           Function.capture(m, f, a)
+
+        f when is_function(f) ->
+          f
 
         _ ->
           raise """
@@ -62,20 +58,32 @@ defmodule LiveNxIREEWeb.HomeLive do
           """
       end
 
-    {backend_flag, runtime_device} =
-      case target_device do
-        :metal ->
-          {"--iree-hal-target-backends=metal-spirv", "metal://"}
+    available_devices = socket.assigns.available_devices
 
-        :cpu ->
-          {"--iree-hal-target-backends=llvm-cpu", "local-sync://"}
+    {target_device, platform} =
+      case target_device_and_platform do
+        {a, b} -> {a, b}
+        a -> {a, nil}
       end
 
-    compiler_flags = [
-      backend_flag,
-      "--iree-input-type=stablehlo_xla",
-      "--iree-execution-model=async-internal"
-    ]
+    %{compiler_flag: backend_flag, uri: device_uri} =
+      case available_devices[target_device] do
+        nil -> Enum.random(available_devices[:cpu])
+        devices -> Enum.random(devices)
+      end
+
+    platform_flag =
+      case {target_device, platform} do
+        {:metal, platform} -> ["--iree-metal-target-platform=#{platform}"]
+        _ -> []
+      end
+
+    compiler_flags =
+      [
+        backend_flag,
+        "--iree-input-type=stablehlo_xla",
+        "--iree-execution-model=async-internal"
+      ] ++ platform_flag
 
     {:ok, %{bytecode: %NxIREE.Module{bytecode: bytecode}, output_container: output_container}} =
       NxIREE.Compiler.to_bytecode(fun, inputs, iree_compiler_flags: compiler_flags)
@@ -88,7 +96,7 @@ defmodule LiveNxIREEWeb.HomeLive do
       |> assign(:bytecode, Base.encode64(bytecode))
       |> assign(:output_container, output_container)
       |> assign(:function_signature, get_signature(function, inputs, output_container))
-      |> assign(:device, runtime_device)
+      |> assign(:device_uri, device_uri)
       |> assign(:reply_to_pid, reply_to_pid)
       |> assign(:inputs, serialize_inputs(inputs))
       |> assign(:num_outputs, num_outputs)
@@ -109,14 +117,83 @@ defmodule LiveNxIREEWeb.HomeLive do
   end
 
   @impl true
-  def handle_event("nx-executed", params, socket) do
-    send(socket.assigns.reply_to_pid, {:nx, :executed, params})
+  def handle_event("nx-executed", serialized_outputs, socket) do
+    {outputs, []} =
+      Nx.Defn.Composite.traverse(
+        socket.assigns.output_container,
+        serialized_outputs,
+        fn node, [base64 | acc] ->
+          {:ok, ref} = base64 |> Base.decode64!() |> NxIREE.Native.deserialize_tensor()
 
-    {:noreply, assign(socket, :reply_to_pid, nil)}
+          uri = "local-sync://"
+
+          {:ok, device, _} = NxIREE.Device.get(uri)
+
+          t = %Nx.Tensor{
+            node
+            | data: %NxIREE.Tensor{
+                device_uri: uri,
+                device: device,
+                ref: ref
+              }
+          }
+
+          {t, acc}
+        end
+      )
+
+    send(socket.assigns.reply_to_pid, {:nx, :executed, outputs})
+
+    {:noreply, socket}
+  end
+
+  def handle_event("nx-mounted", devices, socket) do
+    devices =
+      devices
+      |> Enum.reject(&String.ends_with?(&1, "://default"))
+      |> Enum.sort_by(&get_device_priority/1, :asc)
+      |> Enum.map(fn device ->
+        key = get_device_key(device)
+        {key, %{uri: device, compiler_flag: get_device_flag(key)}}
+      end)
+      |> Enum.group_by(fn {k, _} -> k end, fn {_, v} -> v end)
+
+    {:noreply, assign(socket, :available_devices, devices)}
+  end
+
+  defp get_device_priority(device) do
+    case device do
+      "metal://" <> _ -> 0
+      "cuda://" <> _ -> 0
+      "rocm://" <> _ -> 0
+      "local-sync://" <> _ -> 1
+      _ -> 2
+    end
+  end
+
+  defp get_device_key(device) do
+    case device do
+      "metal://" <> _ -> :metal
+      "cuda://" <> _ -> :cuda
+      "rocm://" <> _ -> :rocm
+      "local-sync://" <> _ -> :cpu
+      _ -> :cpu
+    end
+  end
+
+  defp get_device_flag(device) do
+    case device do
+      :metal -> "--iree-hal-target-backends=metal-spirv"
+      :cpu -> "--iree-hal-target-backends=llvm-cpu"
+    end
   end
 
   defp get_signature({mod, fun, _a}, input_templates, output_container) do
     "#{inspect(mod)}.#{fun}(#{to_flat_type(input_templates)}) -> #{to_flat_type(output_container)}"
+  end
+
+  defp get_signature(fun, input_templates, output_container) do
+    "#{inspect(fun)}(#{to_flat_type(input_templates)}) -> #{to_flat_type(output_container)}"
   end
 
   defp to_flat_type(container) do

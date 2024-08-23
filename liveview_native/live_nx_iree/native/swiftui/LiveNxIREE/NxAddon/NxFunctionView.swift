@@ -16,13 +16,15 @@ struct NxFunctionView<Root: RootRegistry>: View {
     @LiveAttribute("device") private var deviceURI: String? = nil
     @LiveAttribute("inputs") private var serializedInputs: [String]? = nil
     @LiveAttribute("num-outputs") private var numOutputs: Int? = nil
-    @Event("on-execution", type: "change") private var change
+    @Event("on-execution", type: "change") private var onExecution
+    @Event("on-mount", type: "change") private var onMount
     
     @LiveElementIgnored
     private var vmInstance: UnsafePointer<iree_vm_instance_t>? = nil
     
     init() {
         vmInstance = nx_iree_create_instance()
+
     }
     
     var body: some View {
@@ -33,10 +35,19 @@ struct NxFunctionView<Root: RootRegistry>: View {
             }
         }
         .onAppear() {
+            onMount(value: nxIREEListAllDevices())
+        }
+        .onChange(of: deviceURI) {
+            run()
+        }
+        .onChange(of: serializedInputs) {
+            run()
+        }
+        .onChange(of: signature) {
             run()
         }
         .onChange(of: bytecode) {
-            run()  // Run the function when bytecode changes
+            run()
         }
     }
     
@@ -164,7 +175,7 @@ struct NxFunctionView<Root: RootRegistry>: View {
             print("outputs: \(serializedOutputs)")
             print("numOutputs: \(numOutputs)")
             
-            change(value: base64EncodedStrings(from: serializedOutputs!, sizes: outputByteSizes, count: numOutputs!))
+            onExecution(value: base64EncodedStrings(from: serializedOutputs!, sizes: outputByteSizes, count: numOutputs!))
         } else {
             print("vm: \(vmInstance)")
             print("deviceURI: \(deviceURI)")

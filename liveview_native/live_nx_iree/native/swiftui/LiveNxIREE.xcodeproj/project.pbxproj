@@ -12,6 +12,8 @@
 		0A6CE5F5167F6157FF061569 /* DisconnectedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D488732A3104CEE004CB7B42 /* DisconnectedView.swift */; };
 		125165EBA8D40490F0AABE88 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 51F3B59B97B70D891071B6C4 /* Assets.xcassets */; };
 		137E19B83B668B9C3130A3D7 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7955FA5760A1DB1E827049B /* ContentView.swift */; };
+		3732392B2C78A817009D1652 /* libnx_iree_runtime.so in CopyFiles */ = {isa = PBXBuildFile; fileRef = 373239292C78A80B009D1652 /* libnx_iree_runtime.so */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		3732392C2C78A835009D1652 /* libnx_iree_runtime.so in Frameworks */ = {isa = PBXBuildFile; fileRef = 373239292C78A80B009D1652 /* libnx_iree_runtime.so */; };
 		373496882C7707DE00FD2E6F /* NxAddon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 373496872C7707DE00FD2E6F /* NxAddon.swift */; };
 		3734968B2C77081100FD2E6F /* NxFunctionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3734968A2C77081100FD2E6F /* NxFunctionView.swift */; };
 		379E276B2C76D40900624AA7 /* nx_iree.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 379E276A2C76D40900624AA7 /* nx_iree.cpp */; };
@@ -21,6 +23,19 @@
 		E4C8EE2081B99D0A468A7913 /* LiveViewNativeLiveForm in Frameworks */ = {isa = PBXBuildFile; productRef = 20E5CDCF6B54971957E37C14 /* LiveViewNativeLiveForm */; settings = {ATTRIBUTES = (Required, ); }; };
 		E8ABDB597CE60B7A14F06131 /* ErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5349E6CFD45E8C0A7E66CA2B /* ErrorView.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		373239272C78A74E009D1652 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				3732392B2C78A817009D1652 /* libnx_iree_runtime.so in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		0C32E6E8FE5182B70F4A8001 /* ReconnectingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReconnectingView.swift; sourceTree = "<group>"; };
@@ -397,6 +412,7 @@
 		373239182C78760F009D1652 /* libnx_iree_runtime.so */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libnx_iree_runtime.so; sourceTree = "<group>"; };
 		3732391A2C78760F009D1652 /* libnx_iree_runtime.so */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libnx_iree_runtime.so; sourceTree = "<group>"; };
 		3732391C2C78760F009D1652 /* libnx_iree_runtime.so */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libnx_iree_runtime.so; sourceTree = "<group>"; };
+		373239292C78A80B009D1652 /* libnx_iree_runtime.so */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libnx_iree_runtime.so; sourceTree = "<group>"; };
 		373496872C7707DE00FD2E6F /* NxAddon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NxAddon.swift; sourceTree = "<group>"; };
 		3734968A2C77081100FD2E6F /* NxFunctionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NxFunctionView.swift; sourceTree = "<group>"; };
 		379E27672C76D25900624AA7 /* LiveNxIREE-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "LiveNxIREE-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -417,6 +433,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3732392C2C78A835009D1652 /* libnx_iree_runtime.so in Frameworks */,
 				459F92DE90F9275614EDC9F7 /* LiveViewNative in Frameworks */,
 				E4C8EE2081B99D0A468A7913 /* LiveViewNativeLiveForm in Frameworks */,
 			);
@@ -1695,6 +1712,14 @@
 			path = nx_iree;
 			sourceTree = "<group>";
 		};
+		373239282C78A7EB009D1652 /* BuildArtifacts */ = {
+			isa = PBXGroup;
+			children = (
+				373239292C78A80B009D1652 /* libnx_iree_runtime.so */,
+			);
+			path = BuildArtifacts;
+			sourceTree = "<group>";
+		};
 		373496892C7707F700FD2E6F /* NxAddon */ = {
 			isa = PBXGroup;
 			children = (
@@ -1723,6 +1748,7 @@
 		9C300C6CBFF81137887E5576 = {
 			isa = PBXGroup;
 			children = (
+				373239282C78A7EB009D1652 /* BuildArtifacts */,
 				2F2E8465248E555C831C9B55 /* LiveNxIREE */,
 				6CF8FEA143D447C31948C8CB /* Products */,
 				373237382C786921009D1652 /* Frameworks */,
@@ -1737,6 +1763,7 @@
 			buildConfigurationList = 2FBD16D6DFFB71B77D516DD7 /* Build configuration list for PBXNativeTarget "LiveNxIREE" */;
 			buildPhases = (
 				373496942C78272A00FD2E6F /* Copy libnx_ireee_runtime.so */,
+				373239272C78A74E009D1652 /* CopyFiles */,
 				D43BFCA900A98D1510808FD6 /* Sources */,
 				7288EE5E619E83B96AB819F8 /* Resources */,
 				22F70DB26730B53329332C83 /* Frameworks */,
@@ -1822,11 +1849,11 @@
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(BUILT_PRODUCTS_DIR)/libnx_iree_runtime.so",
+				"${SRCROOT}/BuildArtifacts/libnx_iree_runtime.so",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Define the source directories for the different platforms\nIOS_DIR=\"${SRCROOT}/${PROJECT_NAME}/nx_iree/lib/ios\"\nIOS_SIMULATOR_DIR=\"${SRCROOT}/${PROJECT_NAME}/nx_iree/lib/ios_simulator\"\nTVOS_DIR=\"${SRCROOT}/${PROJECT_NAME}/nx_iree/lib/tvos\"\nTVOS_SIMULATOR_DIR=\"${SRCROOT}/${PROJECT_NAME}/nx_iree/lib/tvos_simulator\"\nVISIONOS_DIR=\"${SRCROOT}/${PROJECT_NAME}/nx_iree/lib/visionos\"\nVISIONOS_SIMULATOR_DIR=\"${SRCROOT}/${PROJECT_NAME}/nx_iree/lib/visionos_simulator\"\nHOST_DIR=\"${SRCROOT}/${PROJECT_NAME}/nx_iree/lib/host\"\n\n# Define the destination directory inside the app bundle's Frameworks folder\nDESTINATION=\"${BUILT_PRODUCTS_DIR}\"\n\n# Create the destination directory if it doesn't exist\nmkdir -p \"${DESTINATION}\"\n\n# Check the SDK and copy the appropriate library\nif [[ \"${SDK_NAME}\" == *\"iphoneos\"* ]]; then\n    cp \"${IOS_DIR}/libnx_iree_runtime.so\" \"${DESTINATION}/\"\nelif [[ \"${SDK_NAME}\" == *\"iphonesimulator\"* ]]; then\n    cp \"${IOS_SIMULATOR_DIR}/libnx_iree_runtime.so\" \"${DESTINATION}/\"\nelif [[ \"${SDK_NAME}\" == *\"appletvos\"* ]]; then\n    cp \"${TVOS_DIR}/libnx_iree_runtime.so\" \"${DESTINATION}/\"\nelif [[ \"${SDK_NAME}\" == *\"appletvsimulator\"* ]]; then\n    cp \"${TVOS_SIMULATOR_DIR}/libnx_iree_runtime.so\" \"${DESTINATION}/\"\nelif [[ \"${SDK_NAME}\" == *\"xros\"* ]]; then\n    cp \"${VISIONOS_DIR}/libnx_iree_runtime.so\" \"${DESTINATION}/\"\nelif [[ \"${SDK_NAME}\" == *\"xrsimulator\"* ]]; then\n    cp \"${VISIONOS_SIMULATOR_DIR}/libnx_iree_runtime.so\" \"${DESTINATION}/\"\nelif [[ \"${SDK_NAME}\" == *\"macosx\"* ]]; then\n    cp \"${HOST_DIR}/libnx_iree_runtime.so\" \"${DESTINATION}/\"\nelse\n    echo \"Unsupported SDK: ${SDK_NAME}\"\n    exit 1\nfi\n\n# Ensure the copied file has the correct permissions\nchmod 755 \"${DESTINATION}/libnx_iree_runtime.so\"\n";
+			shellScript = "# Define the source directories for the different platforms\nIOS_DIR=\"${SRCROOT}/${PROJECT_NAME}/nx_iree/lib/ios\"\nIOS_SIMULATOR_DIR=\"${SRCROOT}/${PROJECT_NAME}/nx_iree/lib/ios_simulator\"\nTVOS_DIR=\"${SRCROOT}/${PROJECT_NAME}/nx_iree/lib/tvos\"\nTVOS_SIMULATOR_DIR=\"${SRCROOT}/${PROJECT_NAME}/nx_iree/lib/tvos_simulator\"\nVISIONOS_DIR=\"${SRCROOT}/${PROJECT_NAME}/nx_iree/lib/visionos\"\nVISIONOS_SIMULATOR_DIR=\"${SRCROOT}/${PROJECT_NAME}/nx_iree/lib/visionos_simulator\"\nHOST_DIR=\"${SRCROOT}/${PROJECT_NAME}/nx_iree/lib/host\"\n\n# Define the destination directory inside the app bundle's Frameworks folder\nDESTINATION=\"${SRCROOT}/BuildArtifacts\"\n\n# Create the destination directory if it doesn't exist\nmkdir -p \"${DESTINATION}\"\n\n# Check the SDK and copy the appropriate library\nif [[ \"${SDK_NAME}\" == *\"iphoneos\"* ]]; then\n    cp \"${IOS_DIR}/libnx_iree_runtime.so\" \"${DESTINATION}/\"\nelif [[ \"${SDK_NAME}\" == *\"iphonesimulator\"* ]]; then\n    cp \"${IOS_SIMULATOR_DIR}/libnx_iree_runtime.so\" \"${DESTINATION}/\"\nelif [[ \"${SDK_NAME}\" == *\"appletvos\"* ]]; then\n    cp \"${TVOS_DIR}/libnx_iree_runtime.so\" \"${DESTINATION}/\"\nelif [[ \"${SDK_NAME}\" == *\"appletvsimulator\"* ]]; then\n    cp \"${TVOS_SIMULATOR_DIR}/libnx_iree_runtime.so\" \"${DESTINATION}/\"\nelif [[ \"${SDK_NAME}\" == *\"xros\"* ]]; then\n    cp \"${VISIONOS_DIR}/libnx_iree_runtime.so\" \"${DESTINATION}/\"\nelif [[ \"${SDK_NAME}\" == *\"xrsimulator\"* ]]; then\n    cp \"${VISIONOS_SIMULATOR_DIR}/libnx_iree_runtime.so\" \"${DESTINATION}/\"\nelif [[ \"${SDK_NAME}\" == *\"macosx\"* ]]; then\n    cp \"${HOST_DIR}/libnx_iree_runtime.so\" \"${DESTINATION}/\"\nelse\n    echo \"Unsupported SDK: ${SDK_NAME}\"\n    exit 1\nfi\n\necho \"Copying to destination: ${DESTINATION}/libnx_iree_runtime.so\"\n\n# Ensure the copied file has the correct permissions\nchmod 755 \"${DESTINATION}/libnx_iree_runtime.so\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -1893,6 +1920,7 @@
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.example.LiveNxIREE;
 				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LIBRARY_SEARCH_PATHS[sdk=appletvos*]" = "$(PROJECT_NAME)/nx_iree/lib/tvos";
 				"LIBRARY_SEARCH_PATHS[sdk=appletvsimulator*]" = "$(PROJECT_NAME)/nx_iree/lib/tvos_simulator";
 				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = "$(PROJECT_NAME)/nx_iree/lib/ios";
@@ -1918,6 +1946,9 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = QEGUFG335L;
 				GCC_C_LANGUAGE_STANDARD = "compiler-default";
 				HEADER_SEARCH_PATHS = "$(SRCROOT)/LiveNxIREE/nx_iree/include";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.3;
@@ -1931,10 +1962,12 @@
 					"$(PROJECT_DIR)/LiveNxIREE/nx_iree/lib/tvos_simulator",
 					"$(PROJECT_DIR)/LiveNxIREE/nx_iree/lib/visionos",
 					"$(PROJECT_DIR)/LiveNxIREE/nx_iree/lib/visionos_simulator",
+					"$(PROJECT_DIR)/BuildArtifacts",
 				);
 				OTHER_CFLAGS = "-I$(PROJECT_NAME)/nx_iree/include";
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.LiveNxIREE;
 				PRODUCT_NAME = LiveNxIREE;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -1950,6 +1983,9 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = QEGUFG335L;
 				GCC_C_LANGUAGE_STANDARD = "compiler-default";
 				HEADER_SEARCH_PATHS = "$(SRCROOT)/LiveNxIREE/nx_iree/include";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.3;
@@ -1963,10 +1999,12 @@
 					"$(PROJECT_DIR)/LiveNxIREE/nx_iree/lib/tvos_simulator",
 					"$(PROJECT_DIR)/LiveNxIREE/nx_iree/lib/visionos",
 					"$(PROJECT_DIR)/LiveNxIREE/nx_iree/lib/visionos_simulator",
+					"$(PROJECT_DIR)/BuildArtifacts",
 				);
 				OTHER_CFLAGS = "-I$(PROJECT_NAME)/nx_iree/include";
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.LiveNxIREE;
 				PRODUCT_NAME = LiveNxIREE;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -2018,6 +2056,7 @@
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.example.LiveNxIREE;
 				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LIBRARY_SEARCH_PATHS[arch=*]" = (
 					"//:configuration",
 					"=",

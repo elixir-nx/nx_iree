@@ -74,3 +74,27 @@ char** nx_iree_call(iree_vm_instance_t* vm_instance, iree_hal_device_t* device, 
     return serialized_outputs;
 }
 
+char** nx_iree_list_all_devices(uint64_t* count) {
+    iree_hal_driver_registry_t* registry = get_driver_registry();
+    std::vector<iree::runtime::Device*> devices;
+    iree_status_t status = list_devices(registry, devices);
+    
+    if (!iree_status_is_ok(status)) {
+        count = 0;
+        return nullptr;
+    }
+    
+    *count = devices.size();
+    
+    char** output = reinterpret_cast<char**>(malloc(sizeof(char*) * *count));
+    
+    for (size_t i = 0; i < *count; i++){
+        auto device = devices[i];
+        size_t length = device->uri.length();
+        const char* uri = device->uri.c_str();
+        output[i] = new char[length + 1];
+        strncpy(output[i], uri, length);
+    }
+    
+    return output;
+}

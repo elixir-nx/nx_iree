@@ -1,7 +1,8 @@
 <NxFunction
   on-execution="nx-executed"
+  on-mount="nx-mounted"
   signature={@function_signature}
   bytecode={@bytecode}
-  device={@device}
+  device={@device_uri}
   inputs={@inputs}
   num-outputs={@num_outputs} />

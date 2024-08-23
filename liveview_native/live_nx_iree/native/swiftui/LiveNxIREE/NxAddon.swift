@@ -14,6 +14,9 @@ class iree_hal_device_t {}
 @_silgen_name("nx_iree_create_instance")
 func nx_iree_create_instance() -> UnsafePointer<iree_vm_instance_t>?
 
+@_silgen_name("nx_iree_list_all_devices")
+func nx_iree_list_all_devices(_ count: UnsafeMutablePointer<UInt64>) -> UnsafePointer<UnsafePointer<CChar>?>?
+
 @_silgen_name("nx_iree_create_device")
 func nx_iree_create_device(_ name: UnsafePointer<CChar>) -> UnsafePointer<iree_hal_device_t>?
 
@@ -31,6 +34,21 @@ func nx_iree_call(
 ) -> UnsafePointer<UnsafePointer<CChar>>?
 
 
+func nxIREEListAllDevices() -> [String] {
+    var count: UInt64 = 0
+    guard let devicesPointer = nx_iree_list_all_devices(&count) else {
+        return []
+    }
+    
+    var devices: [String] = []
+    for i in 0..<Int(count) {
+        if let deviceCString = devicesPointer[i] {
+            devices.append(String(cString: deviceCString))
+        }
+    }
+    
+    return devices
+}
 
 public extension Addons {
     @Addon
