@@ -40,6 +40,44 @@ iree_vm_instance_t* nx_iree_create_instance() {
     return create_instance();
 }
 
+unsigned char* nx_iree_image_call(iree_vm_instance_t* vm_instance, iree_hal_device_t* device, uint64_t bytecode_size, unsigned char* bytecode, uint64_t* input_dims, unsigned char* input_data, char* error_message) {
+    std::vector<iree::runtime::IREETensor*> inputs;
+    
+    std::vector<int64_t> input_dims_vec;
+    
+    size_t input_size = 1;
+    for (int i = 0; i < 3; i++){
+        input_size *= input_dims[i];
+        input_dims_vec.push_back(input_dims[i]);
+    }
+    
+    inputs.push_back(new iree::runtime::IREETensor(
+                                                   input_data,
+                                                   input_size,
+                                                   input_dims_vec,
+                                                   iree_hal_element_types_t::IREE_HAL_ELEMENT_TYPE_UINT_8));
+    
+    // driver name is hardcoded because there is only a check for CUDA
+    auto [status, optional_result] = call(vm_instance, device, "not_cuda", bytecode, static_cast<size_t>(bytecode_size), inputs);
+        
+    if (!is_ok(status) || !optional_result.has_value()) {
+        std::string msg = get_status_message(status);
+        strncpy(error_message, msg.c_str(), msg.length());
+        return nullptr;
+    }
+        
+    iree::runtime::IREETensor *tensor= optional_result.value()[0];
+    std::cout << "Tensor: " << tensor;
+    if (tensor == nullptr) {
+        std::cout << "Failed output allocation at index 0\n";
+    }
+    
+    auto output = new unsigned char[tensor->size];
+    memcpy(output, tensor->data, tensor->size);
+    
+    return output;
+}
+
 char** nx_iree_call(iree_vm_instance_t* vm_instance, iree_hal_device_t* device, uint64_t bytecode_size, unsigned char* bytecode, uint64_t num_inputs, char** serialized_inputs, uint64_t num_outputs, char* error_message, uint64_t* output_byte_sizes) {
     std::vector<iree::runtime::IREETensor*> inputs;
     

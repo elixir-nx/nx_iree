@@ -31,6 +31,11 @@ public struct CameraCaptureView: View {
     
     private let cameraManager = CameraManager()
     private let imageHeight = 300.0
+    private let processImageCallback: (UIImage) -> Void
+    
+    init(processImageCallback: @escaping (UIImage) -> Void) {
+        self.processImageCallback = processImageCallback
+    }
 
     public var body: some View {
         VStack { // Use VStack to stack the preview and the button
@@ -39,10 +44,7 @@ public struct CameraCaptureView: View {
             // Button directly under the camera preview
             Button(action: {
                 cameraManager.captureImage { image in
-                    if let imageData = image.jpegData(compressionQuality: 0.5) {
-                        print("encoding in base64")
-                        serializedTensor = imageData.base64EncodedString()
-                    }
+                    processImageCallback(image)
                 }
             }) {
                 Text("Capture")

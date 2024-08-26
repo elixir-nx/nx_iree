@@ -14,7 +14,7 @@
 		137E19B83B668B9C3130A3D7 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7955FA5760A1DB1E827049B /* ContentView.swift */; };
 		3717771C2C7C426600D1D732 /* NxCameraFunctionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3717771B2C7C426600D1D732 /* NxCameraFunctionView.swift */; };
 		3717771E2C7C434B00D1D732 /* CameraCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3717771D2C7C434B00D1D732 /* CameraCaptureView.swift */; };
-		371777202C7C452D00D1D732 /* Base64ImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3717771F2C7C452D00D1D732 /* Base64ImageView.swift */; };
+		371777202C7C452D00D1D732 /* ImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3717771F2C7C452D00D1D732 /* ImageView.swift */; };
 		3732392B2C78A817009D1652 /* libnx_iree_runtime.so in CopyFiles */ = {isa = PBXBuildFile; fileRef = 373239292C78A80B009D1652 /* libnx_iree_runtime.so */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		3732392C2C78A835009D1652 /* libnx_iree_runtime.so in Frameworks */ = {isa = PBXBuildFile; fileRef = 373239292C78A80B009D1652 /* libnx_iree_runtime.so */; };
 		373496882C7707DE00FD2E6F /* NxAddon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 373496872C7707DE00FD2E6F /* NxAddon.swift */; };
@@ -44,7 +44,7 @@
 		0C32E6E8FE5182B70F4A8001 /* ReconnectingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReconnectingView.swift; sourceTree = "<group>"; };
 		3717771B2C7C426600D1D732 /* NxCameraFunctionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NxCameraFunctionView.swift; sourceTree = "<group>"; };
 		3717771D2C7C434B00D1D732 /* CameraCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraCaptureView.swift; sourceTree = "<group>"; };
-		3717771F2C7C452D00D1D732 /* Base64ImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Base64ImageView.swift; sourceTree = "<group>"; };
+		3717771F2C7C452D00D1D732 /* ImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageView.swift; sourceTree = "<group>"; };
 		373237392C786921009D1652 /* libnx_iree_runtime.so */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libnx_iree_runtime.so; sourceTree = "<group>"; };
 		3732373B2C786921009D1652 /* libnx_iree_runtime.so */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libnx_iree_runtime.so; sourceTree = "<group>"; };
 		3732373D2C786921009D1652 /* libnx_iree_runtime.so */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libnx_iree_runtime.so; sourceTree = "<group>"; };
@@ -1732,7 +1732,7 @@
 				3734968A2C77081100FD2E6F /* NxFunctionView.swift */,
 				3717771B2C7C426600D1D732 /* NxCameraFunctionView.swift */,
 				3717771D2C7C434B00D1D732 /* CameraCaptureView.swift */,
-				3717771F2C7C452D00D1D732 /* Base64ImageView.swift */,
+				3717771F2C7C452D00D1D732 /* ImageView.swift */,
 			);
 			path = NxAddon;
 			sourceTree = "<group>";
@@ -1877,7 +1877,7 @@
 				0A6CE5F5167F6157FF061569 /* DisconnectedView.swift in Sources */,
 				E8ABDB597CE60B7A14F06131 /* ErrorView.swift in Sources */,
 				3717771E2C7C434B00D1D732 /* CameraCaptureView.swift in Sources */,
-				371777202C7C452D00D1D732 /* Base64ImageView.swift in Sources */,
+				371777202C7C452D00D1D732 /* ImageView.swift in Sources */,
 				373496882C7707DE00FD2E6F /* NxAddon.swift in Sources */,
 				019462C5C187024761226CEE /* LiveNxIREE.swift in Sources */,
 				BFA36AAE5D8350C95692758F /* ReconnectingView.swift in Sources */,

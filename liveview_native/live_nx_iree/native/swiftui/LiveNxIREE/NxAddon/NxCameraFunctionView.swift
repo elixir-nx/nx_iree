@@ -8,6 +8,41 @@
 import SwiftUI
 import LiveViewNative
 
+import UIKit
+
+extension UIImage {
+    func getRGBData() -> ([UInt8], [UInt64])? {
+        guard let cgImage = self.cgImage else { return nil }
+        
+        let width = cgImage.width
+        let height = cgImage.height
+        let bytesPerPixel = 3 // Only RGB (3 bytes per pixel)
+        let bytesPerRow = bytesPerPixel * width
+        let totalBytes = height * bytesPerRow
+        
+        var rgbData = [UInt8](repeating: 0, count: totalBytes)
+        guard let colorSpace = CGColorSpace(name: CGColorSpace.sRGB) else { return nil }
+
+        let bitmapInfo = CGImageAlphaInfo.noneSkipLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue
+
+        guard let context = CGContext(
+            data: &rgbData,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: bytesPerRow,
+            space: colorSpace,
+            bitmapInfo: bitmapInfo
+        ) else {
+            return nil
+        }
+
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+        
+        return (rgbData, [3, UInt64(height), UInt64(width)])
+    }
+}
+
 @LiveElement
 struct NxCameraFunctionView<Root: RootRegistry>: View {
     @_documentation(visibility: public)
@@ -18,7 +53,7 @@ struct NxCameraFunctionView<Root: RootRegistry>: View {
     @LiveElementIgnored
     private var vmInstance: UnsafePointer<iree_vm_instance_t>? = nil
     
-    private let imageView = Base64ImageView()
+    private let imageView = ImageView()
     
     init() {
         vmInstance = nx_iree_create_instance()
@@ -33,14 +68,16 @@ struct NxCameraFunctionView<Root: RootRegistry>: View {
                 Text("Code not loaded")
                     .padding()
             }
-            CameraCaptureView()
+            CameraCaptureView{ image in
+                run(image)
+            }
             imageView
         }
         .onAppear() {
             onMount(value: nxIREEListAllDevices())
         }
     }
-    
+        
     private func convertBase64StringToBytecode(_ base64String: String) -> (bytecodeSize: UInt64, bytecodePointer: UnsafePointer<CUnsignedChar>?)? {
         // Step 1: Decode the Base64 string into Data
         guard let decodedData = Data(base64Encoded: base64String) else {
@@ -121,7 +158,70 @@ struct NxCameraFunctionView<Root: RootRegistry>: View {
         return base64Strings
     }
     
-    private func run() {
+    private func imageFromRGBData(rgbData: [UInt8], width: Int, height: Int) -> UIImage? {
+        // Ensure that the data size is correct
+        let expectedSize = width * height * 3
+        guard rgbData.count == expectedSize else {
+            print("Invalid data size")
+            return nil
+        }
+        
+        let bytesPerPixel = 3
+        let bytesPerRow = bytesPerPixel * width
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        
+        let bitmapInfo: CGBitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.noneSkipLast.rawValue)
+        
+        guard let context = CGContext(
+            data: UnsafeMutableRawPointer(mutating: rgbData),
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: bytesPerRow,
+            space: colorSpace,
+            bitmapInfo: bitmapInfo.rawValue
+        ) else {
+            print("Failed to create CGContext")
+            return nil
+        }
+        
+        guard let cgImage = context.makeImage() else {
+            print("Failed to create CGImage")
+            return nil
+        }
+        
+        return UIImage(cgImage: cgImage)
+    }
+    
+    private func run(_ image: UIImage) {
         print("run called")
+        
+        if vmInstance != nil,
+           deviceURI != nil,
+           bytecode != nil,
+           let (pixelData, inputDims) = image.getRGBData(),
+           let (bytecodeSize, bytecodePointer) = convertBase64StringToBytecode(bytecode!) {
+            let deviceURIcstr = strdup(deviceURI!)
+            let device = nx_iree_create_device(UnsafePointer(deviceURIcstr)!)
+            deviceURIcstr?.deallocate()
+            
+            let errorMessage = UnsafeMutablePointer<CChar>.allocate(capacity: 256)
+                        
+            let outputPixelDataPointer = nx_iree_image_call(vmInstance!, device!, bytecodeSize, bytecodePointer!, inputDims, pixelData, errorMessage)
+            
+            guard let pointer = outputPixelDataPointer else {
+               return
+           }
+    
+           // Create a [UInt8] array from the pointer
+            let buffer = UnsafeBufferPointer(start: outputPixelDataPointer, count: image.cgImage!.width * image.cgImage!.height * 3)
+           let outputPixelData = Array(buffer)
+            
+            let outputImage = imageFromRGBData(rgbData: outputPixelData, width: image.cgImage!.width, height: image.cgImage!.height)
+            
+            self.imageView.update(outputImage);
+            // pixelData contains the raw RGBA pixel data
+            print("Pixel Data: \(pixelData)")
+        }
    }
 }

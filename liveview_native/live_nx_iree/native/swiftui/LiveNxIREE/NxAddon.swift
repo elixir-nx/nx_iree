@@ -33,6 +33,16 @@ func nx_iree_call(
     _ output_byte_sizes: UnsafeMutablePointer<UInt64>
 ) -> UnsafePointer<UnsafePointer<CChar>>?
 
+@_silgen_name("nx_iree_image_call")
+func nx_iree_image_call(
+    _ vm_instance: UnsafePointer<iree_vm_instance_t>,
+    _ device: UnsafePointer<iree_hal_device_t>,
+    _ bytecode_size: UInt64,
+    _ bytecode: UnsafePointer<CUnsignedChar>,
+    _ input_dims: UnsafePointer<UInt64>,
+    _ serialized_input: UnsafePointer<CUnsignedChar>,
+    _ error_message: UnsafeMutablePointer<CChar>
+) -> UnsafePointer<CUnsignedChar>?
 
 func nxIREEListAllDevices() -> [String] {
     var count: UInt64 = 0
