@@ -2,61 +2,56 @@ import SwiftUI
 import AVFoundation
 import LiveViewNative
 
-/// `CameraCaptureView` component for capturing images using the camera.
-///
-/// Use an event attribute to specify which event to fire when an image is captured.
-///
-/// Example usage in SwiftUI:
-///
-/// ```swift
-/// CameraCaptureView(phx_capture: "imageCaptured")
-/// ```
-///
-/// Handling the captured image event:
-///
-/// ```swift
-/// func handleEvent("imageCaptured", capturedImage: UIImage, socket) do {
-///     // Process the captured image
-/// }
-/// ```
-///
-/// ## Attributes
-/// * `phx_capture` - The event name to fire when an image is captured.
-///
-/// ## Events
-/// * `capture` - Fired when an image is captured.
-public struct CameraCaptureView: View {
-    /// Event triggered when an image is captured.
-    @State var serializedTensor: String?
+class CameraCaptureView: ObservableObject {
+    @Published var cameraManager: CameraManager
+    @Published var imageHeight: Int
+    @Published var imageWidth: Int
+    @Published var cameraPreview: CameraPreview?
     
-    private let cameraManager = CameraManager()
-    private let imageHeight: Int
-    private let imageWidth: Int
-    private let processImageCallback: (UIImage) -> Void
-    
-    init(height: Int, width: Int, processImageCallback: @escaping (UIImage) -> Void) {
-        self.processImageCallback = processImageCallback
-        self.imageWidth = width
-        self.imageHeight = height
+    init() {
+        let cameraManager = CameraManager()
+        self.cameraManager = cameraManager
+        self.imageHeight = 0
+        self.imageWidth = 0
+        self.cameraPreview = nil
     }
+    
+    func initCameraPreview(height: Int, width: Int) {
+        self.imageHeight = height
+        self.imageWidth = width
+        self.cameraPreview = CameraPreview(cameraManager: cameraManager, desiredHeight: height, desiredWidth: width)
+    }
+}
 
+public struct CameraCaptureViewContainer: View  {
+    @ObservedObject var cameraView: CameraCaptureView
+    var processImageCallback: (UIImage) -> Void
+    
+    init(cameraView: CameraCaptureView, processImageCallback: @escaping (UIImage) -> Void) {
+        self.cameraView = cameraView
+        self.processImageCallback = processImageCallback
+    }
+    
     public var body: some View {
-        VStack { // Use VStack to stack the preview and the button
-            CameraPreview(cameraManager: cameraManager, desiredHeight: imageHeight, desiredWidth: imageWidth).frame(width: CGFloat(imageWidth), height: CGFloat(imageHeight))
-
-            // Button directly under the camera preview
+        VStack {
+            if let view = cameraView.cameraPreview {
+                view.frame(width: CGFloat(cameraView.imageWidth), height: CGFloat(cameraView.imageHeight))
+            } else {
+                Text("No preview available")
+            }
+            
             Button(action: {
-                cameraManager.captureImage { image in
-                    processImageCallback(image)
+                cameraView.cameraManager.captureImage { image in
+                    self.processImageCallback(image)
                 }
             }) {
                 Text("Capture")
                     .foregroundColor(.white)
-                    .lineLimit(1) // Ensure the text does not wrap to multiple lines
-                    .minimumScaleFactor(0.5) // Allow the text to scale down if needed, up to 50% of its original size
-                    .frame(width: 70, height: 70) // Define a frame for the text which matches the circle size
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                    .frame(width: 70, height: 70)
                     .background(Circle().fill(Color.blue))
-                    .padding(.top) // Optional: Additional padding to separate the button from other content
+                    .padding(.top)
             }
         }
     }
@@ -180,7 +175,7 @@ extension CameraManager: AVCapturePhotoCaptureDelegate {
 /// Camera Preview to display the camera feed.
 struct CameraPreview: UIViewRepresentable {
     typealias UIViewType = UIView
-    var cameraManager: CameraManager
+    @ObservedObject var cameraManager: CameraManager
     var desiredHeight: Int // Add a desired height parameter
     var desiredWidth: Int
     var previewLayer: AVCaptureVideoPreviewLayer? = nil

@@ -79,6 +79,9 @@ struct NxCameraFunctionView<Root: RootRegistry>: View {
     private var vmInstance: UnsafePointer<iree_vm_instance_t>? = nil
     
     @LiveElementIgnored
+    @StateObject private var cameraView: CameraCaptureView = CameraCaptureView()
+    
+    @LiveElementIgnored
     @StateObject private var imageView = ImageView()
     
     @LiveElementIgnored
@@ -86,6 +89,13 @@ struct NxCameraFunctionView<Root: RootRegistry>: View {
     
     init() {
         vmInstance = nx_iree_create_instance()
+        initCameraPreview()
+    }
+    
+    private func initCameraPreview() {
+        if let height = height, let width = width {
+            cameraView.initCameraPreview(height: height, width: width)
+        }
     }
     
     var body: some View {
@@ -97,7 +107,7 @@ struct NxCameraFunctionView<Root: RootRegistry>: View {
                 Text("Code not loaded")
                     .padding()
             }
-            CameraCaptureView(height: height!, width: width!) { image in
+            CameraCaptureViewContainer(cameraView: cameraView) { image in
                 run(image)
             }
             HStack {
@@ -112,7 +122,14 @@ struct NxCameraFunctionView<Root: RootRegistry>: View {
             }
         }
         .onAppear() {
+            initCameraPreview() // Initialize when the view appears
             onMount(value: nxIREEListAllDevices())
+        }
+        .onChange(of: height) {
+            initCameraPreview()
+        }
+        .onChange(of: width) {
+            initCameraPreview()
         }
     }
         
@@ -185,26 +202,28 @@ struct NxCameraFunctionView<Root: RootRegistry>: View {
            let resizedImage = image.resize(to: CGSize(width: width!, height: height!)),
            let (pixelData, inputDims) = resizedImage.getRGBAData(),
            let (bytecodeSize, bytecodePointer) = convertBase64StringToBytecode(bytecode!) {
-            let deviceURIcstr = strdup(deviceURI!)
-            let device = nx_iree_create_device(UnsafePointer(deviceURIcstr)!)
-            deviceURIcstr?.deallocate()
+             let deviceURIcstr = strdup(deviceURI!)
+             let device = nx_iree_create_device(UnsafePointer(deviceURIcstr)!)
+             deviceURIcstr?.deallocate()
             
-            let errorMessage = UnsafeMutablePointer<CChar>.allocate(capacity: 256)
+             let errorMessage = UnsafeMutablePointer<CChar>.allocate(capacity: 256)
                         
-            let outputPixelDataPointer = nx_iree_image_call(vmInstance!, device!, bytecodeSize, bytecodePointer!, inputDims, pixelData, errorMessage)
+             let outputPixelDataPointer = nx_iree_image_call(vmInstance!, device!, bytecodeSize, bytecodePointer!, inputDims, pixelData, errorMessage)
             
-            guard let _ = outputPixelDataPointer else {
-               return
-           }
+             guard let _ = outputPixelDataPointer else {
+                 return
+            }
     
-           // Create a [UInt8] array from the pointer
-           let buffer = UnsafeBufferPointer(start: outputPixelDataPointer, count: width! * height! * 4)
-           let outputPixelData = Array(buffer)
+            // Create a [UInt8] array from the pointer
+            let buffer = UnsafeBufferPointer(start: outputPixelDataPointer, count: width! * height! * 4)
+            let outputPixelData = Array(buffer)
             
-           let outputImage = imageFromRGBAData(rgbaData: outputPixelData, width: width!, height: height!)
-                   
-           self.previewImageView.update(image, width!, height!)
-           self.imageView.update(outputImage, width!, height!);
+            let outputImage = imageFromRGBAData(rgbaData: outputPixelData, width: width!, height: height!)
+               
+            DispatchQueue.main.async {
+                self.previewImageView.update(image, width!, height!)
+                self.imageView.update(outputImage, width!, height!)
+            }
         }
    }
 }
