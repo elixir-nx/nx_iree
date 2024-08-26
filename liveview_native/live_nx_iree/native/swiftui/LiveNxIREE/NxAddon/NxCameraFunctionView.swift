@@ -11,12 +11,22 @@ import LiveViewNative
 import UIKit
 
 extension UIImage {
+    func resize(to targetSize: CGSize) -> UIImage? {
+        // Use the scale of the current image to ensure the correct size
+        let scale = self.scale
+        UIGraphicsBeginImageContextWithOptions(targetSize, false, scale)
+        self.draw(in: CGRect(origin: .zero, size: targetSize))
+        let resizedImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        return resizedImage
+    }
+    
     func getRGBData() -> ([UInt8], [UInt64])? {
         guard let cgImage = self.cgImage else { return nil }
         
         let width = cgImage.width
         let height = cgImage.height
-        let bytesPerPixel = 3 // Only RGB (3 bytes per pixel)
+        let bytesPerPixel = 4 // Only RGB (3 bytes per pixel)
         let bytesPerRow = bytesPerPixel * width
         let totalBytes = height * bytesPerRow
         
@@ -48,12 +58,15 @@ struct NxCameraFunctionView<Root: RootRegistry>: View {
     @_documentation(visibility: public)
     @LiveAttribute("bytecode") private var bytecode: String? = nil
     @LiveAttribute("device") private var deviceURI: String? = nil
+    @LiveAttribute("height") private var height: Int? = nil
+    @LiveAttribute("width") private var width: Int? = nil
     @Event("on-mount", type: "change") private var onMount
     
     @LiveElementIgnored
     private var vmInstance: UnsafePointer<iree_vm_instance_t>? = nil
     
-    private let imageView = ImageView()
+    @LiveElementIgnored
+    @StateObject private var imageView = ImageView()
     
     init() {
         vmInstance = nx_iree_create_instance()
@@ -68,10 +81,10 @@ struct NxCameraFunctionView<Root: RootRegistry>: View {
                 Text("Code not loaded")
                     .padding()
             }
-            CameraCaptureView{ image in
+            CameraCaptureView(height: height!, width: width!) { image in
                 run(image)
             }
-            imageView
+            ImageViewContainer(imageView: imageView)
         }
         .onAppear() {
             onMount(value: nxIREEListAllDevices())
@@ -166,11 +179,11 @@ struct NxCameraFunctionView<Root: RootRegistry>: View {
             return nil
         }
         
-        let bytesPerPixel = 3
+        let bytesPerPixel = 4
         let bytesPerRow = bytesPerPixel * width
         let colorSpace = CGColorSpaceCreateDeviceRGB()
         
-        let bitmapInfo: CGBitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.noneSkipLast.rawValue)
+        let bitmapInfo: CGBitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.noneSkipLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue)
         
         guard let context = CGContext(
             data: UnsafeMutableRawPointer(mutating: rgbData),
@@ -199,7 +212,8 @@ struct NxCameraFunctionView<Root: RootRegistry>: View {
         if vmInstance != nil,
            deviceURI != nil,
            bytecode != nil,
-           let (pixelData, inputDims) = image.getRGBData(),
+           let resizedImage = image.resize(to: CGSize(width: width!, height: height!)),
+           let (pixelData, inputDims) = resizedImage.getRGBData(),
            let (bytecodeSize, bytecodePointer) = convertBase64StringToBytecode(bytecode!) {
             let deviceURIcstr = strdup(deviceURI!)
             let device = nx_iree_create_device(UnsafePointer(deviceURIcstr)!)
@@ -209,19 +223,17 @@ struct NxCameraFunctionView<Root: RootRegistry>: View {
                         
             let outputPixelDataPointer = nx_iree_image_call(vmInstance!, device!, bytecodeSize, bytecodePointer!, inputDims, pixelData, errorMessage)
             
-            guard let pointer = outputPixelDataPointer else {
+            guard let _ = outputPixelDataPointer else {
                return
            }
     
            // Create a [UInt8] array from the pointer
-            let buffer = UnsafeBufferPointer(start: outputPixelDataPointer, count: image.cgImage!.width * image.cgImage!.height * 3)
+           let buffer = UnsafeBufferPointer(start: outputPixelDataPointer, count: width! * height! * 3)
            let outputPixelData = Array(buffer)
             
-            let outputImage = imageFromRGBData(rgbData: outputPixelData, width: image.cgImage!.width, height: image.cgImage!.height)
+            let outputImage = imageFromRGBData(rgbData: outputPixelData, width: width!, height: height!)
             
             self.imageView.update(outputImage);
-            // pixelData contains the raw RGBA pixel data
-            print("Pixel Data: \(pixelData)")
         }
    }
 }

@@ -62,6 +62,7 @@ unsigned char* nx_iree_image_call(iree_vm_instance_t* vm_instance, iree_hal_devi
         
     if (!is_ok(status) || !optional_result.has_value()) {
         std::string msg = get_status_message(status);
+        std::cout << msg << std::endl;
         strncpy(error_message, msg.c_str(), msg.length());
         return nullptr;
     }
@@ -73,8 +74,20 @@ unsigned char* nx_iree_image_call(iree_vm_instance_t* vm_instance, iree_hal_devi
     }
     
     auto output = new unsigned char[tensor->size];
-    memcpy(output, tensor->data, tensor->size);
     
+    if (output == nullptr) {
+      return nullptr;
+    }
+
+    status = read_buffer(device, tensor->buffer_view, output, input_size);
+
+    if (!iree_status_is_ok(status)) {
+        std::string msg = get_status_message(status);
+        std::cout << msg << std::endl;
+        strncpy(error_message, msg.c_str(), msg.length());
+        return nullptr;
+    }
+        
     return output;
 }
 

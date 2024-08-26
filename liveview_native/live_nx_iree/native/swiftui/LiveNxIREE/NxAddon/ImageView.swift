@@ -8,20 +8,27 @@
 import SwiftUI
 import LiveViewNative
 
-public struct ImageView: View {
+class ImageView: ObservableObject {
+    @Published var image: UIImage? = nil
+    
+    func update(_ newImage: UIImage?) {
+        self.image = newImage
+    }
+}
+
+public struct ImageViewContainer: View {
     /// The interactions allowed on the map.
     @_documentation(visibility: public)
-    @State private var image: UIImage? = nil
-    
-    func update(_ image: UIImage?) {
-        self.image = image
-    }
+    @ObservedObject var imageView: ImageView
         
     public var body: some View {
-        if let image {
+        if let image = imageView.image {
             Image(uiImage: image)
-                .resizable() // Make the image resizable
-                .aspectRatio(contentMode: .fit) // Maintain aspect ratio and fill the frame
+                .resizable()
+                .scaledToFit()
+        } else {
+            Text("No image available")
+                .padding()
         }
     }
 }

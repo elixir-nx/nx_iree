@@ -21,7 +21,8 @@ defmodule LiveNxIREEWeb.Router do
   scope "/", LiveNxIREEWeb do
     pipe_through :browser
 
-    live "/", HomeLive, :index
+    # live "/", HomeLive, :index
+    live "/", CameraLive, :index
   end
 
   # Other scopes may use custom stacks.

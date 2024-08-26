@@ -30,16 +30,19 @@ public struct CameraCaptureView: View {
     @State var serializedTensor: String?
     
     private let cameraManager = CameraManager()
-    private let imageHeight = 300.0
+    private let imageHeight: Int
+    private let imageWidth: Int
     private let processImageCallback: (UIImage) -> Void
     
-    init(processImageCallback: @escaping (UIImage) -> Void) {
+    init(height: Int, width: Int, processImageCallback: @escaping (UIImage) -> Void) {
         self.processImageCallback = processImageCallback
+        self.imageWidth = width
+        self.imageHeight = height
     }
 
     public var body: some View {
         VStack { // Use VStack to stack the preview and the button
-            CameraPreview(cameraManager: cameraManager, desiredHeight: imageHeight).frame(height: imageHeight) // Set your desired height
+            CameraPreview(cameraManager: cameraManager, desiredHeight: imageHeight, desiredWidth: imageWidth).frame(width: CGFloat(imageWidth), height: CGFloat(imageHeight)) // Set your desired height
 
             // Button directly under the camera preview
             Button(action: {
@@ -100,7 +103,9 @@ public class CameraManager: NSObject, ObservableObject {
             if session.canAddInput(input) && session.canAddOutput(output) {
                 session.addInput(input)
                 session.addOutput(output)
-                startSession()
+                DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                    self?.startSession()
+                }
             }
         } catch {
             print("Error setting up camera input: \(error)")
@@ -130,12 +135,13 @@ extension CameraManager: AVCapturePhotoCaptureDelegate {
 struct CameraPreview: UIViewRepresentable {
     typealias UIViewType = UIView
     var cameraManager: CameraManager
-    var desiredHeight: CGFloat // Add a desired height parameter
+    var desiredHeight: Int // Add a desired height parameter
+    var desiredWidth: Int
 
     func makeUIView(context: Context) -> UIViewType {
         let view = UIView()
         // Set the frame of the view to have the desired height while maintaining the screen width
-        view.frame = CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: desiredHeight)
+        view.frame = CGRect(x: 0, y: 0, width: CGFloat(desiredWidth), height: CGFloat(desiredHeight))
 
         let previewLayer = AVCaptureVideoPreviewLayer(session: cameraManager.session)
         previewLayer.frame = view.bounds // Set the previewLayer frame to match the view bounds
