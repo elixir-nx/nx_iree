@@ -64,6 +64,7 @@ public class CameraManager: NSObject, ObservableObject {
     private var permissionGranted = false
     private var currentCameraPosition: AVCaptureDevice.Position = .back
     var captureCompletion: ((UIImage) -> Void)?
+    var previewLayer: AVCaptureVideoPreviewLayer?
 
     override init() {
         super.init()
@@ -185,19 +186,22 @@ struct CameraPreview: UIViewRepresentable {
         // Set the frame of the view to have the desired height while maintaining the screen width
         view.frame = CGRect(x: 0, y: 0, width: CGFloat(desiredWidth), height: CGFloat(desiredHeight))
 
-        if (previewLayer == nil) {
+        if cameraManager.previewLayer == nil {
             let previewLayer = AVCaptureVideoPreviewLayer(session: cameraManager.session)
             previewLayer.frame = view.bounds // Set the previewLayer frame to match the view bounds
             previewLayer.videoGravity = .resizeAspect // Use .resizeAspect to maintain the aspect ratio
-            //        previewLayer.connection?.videoOrientation = UIDevice.current.orientation
+            previewLayer.connection?.videoRotationAngle = 180
             view.layer.addSublayer(previewLayer)
         }
+        
+        
 
         return view
     }
 
     func updateUIView(_ uiView: UIViewType, context: Context) {
-        guard let layer = previewLayer else { return }
-        layer.videoGravity = .resizeAspect // Use .resizeAspect to maintain the aspect ratio
+        if let previewLayer = cameraManager.previewLayer {
+            previewLayer.frame = uiView.bounds
+        }
     }
 }

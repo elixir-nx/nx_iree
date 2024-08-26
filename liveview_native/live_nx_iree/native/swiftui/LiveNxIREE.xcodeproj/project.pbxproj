@@ -1966,6 +1966,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = LiveNxIREE;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Image Processing";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationLandscapeRight;
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.example.LiveNxIREE;
 				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.3;
@@ -2008,6 +2009,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = LiveNxIREE;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Image Processing";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationLandscapeRight;
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.example.LiveNxIREE;
 				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.3;
