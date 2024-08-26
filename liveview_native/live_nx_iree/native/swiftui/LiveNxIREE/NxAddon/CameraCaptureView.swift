@@ -25,33 +25,18 @@ class CameraCaptureView: ObservableObject {
 
 public struct CameraCaptureViewContainer: View  {
     @ObservedObject var cameraView: CameraCaptureView
-    var processImageCallback: (UIImage) -> Void
     
-    init(cameraView: CameraCaptureView, processImageCallback: @escaping (UIImage) -> Void) {
+    init(cameraView: CameraCaptureView) {
         self.cameraView = cameraView
-        self.processImageCallback = processImageCallback
     }
     
     public var body: some View {
         VStack {
             if let view = cameraView.cameraPreview {
                 view.frame(width: CGFloat(cameraView.imageWidth), height: CGFloat(cameraView.imageHeight))
+                    
             } else {
                 Text("No preview available")
-            }
-            
-            Button(action: {
-                cameraView.cameraManager.captureImage { image in
-                    self.processImageCallback(image)
-                }
-            }) {
-                Text("Capture")
-                    .foregroundColor(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-                    .frame(width: 70, height: 70)
-                    .background(Circle().fill(Color.blue))
-                    .padding(.top)
             }
         }
     }
@@ -134,8 +119,10 @@ extension CameraManager: AVCapturePhotoCaptureDelegate {
             transform = .identity
         case .landscapeLeft:
             transform = CGAffineTransform(rotationAngle: CGFloat.pi)
+            transform = transform.scaledBy(x: -1, y: 1)
         case .landscapeRight:
             transform = CGAffineTransform(rotationAngle: 0)
+            transform = transform.scaledBy(x: -1, y: 1)
         default:
             transform = .identity
         }

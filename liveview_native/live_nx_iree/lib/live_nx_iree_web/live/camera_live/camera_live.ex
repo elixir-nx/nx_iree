@@ -83,14 +83,16 @@ defmodule LiveNxIREEWeb.CameraLive do
       end)
       |> Enum.group_by(fn {k, _} -> k end, fn {_, v} -> v end)
 
-    seed = System.system_time()
-
-    function = fn image ->
+    function = fn image, seed ->
       alpha = image[[.., .., 3..3]]
 
-      noise = 0.25
+      noise = 0.5
       image = image[[.., .., 0..2]]
-      {random, _} = Nx.Random.uniform(Nx.Random.key(seed), 0, noise, shape: Nx.shape(image))
+
+      {w, h, _channels} = Nx.shape(image)
+
+      {random, _} = Nx.Random.uniform(Nx.Random.key(seed), 0, 1, shape: {w, h, 1})
+      random = Nx.multiply(random, noise)
       image = Nx.divide(image, 255) |> Nx.multiply(1 - noise)
 
       image =
@@ -129,7 +131,10 @@ defmodule LiveNxIREEWeb.CameraLive do
         "--iree-execution-model=async-internal"
       ] ++ platform_flag
 
-    inputs = [Nx.template({socket.assigns.height, socket.assigns.width, 4}, :u8)]
+    inputs = [
+      Nx.template({socket.assigns.height, socket.assigns.width, 4}, :u8),
+      Nx.template({}, :u32)
+    ]
 
     {:ok, %{bytecode: %NxIREE.Module{bytecode: bytecode}, output_container: output_container}} =
       NxIREE.Compiler.to_bytecode(function, inputs, iree_compiler_flags: compiler_flags)

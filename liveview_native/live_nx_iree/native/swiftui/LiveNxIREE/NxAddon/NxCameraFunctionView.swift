@@ -9,6 +9,7 @@ import SwiftUI
 import LiveViewNative
 
 import UIKit
+import Combine
 
 extension UIImage {
     func correctImageOrientation() -> UIImage {
@@ -87,6 +88,9 @@ struct NxCameraFunctionView<Root: RootRegistry>: View {
     @LiveElementIgnored
     @StateObject private var previewImageView = ImageView()
     
+    @LiveElementIgnored
+    @State private var timer: AnyCancellable?
+    
     init() {
         vmInstance = nx_iree_create_instance()
         initCameraPreview()
@@ -98,6 +102,8 @@ struct NxCameraFunctionView<Root: RootRegistry>: View {
         }
     }
     
+    
+    
     var body: some View {
         VStack {
             if bytecode != nil {
@@ -107,13 +113,12 @@ struct NxCameraFunctionView<Root: RootRegistry>: View {
                 Text("Code not loaded")
                     .padding()
             }
-            CameraCaptureViewContainer(cameraView: cameraView) { image in
-                run(image)
-            }
+//            CameraCaptureViewContainer(cameraView: cameraView)
             HStack {
                 VStack {
                     Text("Input").padding()
-                    ImageViewContainer(imageView: previewImageView)
+                    CameraCaptureViewContainer(cameraView: cameraView)
+//                    ImageViewContainer(imageView: previewImageView)
                 }
                 VStack {
                     Text("Output").padding()
@@ -124,12 +129,40 @@ struct NxCameraFunctionView<Root: RootRegistry>: View {
         .onAppear() {
             initCameraPreview() // Initialize when the view appears
             onMount(value: nxIREEListAllDevices())
+            startCaptureTimer()
         }
         .onChange(of: height) {
             initCameraPreview()
         }
         .onChange(of: width) {
             initCameraPreview()
+        }
+        .onDisappear {
+            stopCaptureTimer()
+        }
+        .onChange(of: bytecode) {
+            stopCaptureTimer()
+            startCaptureTimer()
+        }
+    }
+    
+    private func startCaptureTimer() {
+        timer = Timer.publish(every: 1/60, on: .main, in: .common)
+            .autoconnect()
+            .sink { _ in
+                captureAndProcessImage()
+            }
+    }
+
+    private func stopCaptureTimer() {
+        timer?.cancel()
+    }
+
+    private func captureAndProcessImage() {
+        cameraView.cameraManager.captureImage { image in
+            DispatchQueue.main.async {
+                self.run(image)
+            }
         }
     }
         
@@ -196,19 +229,27 @@ struct NxCameraFunctionView<Root: RootRegistry>: View {
     private func run(_ image: UIImage) {
         print("run called")
         
+        print(vmInstance)
+        print(deviceURI)
+        print(bytecode != nil)
+        print(image)
+        
         if vmInstance != nil,
            deviceURI != nil,
            bytecode != nil,
            let resizedImage = image.resize(to: CGSize(width: width!, height: height!)),
            let (pixelData, inputDims) = resizedImage.getRGBAData(),
            let (bytecodeSize, bytecodePointer) = convertBase64StringToBytecode(bytecode!) {
+             print("running")
+            
              let deviceURIcstr = strdup(deviceURI!)
              let device = nx_iree_create_device(UnsafePointer(deviceURIcstr)!)
              deviceURIcstr?.deallocate()
             
              let errorMessage = UnsafeMutablePointer<CChar>.allocate(capacity: 256)
                         
-             let outputPixelDataPointer = nx_iree_image_call(vmInstance!, device!, bytecodeSize, bytecodePointer!, inputDims, pixelData, errorMessage)
+            let seed: UInt32 = .random(in: UInt32.min...UInt32.max)
+             let outputPixelDataPointer = nx_iree_image_call(vmInstance!, device!, bytecodeSize, bytecodePointer!, inputDims, pixelData, errorMessage, seed)
             
              guard let _ = outputPixelDataPointer else {
                  return
@@ -221,7 +262,7 @@ struct NxCameraFunctionView<Root: RootRegistry>: View {
             let outputImage = imageFromRGBAData(rgbaData: outputPixelData, width: width!, height: height!)
                
             DispatchQueue.main.async {
-                self.previewImageView.update(image, width!, height!)
+//                self.previewImageView.update(image, width!, height!)
                 self.imageView.update(outputImage, width!, height!)
             }
         }

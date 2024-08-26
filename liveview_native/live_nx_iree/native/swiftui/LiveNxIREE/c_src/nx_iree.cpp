@@ -40,7 +40,7 @@ iree_vm_instance_t* nx_iree_create_instance() {
     return create_instance();
 }
 
-unsigned char* nx_iree_image_call(iree_vm_instance_t* vm_instance, iree_hal_device_t* device, uint64_t bytecode_size, unsigned char* bytecode, uint64_t* input_dims, unsigned char* input_data, char* error_message) {
+unsigned char* nx_iree_image_call(iree_vm_instance_t* vm_instance, iree_hal_device_t* device, uint64_t bytecode_size, unsigned char* bytecode, uint64_t* input_dims, unsigned char* input_data, char* error_message, uint32_t seed) {
     std::vector<iree::runtime::IREETensor*> inputs;
     
     std::vector<int64_t> input_dims_vec;
@@ -56,6 +56,9 @@ unsigned char* nx_iree_image_call(iree_vm_instance_t* vm_instance, iree_hal_devi
                                                    input_size,
                                                    input_dims_vec,
                                                    iree_hal_element_types_t::IREE_HAL_ELEMENT_TYPE_UINT_8));
+    
+    
+    inputs.push_back(new iree::runtime::IREETensor(&seed, 4, {},                                                    iree_hal_element_types_t::IREE_HAL_ELEMENT_TYPE_UINT_32));
     
     // driver name is hardcoded because there is only a check for CUDA
     auto [status, optional_result] = call(vm_instance, device, "not_cuda", bytecode, static_cast<size_t>(bytecode_size), inputs);
