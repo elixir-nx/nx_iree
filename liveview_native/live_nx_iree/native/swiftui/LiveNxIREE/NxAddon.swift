@@ -55,6 +55,7 @@ public extension Addons {
     struct NxAddon<Root: RootRegistry> {
         public enum TagName: String {
             case nxFunction = "NxFunction"
+            case nxCameraFunction = "NxCameraFunction"
         }
 
         @ViewBuilder
@@ -62,6 +63,8 @@ public extension Addons {
             switch name {
             case .nxFunction:
                 NxFunctionView<Root>()
+            case .nxCameraFunction:
+                NxCameraFunctionView<Root>()
             }
         }
     }
