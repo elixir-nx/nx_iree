@@ -42,7 +42,7 @@ public struct CameraCaptureView: View {
 
     public var body: some View {
         VStack { // Use VStack to stack the preview and the button
-            CameraPreview(cameraManager: cameraManager, desiredHeight: imageHeight, desiredWidth: imageWidth).frame(width: CGFloat(imageWidth), height: CGFloat(imageHeight)) // Set your desired height
+            CameraPreview(cameraManager: cameraManager, desiredHeight: imageHeight, desiredWidth: imageWidth).frame(width: CGFloat(imageWidth), height: CGFloat(imageHeight))
 
             // Button directly under the camera preview
             Button(action: {
@@ -124,9 +124,55 @@ public class CameraManager: NSObject, ObservableObject {
 }
 
 extension CameraManager: AVCapturePhotoCaptureDelegate {
+    private func correctImageOrientation(image: UIImage) -> UIImage {
+        guard let cgImage = image.cgImage else { return image }
+        
+        let orientation = UIDevice.current.orientation
+
+        var transform: CGAffineTransform = .identity
+
+        switch orientation {
+        case .portrait:
+            transform = .identity
+        case .portraitUpsideDown:
+            transform = .identity
+        case .landscapeLeft:
+            transform = CGAffineTransform(rotationAngle: CGFloat.pi)
+        case .landscapeRight:
+            transform = CGAffineTransform(rotationAngle: 0)
+        default:
+            transform = .identity
+        }
+
+        let context = CGContext(
+            data: nil,
+            width: cgImage.width,
+            height: cgImage.height,
+            bitsPerComponent: cgImage.bitsPerComponent,
+            bytesPerRow: cgImage.bytesPerRow,
+            space: cgImage.colorSpace!,
+            bitmapInfo: cgImage.bitmapInfo.rawValue
+        )!
+
+        context.concatenate(transform)
+
+        var rect: CGRect = .init(x: 0, y: 0, width: cgImage.width, height: cgImage.height)
+//        if !(orientation == .portrait || orientation == .portraitUpsideDown) {
+        rect = rect.applying(transform)
+//        }
+
+        context.draw(cgImage, in: rect)
+
+        if let newCgImage = context.makeImage() {
+            return UIImage(cgImage: newCgImage)
+        } else {
+            return image
+        }
+    }
+    
     public func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
         if let imageData = photo.fileDataRepresentation(), let image = UIImage(data: imageData) {
-            captureCompletion?(image)
+            captureCompletion?(correctImageOrientation(image: image))
         }
     }
 }
@@ -137,38 +183,26 @@ struct CameraPreview: UIViewRepresentable {
     var cameraManager: CameraManager
     var desiredHeight: Int // Add a desired height parameter
     var desiredWidth: Int
+    var previewLayer: AVCaptureVideoPreviewLayer? = nil
 
     func makeUIView(context: Context) -> UIViewType {
         let view = UIView()
         // Set the frame of the view to have the desired height while maintaining the screen width
         view.frame = CGRect(x: 0, y: 0, width: CGFloat(desiredWidth), height: CGFloat(desiredHeight))
 
-        let previewLayer = AVCaptureVideoPreviewLayer(session: cameraManager.session)
-        previewLayer.frame = view.bounds // Set the previewLayer frame to match the view bounds
-        previewLayer.videoGravity = .resizeAspect // Use .resizeAspect to maintain the aspect ratio
-        previewLayer.connection?.videoOrientation = currentVideoOrientation()
-        view.layer.addSublayer(previewLayer)
+        if (previewLayer == nil) {
+            let previewLayer = AVCaptureVideoPreviewLayer(session: cameraManager.session)
+            previewLayer.frame = view.bounds // Set the previewLayer frame to match the view bounds
+            previewLayer.videoGravity = .resizeAspect // Use .resizeAspect to maintain the aspect ratio
+            //        previewLayer.connection?.videoOrientation = UIDevice.current.orientation
+            view.layer.addSublayer(previewLayer)
+        }
 
         return view
     }
-    
-    private func currentVideoOrientation() -> AVCaptureVideoOrientation {
-       switch UIDevice.current.orientation {
-       case .portrait:
-           return .portrait
-       case .portraitUpsideDown:
-           return .portraitUpsideDown
-       case .landscapeRight:
-           return .landscapeLeft
-       case .landscapeLeft:
-           return .landscapeRight
-       default:
-           return .portrait
-       }
-   }
 
     func updateUIView(_ uiView: UIViewType, context: Context) {
-        // If you need to update the view's frame or the preview layer's frame when the desiredHeight changes, do it here.
-        // For example, if the desiredHeight can change, you might want to adjust the frame of both the uiView and the previewLayer here.
+        guard let layer = previewLayer else { return }
+        layer.videoGravity = .resizeAspect // Use .resizeAspect to maintain the aspect ratio
     }
 }

@@ -11,6 +11,19 @@ import LiveViewNative
 import UIKit
 
 extension UIImage {
+    func correctImageOrientation() -> UIImage {
+        if self.imageOrientation == .up {
+            return self
+        }
+        
+        UIGraphicsBeginImageContextWithOptions(self.size, false, self.scale)
+        self.draw(in: CGRect(origin: .zero, size: self.size))
+        let normalizedImage = UIGraphicsGetImageFromCurrentImageContext()!
+        UIGraphicsEndImageContext()
+        
+        return normalizedImage
+    }
+
     func resize(to targetSize: CGSize) -> UIImage? {
         // Use the scale of the current image to ensure the correct size
         let scale = self.scale
@@ -21,22 +34,22 @@ extension UIImage {
         return resizedImage
     }
     
-    func getRGBData() -> ([UInt8], [UInt64])? {
+    func getRGBAData() -> ([UInt8], [UInt64])? {
         guard let cgImage = self.cgImage else { return nil }
         
         let width = cgImage.width
         let height = cgImage.height
-        let bytesPerPixel = 4 // Only RGB (3 bytes per pixel)
+        let bytesPerPixel = 4  // RGBA has 4 bytes per pixel
         let bytesPerRow = bytesPerPixel * width
         let totalBytes = height * bytesPerRow
         
-        var rgbData = [UInt8](repeating: 0, count: totalBytes)
+        var rgbaData = [UInt8](repeating: 0, count: totalBytes)
         guard let colorSpace = CGColorSpace(name: CGColorSpace.sRGB) else { return nil }
 
-        let bitmapInfo = CGImageAlphaInfo.noneSkipLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue
+        let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue
 
         guard let context = CGContext(
-            data: &rgbData,
+            data: &rgbaData,
             width: width,
             height: height,
             bitsPerComponent: 8,
@@ -49,7 +62,7 @@ extension UIImage {
 
         context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
         
-        return (rgbData, [3, UInt64(height), UInt64(width)])
+        return (rgbaData, [UInt64(height), UInt64(width), 4])  // 4 channels (RGBA)
     }
 }
 
@@ -68,6 +81,9 @@ struct NxCameraFunctionView<Root: RootRegistry>: View {
     @LiveElementIgnored
     @StateObject private var imageView = ImageView()
     
+    @LiveElementIgnored
+    @StateObject private var previewImageView = ImageView()
+    
     init() {
         vmInstance = nx_iree_create_instance()
     }
@@ -84,7 +100,16 @@ struct NxCameraFunctionView<Root: RootRegistry>: View {
             CameraCaptureView(height: height!, width: width!) { image in
                 run(image)
             }
-            ImageViewContainer(imageView: imageView)
+            HStack {
+                VStack {
+                    Text("Input").padding()
+                    ImageViewContainer(imageView: previewImageView)
+                }
+                VStack {
+                    Text("Output").padding()
+                    ImageViewContainer(imageView: imageView)
+                }
+            }
         }
         .onAppear() {
             onMount(value: nxIREEListAllDevices())
@@ -110,99 +135,44 @@ struct NxCameraFunctionView<Root: RootRegistry>: View {
         return (bytecodeSize, bytecodePointer)
     }
     
-    private func convertToCStringArray(from strings: [String]) -> UnsafePointer<UnsafePointer<CChar>>? {
-        // Array to hold the C strings (UnsafePointer<CChar>)
-        var cStrings: [UnsafePointer<CChar>] = []
-        
-        for string in strings {
-            // Decode the base64 string to Data
-            guard let decodedData = Data(base64Encoded: string) else {
-                print("Failed to decode base64 string: \(string)")
-                return nil
-            }
-            
-            // Convert Data to a C string (null-terminated UTF-8)
-            let cString = decodedData.withUnsafeBytes { (pointer: UnsafeRawBufferPointer) -> UnsafePointer<CChar>? in
-                guard let baseAddress = pointer.baseAddress else { return nil }
-                // Allocate memory for the C string and copy the data
-                let cStringPointer = UnsafeMutablePointer<CChar>.allocate(capacity: decodedData.count + 1)
-                cStringPointer.initialize(from: baseAddress.assumingMemoryBound(to: CChar.self), count: decodedData.count)
-                cStringPointer[decodedData.count] = 0 // Null-terminate the string
-                return UnsafePointer(cStringPointer)
-            }
-            
-            guard let cStr = cString else {
-                print("Failed to convert Data to C string.")
-                return nil
-            }
-            
-            cStrings.append(cStr)
-        }
-        
-        // Allocate memory for the array of C strings
-        let cStringsPointer = UnsafeMutablePointer<UnsafePointer<CChar>>.allocate(capacity: cStrings.count)
-        
-        // Copy the C strings to the allocated array
-        cStringsPointer.initialize(from: &cStrings, count: cStrings.count)
-        
-        // Return the pointer to the array
-        return UnsafePointer(cStringsPointer)
-    }
-    
-    private func base64EncodedStrings(
-        from serializedOutputs: UnsafePointer<UnsafePointer<CChar>>,
-        sizes: UnsafeMutablePointer<UInt64>,
-        count: Int) -> [String] {
-        var base64Strings: [String] = []
-
-        for i in 0..<count {
-            let cStringPointer = serializedOutputs.advanced(by: i).pointee
-            let size = Int(sizes[i])  // Convert UInt64 to Int
-
-            // Create a Data object from the raw bytes
-            let data = Data(bytes: cStringPointer, count: size)
-
-            // Encode the Data to Base64
-            let base64String = data.base64EncodedString()
-            print("base64String: \(base64String)")
-            base64Strings.append(base64String)
-        }
-
-        return base64Strings
-    }
-    
-    private func imageFromRGBData(rgbData: [UInt8], width: Int, height: Int) -> UIImage? {
-        // Ensure that the data size is correct
-        let expectedSize = width * height * 3
-        guard rgbData.count == expectedSize else {
+    func imageFromRGBAData(rgbaData: [UInt8], width: Int, height: Int) -> UIImage? {
+        // Ensure that the data size matches the expected size
+        guard rgbaData.count == width * height * 4 else {
             print("Invalid data size")
             return nil
         }
         
-        let bytesPerPixel = 4
-        let bytesPerRow = bytesPerPixel * width
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        // Create a CFData object from the RGBA data array
+        let cfData = CFDataCreate(nil, rgbaData, rgbaData.count)
         
-        let bitmapInfo: CGBitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.noneSkipLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue)
-        
-        guard let context = CGContext(
-            data: UnsafeMutableRawPointer(mutating: rgbData),
-            width: width,
-            height: height,
-            bitsPerComponent: 8,
-            bytesPerRow: bytesPerRow,
-            space: colorSpace,
-            bitmapInfo: bitmapInfo.rawValue
-        ) else {
-            print("Failed to create CGContext")
+        // Create a CGDataProvider from the CFData object
+        guard let dataProvider = CGDataProvider(data: cfData!) else {
+            print("Failed to create CGDataProvider")
             return nil
         }
         
-        guard let cgImage = context.makeImage() else {
+        // Define the color space (sRGB)
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        
+        // Create a CGImage from the data provider
+        guard let cgImage = CGImage(
+            width: width,
+            height: height,
+            bitsPerComponent: 8,        // 8 bits per component (per color channel)
+            bitsPerPixel: 32,           // 32 bits per pixel (RGBA, 4 channels * 8 bits each)
+            bytesPerRow: width * 4,     // 4 bytes per pixel times the width
+            space: colorSpace,
+            bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue),
+            provider: dataProvider,
+            decode: nil,
+            shouldInterpolate: true,
+            intent: .defaultIntent
+        ) else {
             print("Failed to create CGImage")
             return nil
         }
         
+        // Convert the CGImage to a UIImage and return it
         return UIImage(cgImage: cgImage)
     }
     
@@ -213,7 +183,7 @@ struct NxCameraFunctionView<Root: RootRegistry>: View {
            deviceURI != nil,
            bytecode != nil,
            let resizedImage = image.resize(to: CGSize(width: width!, height: height!)),
-           let (pixelData, inputDims) = resizedImage.getRGBData(),
+           let (pixelData, inputDims) = resizedImage.getRGBAData(),
            let (bytecodeSize, bytecodePointer) = convertBase64StringToBytecode(bytecode!) {
             let deviceURIcstr = strdup(deviceURI!)
             let device = nx_iree_create_device(UnsafePointer(deviceURIcstr)!)
@@ -228,12 +198,13 @@ struct NxCameraFunctionView<Root: RootRegistry>: View {
            }
     
            // Create a [UInt8] array from the pointer
-           let buffer = UnsafeBufferPointer(start: outputPixelDataPointer, count: width! * height! * 3)
+           let buffer = UnsafeBufferPointer(start: outputPixelDataPointer, count: width! * height! * 4)
            let outputPixelData = Array(buffer)
             
-            let outputImage = imageFromRGBData(rgbData: outputPixelData, width: width!, height: height!)
-            
-            self.imageView.update(outputImage);
+           let outputImage = imageFromRGBAData(rgbaData: outputPixelData, width: width!, height: height!)
+                   
+           self.previewImageView.update(image, width!, height!)
+           self.imageView.update(outputImage, width!, height!);
         }
    }
 }

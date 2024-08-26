@@ -86,22 +86,34 @@ defmodule LiveNxIREEWeb.CameraLive do
     seed = System.system_time()
 
     function = fn image ->
+      alpha = image[[.., .., 3..3]]
+
       noise = 0.25
+      image = image[[.., .., 0..2]]
       {random, _} = Nx.Random.uniform(Nx.Random.key(seed), 0, noise, shape: Nx.shape(image))
       image = Nx.divide(image, 255) |> Nx.multiply(1 - noise)
 
-      image
-      |> Nx.add(random)
-      |> Nx.multiply(255)
-      |> Nx.as_type(:u8)
+      image =
+        image
+        |> Nx.add(random)
+        |> Nx.multiply(255)
+        |> Nx.as_type(:u8)
+
+      Nx.concatenate([image, alpha], axis: -1)
     end
 
     {target_device, platform} = {:metal, :ios}
 
     %{compiler_flag: backend_flag, uri: device_uri} =
       case available_devices[target_device] do
-        nil -> Enum.random(available_devices[:cpu])
-        devices -> Enum.random(devices)
+        nil ->
+          Enum.random(
+            available_devices[:cpu] ||
+              [%{compiler_flag: "--iree-hal-target-backends=llvm-cpu", uri: "local-sync://"}]
+          )
+
+        devices ->
+          Enum.random(devices)
       end
 
     platform_flag =
@@ -117,7 +129,7 @@ defmodule LiveNxIREEWeb.CameraLive do
         "--iree-execution-model=async-internal"
       ] ++ platform_flag
 
-    inputs = [Nx.template({3, socket.assigns.height, socket.assigns.width}, :u8)]
+    inputs = [Nx.template({socket.assigns.height, socket.assigns.width, 4}, :u8)]
 
     {:ok, %{bytecode: %NxIREE.Module{bytecode: bytecode}, output_container: output_container}} =
       NxIREE.Compiler.to_bytecode(function, inputs, iree_compiler_flags: compiler_flags)
