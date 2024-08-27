@@ -20,6 +20,9 @@ func nx_iree_list_all_devices(_ count: UnsafeMutablePointer<UInt64>) -> UnsafePo
 @_silgen_name("nx_iree_create_device")
 func nx_iree_create_device(_ name: UnsafePointer<CChar>) -> UnsafePointer<iree_hal_device_t>?
 
+@_silgen_name("nx_iree_release_device")
+func nx_iree_release_device(_ device: UnsafePointer<iree_hal_device_t>?) -> Void
+
 @_silgen_name("nx_iree_call")
 func nx_iree_call(
     _ vm_instance: UnsafePointer<iree_vm_instance_t>,
@@ -43,7 +46,7 @@ func nx_iree_image_call(
     _ serialized_input: UnsafePointer<CUnsignedChar>,
     _ error_message: UnsafeMutablePointer<CChar>,
     _ seed: UInt32
-) -> UnsafePointer<CUnsignedChar>?
+) -> UnsafeMutablePointer<CUnsignedChar>?
 
 func nxIREEListAllDevices() -> [String] {
     var count: UInt64 = 0

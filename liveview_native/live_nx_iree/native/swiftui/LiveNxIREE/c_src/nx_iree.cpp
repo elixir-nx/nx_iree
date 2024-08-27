@@ -12,21 +12,9 @@
 #include <vector>
 #include <iostream>
 
-int nx_iree_initialize(iree_vm_instance_t* vm_instance, iree_hal_driver_registry_t* driver_registry, char* error_message) {
-    vm_instance = create_instance();
-    driver_registry = get_driver_registry();
-    auto status = register_all_drivers(driver_registry);
-    
-    if (!is_ok(status) && !iree_status_is_already_exists(status)) {
-        if (error_message) {
-            std::string msg = get_status_message(status);
-            strncpy(error_message, msg.c_str(), msg.length());
-        }
-        
-        return 1;
-    }
-    
-    return 0;
+void nx_iree_release_device(iree_hal_device_t* device) {
+    // TODO: actually release device
+    return;
 }
 
 iree_hal_device_t* nx_iree_create_device(char* device_uri) {
@@ -62,6 +50,10 @@ unsigned char* nx_iree_image_call(iree_vm_instance_t* vm_instance, iree_hal_devi
     
     // driver name is hardcoded because there is only a check for CUDA
     auto [status, optional_result] = call(vm_instance, device, "not_cuda", bytecode, static_cast<size_t>(bytecode_size), inputs);
+    
+    for (auto input: inputs) {
+        delete input;
+    }
         
     if (!is_ok(status) || !optional_result.has_value()) {
         std::string msg = get_status_message(status);
@@ -71,10 +63,6 @@ unsigned char* nx_iree_image_call(iree_vm_instance_t* vm_instance, iree_hal_devi
     }
         
     iree::runtime::IREETensor *tensor= optional_result.value()[0];
-    std::cout << "Tensor: " << tensor;
-    if (tensor == nullptr) {
-        std::cout << "Failed output allocation at index 0\n";
-    }
     
     auto output = new unsigned char[tensor->size];
     
@@ -90,6 +78,8 @@ unsigned char* nx_iree_image_call(iree_vm_instance_t* vm_instance, iree_hal_devi
         strncpy(error_message, msg.c_str(), msg.length());
         return nullptr;
     }
+    
+    delete tensor;
         
     return output;
 }
@@ -115,15 +105,14 @@ char** nx_iree_call(iree_vm_instance_t* vm_instance, iree_hal_device_t* device, 
     std::vector<iree::runtime::IREETensor *> result = optional_result.value();
     for (size_t i = 0; i < num_outputs; i++) {
         iree::runtime::IREETensor *tensor = result[i];
-        std::cout << "Tensor: " << tensor;
-        if (tensor == nullptr) {
-            std::cout << "Failed output allocation at index " << i << "\n";
-        }
         std::vector<char> *serialized = tensor->serialize();
         serialized_outputs[i] = new char[serialized->size()];
         memcpy(serialized_outputs[i], serialized->data(), serialized->size());
         output_byte_sizes[i] = serialized->size();
+        delete tensor;
     }
+    
+    
     
     return serialized_outputs;
 }

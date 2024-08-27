@@ -76,8 +76,17 @@ struct NxCameraFunctionView<Root: RootRegistry>: View {
     @LiveAttribute("width") private var width: Int? = nil
     @Event("on-mount", type: "change") private var onMount
     
+//    @LiveElementIgnored
+//    @State private var bytecodeSize: UInt64 = 0
+//    
+//    @LiveElementIgnored
+//    @State private var bytecodePointer: UnsafePointer<CUnsignedChar>? = nil
+//    
     @LiveElementIgnored
     private var vmInstance: UnsafePointer<iree_vm_instance_t>? = nil
+    
+    @LiveElementIgnored
+    @State private var device: UnsafePointer<iree_hal_device_t>? = nil
     
     @LiveElementIgnored
     @StateObject private var cameraView: CameraCaptureView = CameraCaptureView()
@@ -92,6 +101,12 @@ struct NxCameraFunctionView<Root: RootRegistry>: View {
     @State private var timer: AnyCancellable?
     
     init() {
+        if self.deviceURI != nil {
+            let deviceURIcstr = strdup(deviceURI!)
+            self.device = nx_iree_create_device(UnsafePointer(deviceURIcstr)!)
+            free(deviceURIcstr)
+        }
+        
         vmInstance = nx_iree_create_instance()
         initCameraPreview()
     }
@@ -101,7 +116,6 @@ struct NxCameraFunctionView<Root: RootRegistry>: View {
             cameraView.initCameraPreview(height: height, width: width)
         }
     }
-    
     
     
     var body: some View {
@@ -140,6 +154,17 @@ struct NxCameraFunctionView<Root: RootRegistry>: View {
         .onDisappear {
             stopCaptureTimer()
         }
+        .onChange(of: deviceURI) {
+            if self.deviceURI != nil {
+                if self.device != nil {
+                    nx_iree_release_device(self.device)
+                }
+                let deviceURIcstr = strdup(deviceURI!)
+                self.device?.deallocate()
+                self.device = nx_iree_create_device(UnsafePointer(deviceURIcstr)!)
+                free(deviceURIcstr)
+            }
+        }
         .onChange(of: bytecode) {
             stopCaptureTimer()
             startCaptureTimer()
@@ -166,18 +191,12 @@ struct NxCameraFunctionView<Root: RootRegistry>: View {
         }
     }
         
-    private func convertBase64StringToBytecode(_ base64String: String) -> (bytecodeSize: UInt64, bytecodePointer: UnsafePointer<CUnsignedChar>?)? {
-        // Step 1: Decode the Base64 string into Data
-        guard let decodedData = Data(base64Encoded: base64String) else {
-            print("Failed to decode base64 string.")
-            return nil
-        }
-        
-        // Step 2: Get the size of the data
+    private func convertBase64StringToBytecode(_ decodedData: Data) -> (bytecodeSize: UInt64, bytecodePointer: UnsafePointer<CUnsignedChar>?)? {
+        // Step 1: Get the size of the data
         let bytecodeSize = UInt64(decodedData.count)
         
-        // Step 3: Convert Data to UnsafePointer<CUnsignedChar>
-        // We use `withUnsafeBytes` to get a pointer to the data
+        // Step 2: Convert Data to UnsafePointer<CUnsignedChar>
+        // We use withUnsafeBytes to get a pointer to the data
         let bytecodePointer = decodedData.withUnsafeBytes { (pointer: UnsafeRawBufferPointer) -> UnsafePointer<CUnsignedChar>? in
             return pointer.bindMemory(to: CUnsignedChar.self).baseAddress
         }
@@ -227,43 +246,41 @@ struct NxCameraFunctionView<Root: RootRegistry>: View {
     }
     
     private func run(_ image: UIImage) {
-        print("run called")
-        
-        print(vmInstance)
-        print(deviceURI)
-        print(bytecode != nil)
-        print(image)
-        
         if vmInstance != nil,
-           deviceURI != nil,
+           device != nil,
            bytecode != nil,
            let resizedImage = image.resize(to: CGSize(width: width!, height: height!)),
            let (pixelData, inputDims) = resizedImage.getRGBAData(),
-           let (bytecodeSize, bytecodePointer) = convertBase64StringToBytecode(bytecode!) {
-             print("running")
+           let decodedData = Data(base64Encoded: bytecode!),
+           let (bytecodeSize, bytecodePointer) = convertBase64StringToBytecode(decodedData) {
+            let errorMessageCapacity = 256
+            let errorMessage = UnsafeMutablePointer<CChar>.allocate(capacity: errorMessageCapacity)
             
-             let deviceURIcstr = strdup(deviceURI!)
-             let device = nx_iree_create_device(UnsafePointer(deviceURIcstr)!)
-             deviceURIcstr?.deallocate()
-            
-             let errorMessage = UnsafeMutablePointer<CChar>.allocate(capacity: 256)
-                        
             let seed: UInt32 = .random(in: UInt32.min...UInt32.max)
-             let outputPixelDataPointer = nx_iree_image_call(vmInstance!, device!, bytecodeSize, bytecodePointer!, inputDims, pixelData, errorMessage, seed)
+            let outputPixelDataPointer = nx_iree_image_call(vmInstance!, device!, bytecodeSize, UnsafePointer(bytecodePointer)!, inputDims, pixelData, errorMessage, seed)
             
-             guard let _ = outputPixelDataPointer else {
-                 return
+            guard let _ = outputPixelDataPointer else {
+                let errorString = String(cString: errorMessage)
+                print("Failed execution with error: \(errorString)")
+                let mutablePointer = errorMessage.withMemoryRebound(to: CChar.self, capacity: Int(errorMessageCapacity), { $0 })
+                mutablePointer.deallocate()
+                return
             }
     
             // Create a [UInt8] array from the pointer
-            let buffer = UnsafeBufferPointer(start: outputPixelDataPointer, count: width! * height! * 4)
+            let bufferCount = width! * height! * 4
+            let buffer = UnsafeBufferPointer(start: UnsafePointer(outputPixelDataPointer), count: bufferCount)
             let outputPixelData = Array(buffer)
             
             let outputImage = imageFromRGBAData(rgbaData: outputPixelData, width: width!, height: height!)
-               
-            DispatchQueue.main.async {
-//                self.previewImageView.update(image, width!, height!)
-                self.imageView.update(outputImage, width!, height!)
+            
+            self.imageView.update(outputImage, width!, height!)
+            
+            let mutablePointer = errorMessage.withMemoryRebound(to: CChar.self, capacity: Int(errorMessageCapacity), { $0 })
+            mutablePointer.deallocate()
+            
+            if let ptr = outputPixelDataPointer?.withMemoryRebound(to: CUnsignedChar.self, capacity: Int(bufferCount), { $0 }) {
+                ptr.deallocate()
             }
         }
    }

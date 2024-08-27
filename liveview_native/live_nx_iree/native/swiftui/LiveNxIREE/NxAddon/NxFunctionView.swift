@@ -160,6 +160,8 @@ struct NxFunctionView<Root: RootRegistry>: View {
                 outputByteSizes
             )
             
+            nx_iree_release_device(device)
+            
             if serializedOutputs == nil {
                 let errorString = String(cString: errorMessage)
                 print("Failed execution with error: \(errorString)")
@@ -172,14 +174,9 @@ struct NxFunctionView<Root: RootRegistry>: View {
             inputs.deallocate()
             
             print("Finished executing. Preparing to send results back.")
-            print("outputs: \(serializedOutputs)")
-            print("numOutputs: \(numOutputs)")
-            
+     
             onExecution(value: base64EncodedStrings(from: serializedOutputs!, sizes: outputByteSizes, count: numOutputs!))
         } else {
-            print("vm: \(vmInstance)")
-            print("deviceURI: \(deviceURI)")
-            print("bytecode: \(bytecode)")
             print("IREE components are not initialized.")
         }
    }
