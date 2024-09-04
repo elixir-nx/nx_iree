@@ -44,7 +44,7 @@ defmodule NxIREE.Compiler do
           )
 
         {res, []} =
-          Nx.Defn.Composite.traverse(output_container, Enum.reverse(results), fn _, [r | acc] ->
+          Nx.Defn.Composite.traverse(output_container, results, fn _, [r | acc] ->
             {r, acc}
           end)
 

@@ -45,7 +45,8 @@ func nx_iree_image_call(
     _ input_dims: UnsafePointer<UInt64>,
     _ serialized_input: UnsafePointer<CUnsignedChar>,
     _ error_message: UnsafeMutablePointer<CChar>,
-    _ seed: UInt32
+    _ seed: UInt32,
+    _ noiseAmount: Float
 ) -> UnsafeMutablePointer<CUnsignedChar>?
 
 func nxIREEListAllDevices() -> [String] {

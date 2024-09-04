@@ -22,7 +22,7 @@ void nx_iree_release_device(iree_hal_device_t*);
 char** nx_iree_call(iree_vm_instance_t* vm_instance, iree_hal_device_t* device, uint64_t bytecode_size, unsigned char* bytecode, uint64_t num_inputs, char** serialized_inputs, uint64_t num_outputs, char* error_message, uint64_t* output_byte_sizes);
 
 // this function expects to receive a single image ordered as channels x height x width and return an image with the same dimensions
-unsigned char* nx_iree_image_call(iree_vm_instance_t* vm_instance, iree_hal_device_t* device, uint64_t bytecode_size, unsigned char* bytecode, uint64_t* input_dims, unsigned char* input_data, char* error_message, uint32_t seed);
+unsigned char* nx_iree_image_call(iree_vm_instance_t* vm_instance, iree_hal_device_t* device, uint64_t bytecode_size, unsigned char* bytecode, uint64_t* input_dims, unsigned char* input_data, char* error_message, uint32_t seed, float noise_amount);
 
 char** nx_iree_list_all_devices(uint64_t* count);
 

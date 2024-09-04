@@ -46,9 +46,9 @@
             filePath = "LiveNxIREE/c_src/nx_iree.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "130"
-            endingLineNumber = "130"
-            landmarkName = "nx_iree_list_all_devices(count)"
+            startingLineNumber = "147"
+            endingLineNumber = "147"
+            landmarkName = "nx_iree_image_call(vm_instance, device, bytecode_size, bytecode, input_dims, input_data, error_message, seed, noise_amount)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
@@ -62,9 +62,9 @@
             filePath = "LiveNxIREE/c_src/nx_iree.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "132"
-            endingLineNumber = "132"
-            landmarkName = "nx_iree_list_all_devices(count)"
+            startingLineNumber = "149"
+            endingLineNumber = "149"
+            landmarkName = "nx_iree_image_call(vm_instance, device, bytecode_size, bytecode, input_dims, input_data, error_message, seed, noise_amount)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
@@ -78,9 +78,9 @@
             filePath = "LiveNxIREE/c_src/nx_iree.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "141"
-            endingLineNumber = "141"
-            landmarkName = "nx_iree_list_all_devices(count)"
+            startingLineNumber = "158"
+            endingLineNumber = "158"
+            landmarkName = "nx_iree_image_call(vm_instance, device, bytecode_size, bytecode, input_dims, input_data, error_message, seed, noise_amount)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
@@ -94,9 +94,9 @@
             filePath = "LiveNxIREE/c_src/nx_iree.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "142"
-            endingLineNumber = "142"
-            landmarkName = "nx_iree_list_all_devices(count)"
+            startingLineNumber = "159"
+            endingLineNumber = "159"
+            landmarkName = "nx_iree_image_call(vm_instance, device, bytecode_size, bytecode, input_dims, input_data, error_message, seed, noise_amount)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
@@ -110,24 +110,8 @@
             filePath = "LiveNxIREE/NxAddon/NxCameraFunctionView.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "273"
-            endingLineNumber = "273"
-            landmarkName = "run(_:)"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "8EBF4F71-2211-4253-9E87-6DAFA2840622"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "LiveNxIREE/NxAddon/NxCameraFunctionView.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "260"
-            endingLineNumber = "260"
+            startingLineNumber = "289"
+            endingLineNumber = "289"
             landmarkName = "run(_:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -142,8 +126,8 @@
             filePath = "LiveNxIREE/NxAddon/NxCameraFunctionView.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "262"
-            endingLineNumber = "262"
+            startingLineNumber = "278"
+            endingLineNumber = "278"
             landmarkName = "run(_:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -158,8 +142,8 @@
             filePath = "LiveNxIREE/NxAddon/NxCameraFunctionView.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "277"
-            endingLineNumber = "277"
+            startingLineNumber = "293"
+            endingLineNumber = "293"
             landmarkName = "run(_:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -174,8 +158,8 @@
             filePath = "LiveNxIREE/NxAddon/NxCameraFunctionView.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "253"
-            endingLineNumber = "253"
+            startingLineNumber = "261"
+            endingLineNumber = "261"
             landmarkName = "run(_:)"
             landmarkType = "7">
          </BreakpointContent>

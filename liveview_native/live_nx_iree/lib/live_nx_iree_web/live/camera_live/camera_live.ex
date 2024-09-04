@@ -83,17 +83,16 @@ defmodule LiveNxIREEWeb.CameraLive do
       end)
       |> Enum.group_by(fn {k, _} -> k end, fn {_, v} -> v end)
 
-    function = fn image, seed ->
+    function = fn image, seed, noiseAmount ->
       alpha = image[[.., .., 3..3]]
 
-      noise = 0.5
       image = image[[.., .., 0..2]]
 
       {w, h, _channels} = Nx.shape(image)
 
       {random, _} = Nx.Random.uniform(Nx.Random.key(seed), 0, 1, shape: {w, h, 1})
-      random = Nx.multiply(random, noise)
-      image = Nx.divide(image, 255) |> Nx.multiply(1 - noise)
+      random = Nx.multiply(random, noiseAmount)
+      image = Nx.divide(image, 255) |> Nx.multiply(Nx.subtract(1, noiseAmount))
 
       image =
         image
@@ -102,6 +101,7 @@ defmodule LiveNxIREEWeb.CameraLive do
         |> Nx.as_type(:u8)
 
       Nx.concatenate([image, alpha], axis: -1)
+      |> Nx.Defn.Kernel.print_expr()
     end
 
     {target_device, platform} = {:metal, :ios}
@@ -133,7 +133,8 @@ defmodule LiveNxIREEWeb.CameraLive do
 
     inputs = [
       Nx.template({socket.assigns.height, socket.assigns.width, 4}, :u8),
-      Nx.template({}, :u32)
+      Nx.template({}, :u32),
+      Nx.template({}, :f32)
     ]
 
     {:ok, %{bytecode: %NxIREE.Module{bytecode: bytecode}, output_container: output_container}} =
