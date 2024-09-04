@@ -26,7 +26,7 @@ iree::runtime::Device::~Device() {
   }
 }
 
-iree::runtime::IREETensor::IREETensor(iree_hal_buffer_view_t *buffer_view, iree_hal_element_type_t type) : buffer_view(buffer_view), type(type) {
+iree::runtime::IREETensor::IREETensor(iree_hal_buffer_view_t *buffer_view, iree_hal_element_type_t type, iree_hal_device_t *device) : buffer_view(buffer_view), type(type), device(device) {
   size = iree_hal_buffer_view_byte_length(buffer_view);
   // TODO: fill in dim metadata
 }
@@ -81,6 +81,19 @@ std::vector<char> *iree::runtime::IREETensor::serialize() {
   size_t size_size = sizeof(size);
   buffer->insert(buffer->end(), reinterpret_cast<const char *>(&size), reinterpret_cast<const char *>(&size) + size_size);
 
+  if (data == nullptr) {
+    data = std::malloc(size);
+
+    if (data == nullptr) {
+      return nullptr;
+    }
+
+    auto status = read_buffer(device, buffer_view, data, size);
+
+    if (!iree_status_is_ok(status)) {
+      return nullptr;
+    }
+  }
   // Serialize 'data'
   buffer->insert(buffer->end(), reinterpret_cast<const char *>(data), reinterpret_cast<const char *>(data) + size);
 
@@ -341,7 +354,7 @@ call(iree_vm_instance_t *instance, iree_hal_device_t *device, std::string driver
     const iree_hal_dim_t *out_shape = iree_hal_buffer_view_shape_dims(output_buffer_view);
     iree_hal_element_type_t out_type = iree_hal_buffer_view_element_type(output_buffer_view);
 
-    auto tensor = new iree::runtime::IREETensor(output_buffer_view, out_type);
+    auto tensor = new iree::runtime::IREETensor(output_buffer_view, out_type, device);
     tensor->dims = std::vector<iree_hal_dim_t>();
     for (int j = 0; j < out_shape_rank; j++) {
       tensor->dims.push_back(out_shape[j]);

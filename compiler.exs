@@ -18,6 +18,7 @@ Nx.Defn.default_options(compiler: NxIREE.Compiler, iree_compiler_flags: flags, i
 
 f = Nx.Defn.compile(fun, args)
 
+Nx.default_backend(NxIREE.Tensor)
 arg0 = Nx.tensor([1.0, 2.0, 3.0, 4.0])
 arg1 = Nx.tensor([1, -1, 1, -1])
 f.(arg0, arg1) |> dbg()

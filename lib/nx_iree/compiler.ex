@@ -3,6 +3,15 @@ defmodule NxIREE.Compiler do
   Compiler for Nx defn
   """
 
+  def to_bytecode(fun, templates, opts \\ []) do
+    opts = opts |> Keyword.put(:output_mode, :bytecode) |> Keyword.put(:compiler, __MODULE__)
+
+    Nx.Defn.compile(fun, templates, opts)
+  catch
+    {:bytecode, %{bytecode: bytecode, output_container: output_container}} ->
+      {:ok, %{bytecode: bytecode, output_container: output_container}}
+  end
+
   @behaviour Nx.Defn.Compiler
 
   @impl true
@@ -22,9 +31,7 @@ defmodule NxIREE.Compiler do
     bytecode = NxIREE.compile(mlir_module, iree_compiler_flags)
 
     if output_mode == :bytecode do
-      fn _ ->
-        [bytecode]
-      end
+      throw({:bytecode, %{bytecode: bytecode, output_container: output_container}})
     else
       fn [inputs] ->
         {:ok, results} =
@@ -37,7 +44,7 @@ defmodule NxIREE.Compiler do
           )
 
         {res, []} =
-          Nx.Defn.Composite.traverse(output_container, Enum.reverse(results), fn _, [r | acc] ->
+          Nx.Defn.Composite.traverse(output_container, results, fn _, [r | acc] ->
             {r, acc}
           end)
 

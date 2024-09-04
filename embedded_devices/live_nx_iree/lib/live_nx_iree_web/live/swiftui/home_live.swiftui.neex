@@ -1,0 +1,16 @@
+<!---
+<NxFunction
+  on-execution="nx-executed"
+  on-mount="nx-mounted"
+  signature={@function_signature}
+  bytecode={@bytecode}
+  device={@device_uri}
+  inputs={@inputs}
+  num-outputs={@num_outputs} />
+  --->
+
+<NxCameraFunction
+  on-mount="nx-mounted"
+  signature={@function_signature}
+  bytecode={@bytecode}
+  device={@device_uri} />

@@ -69,7 +69,11 @@ defmodule NxIREE do
 
     [driver_name, _] = String.split(device, "://", parts: 2)
 
-    input_refs = Enum.map(inputs, &NxIREE.VM.allocate_buffer(&1, device_ref))
+    input_refs =
+      Enum.map(inputs, fn
+        %Nx.Tensor{data: %NxIREE.Tensor{ref: ref}} -> ref
+        t -> NxIREE.VM.allocate_buffer(t, device_ref)
+      end)
 
     instance_ref = NxIREE.VM.get_instance()
 

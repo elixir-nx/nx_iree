@@ -16,7 +16,7 @@ jobs:
       MIX_ENV: prod
       NX_IREE_PREFER_PRECOMPILED: false
       NX_IREE_SOURCE_DIR: ./build-cache/iree
-      IREE_GIT_REV: candidate-20240604.914
+      IREE_GIT_REV: candidate-20240822.993
       BUILD_IREE_RUNTIME: false
     strategy:
       fail-fast: false
@@ -83,7 +83,7 @@ jobs:
       MIX_ENV: prod
       NX_IREE_PREFER_PRECOMPILED: false
       NX_IREE_SOURCE_DIR: ./build-cache/iree
-      IREE_GIT_REV: candidate-20240604.914
+      IREE_GIT_REV: candidate-20240822.993
       ImageOS: ubuntu22
       LANG: en_US.UTF-8
       LANGUAGE: en_US:en

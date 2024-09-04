@@ -1,7 +1,12 @@
+# Force NxIREE.MixHelpers to be available before the app is compiled
+Code.eval_file("./lib/nx_iree/mix_helpers.exs")
+
 defmodule NxIREE.MixProject do
   use Mix.Project
 
-  @version "0.0.1-pre.4"
+  @version File.read!(Path.join([__DIR__, "priv", "VERSION"]))
+
+  import NxIREE.MixHelpers, only: [download!: 3, github_release_path: 1]
 
   def project do
     n_jobs = to_string(max(System.schedulers_online() - 2, 1))
@@ -19,7 +24,7 @@ defmodule NxIREE.MixProject do
       ],
       make_env: fn ->
         priv_path = Path.join(Mix.Project.app_path(), "priv")
-        cwd_relative_to_priv = relative_to(File.cwd!(), priv_path)
+        cwd_relative_to_priv = relative_to(__DIR__, priv_path)
 
         %{
           "MIX_BUILD_EMBEDDED" => "#{Mix.Project.config()[:build_embedded]}",
@@ -66,8 +71,8 @@ defmodule NxIREE.MixProject do
   end
 
   defp nx_iree_config() do
-    version = System.get_env("NX_IREE_VERSION", "20240818.989")
-    tag = System.get_env("NX_IREE_GIT_REV", "candidate-20240818.989")
+    version = System.get_env("NX_IREE_VERSION", "20240822.993")
+    tag = System.get_env("NX_IREE_GIT_REV", "candidate-20240822.993")
 
     env_dir = System.get_env("NX_IREE_COMPILER_DIR")
 
@@ -89,8 +94,8 @@ defmodule NxIREE.MixProject do
       dir: dir,
       source_dir: source_dir,
       use_precompiled: use_precompiled,
-      nx_iree_so_path: Path.join("cache", "libnx_iree.so"),
-      nx_iree_tar_gz_path: Path.join("cache", "libnx_iree.tar.gz")
+      nx_iree_so_path: Path.join([__DIR__, "cache", "libnx_iree.so"]),
+      nx_iree_tar_gz_path: Path.join([__DIR__, "cache", "libnx_iree.tar.gz"])
     }
   end
 
@@ -219,7 +224,7 @@ defmodule NxIREE.MixProject do
 
     download!(
       "NxIREE NIFs",
-      "https://github.com/elixir-nx/nx_iree/releases/download/v#{@version}/#{source_tar_path}",
+      github_release_path(source_tar_path),
       zip_name
     )
 
@@ -244,49 +249,6 @@ defmodule NxIREE.MixProject do
 
     :ok
   end
-
-  defp assert_network_tool!() do
-    unless network_tool() do
-      raise "expected either curl or wget to be available in your system, but neither was found"
-    end
-  end
-
-  defp download!(name, url, dest) do
-    assert_network_tool!()
-
-    case download(name, url, dest) do
-      :ok ->
-        :ok
-
-      _ ->
-        raise "unable to download iree from #{url}"
-    end
-  end
-
-  defp download(name, url, dest) do
-    {command, args} =
-      case network_tool() do
-        :curl -> {"curl", ["--fail", "-L", url, "-o", dest]}
-        :wget -> {"wget", ["-O", dest, url]}
-      end
-
-    IO.puts("Downloading #{name} from #{url}")
-
-    case System.cmd(command, args) do
-      {_, 0} -> :ok
-      _ -> :error
-    end
-  end
-
-  defp network_tool() do
-    cond do
-      executable_exists?("curl") -> :curl
-      executable_exists?("wget") -> :wget
-      true -> nil
-    end
-  end
-
-  defp executable_exists?(name), do: not is_nil(System.find_executable(name))
 
   # Returns `path` relative to the `from` directory.
   defp relative_to(path, from) do
