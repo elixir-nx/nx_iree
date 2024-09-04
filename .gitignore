@@ -27,3 +27,7 @@ nx_iree-*.tar
 
 /iree-runtime/
 /cache/
+
+/priv/iree-compile
+/priv/iree-runtime
+/priv/lbnx_iree.so
