@@ -22,18 +22,13 @@ Nx.Defn.default_options(compiler: NxIREE.Compiler, iree_compiler_flags: flags, i
 
 template = %{"x" => Nx.template({10, 3}, :f32)}
 
-IO.puts("\n\n\n======= Axon.build =======\n\n\n")
 {init_fn, predict_fn} = Axon.build(model, [])
-IO.puts("\n\n\n======= Axon.build =======\n\n\n")
-
-IO.puts("\n\n\n======= init_params =======\n\n\n")
 init_params = Nx.Defn.jit_apply(init_fn, [template, Axon.ModelState.new(Axon.ModelState.empty())])
-IO.puts("\n\n\n======= init_params =======\n\n\n")
 
-IO.puts("\n\n\n======= predict_compiled_fn =======\n\n\n")
+IO.puts("\n\n\n======= BEGIN predict_compiled_fn =======\n\n\n")
 predict_compiled_fn = Nx.Defn.compile(predict_fn, [init_params, template])
-IO.puts("\n\n\n======= predict_compiled_fn =======\n\n\n")
+IO.puts("\n\n\n======= END predict_compiled_fn =======\n\n\n")
 
-IO.puts("\n\n\n======= predict_compiled_fn CALL =======\n\n\n")
+IO.puts("\n\n\n======= BEGIN predict_compiled_fn CALL =======\n\n\n")
 predict_compiled_fn.(init_params, Nx.iota({10, 3}, type: :f32)) |> dbg()
-IO.puts("\n\n\n======= predict_compiled_fn CALL =======\n\n\n")
+IO.puts("\n\n\n======= END predict_compiled_fn CALL =======\n\n\n")
