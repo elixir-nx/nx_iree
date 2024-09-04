@@ -16,8 +16,6 @@ defmodule NxIREE.Compiler do
 
   @impl true
   def __compile__(key, vars, fun, opts) do
-    output_container = fun.(vars)
-
     {iree_compiler_flags, opts} = Keyword.pop(opts, :iree_compiler_flags, nil)
     {iree_runtime_options, opts} = Keyword.pop(opts, :iree_runtime_options, [])
     {output_mode, opts} = Keyword.pop(opts, :output_mode, nil)
@@ -26,7 +24,9 @@ defmodule NxIREE.Compiler do
       raise "missing :iree_compiler_flags option"
     end
 
-    mlir_module = EXLA.to_mlir_module(key, vars, opts)
+    # FIXME: return output container and used inputs from to_mlir_module
+    %{mlir_module: mlir_module, output_container: output_container, used_inputs: used_inputs} =
+      EXLA.to_mlir_module(key, vars, opts)
 
     bytecode = NxIREE.compile(mlir_module, iree_compiler_flags)
 
@@ -34,12 +34,13 @@ defmodule NxIREE.Compiler do
       throw({:bytecode, %{bytecode: bytecode, output_container: output_container}})
     else
       fn [inputs] ->
+        filtered_inputs =
+          filter_inputs_by_indices(inputs, used_inputs)
+
         {:ok, results} =
           NxIREE.call(
             bytecode,
-            Enum.map(inputs, fn f ->
-              f.()
-            end),
+            filtered_inputs,
             iree_runtime_options
           )
 
@@ -68,4 +69,30 @@ defmodule NxIREE.Compiler do
 
   @impl true
   defdelegate __to_backend__(opts), to: EXLA.Defn
+
+  defp filter_inputs_by_indices(args, inputs, callback \\ fn x, _ -> x end)
+
+  defp filter_inputs_by_indices(args, inputs, callback) when is_list(inputs),
+    do: filter_by_indices_list(args, 0, inputs, callback)
+
+  defp filter_inputs_by_indices(args, inputs, callback) when is_map(inputs),
+    do: filter_by_indices_map(args, 0, inputs, callback)
+
+  defp filter_by_indices_list([var | vars], i, [i | inputs], callback),
+    do: [callback.(var, i) | filter_by_indices_list(vars, i + 1, inputs, callback)]
+
+  defp filter_by_indices_list([_var | vars], i, inputs, callback),
+    do: filter_by_indices_list(vars, i + 1, inputs, callback)
+
+  defp filter_by_indices_list([], _i, [], _callback),
+    do: []
+
+  defp filter_by_indices_map([var | vars], i, inputs, callback) when is_map_key(inputs, i),
+    do: [callback.(var, i) | filter_by_indices_map(vars, i + 1, inputs, callback)]
+
+  defp filter_by_indices_map([_var | vars], i, inputs, callback),
+    do: filter_by_indices_map(vars, i + 1, inputs, callback)
+
+  defp filter_by_indices_map([], _i, _, _callback),
+    do: []
 end

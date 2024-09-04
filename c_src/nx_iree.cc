@@ -355,6 +355,14 @@ DECLARE_NIF(read_buffer_nif) {
     return error(env, "invalid num_bytes");
   }
 
+  std::cout << "num_bytes input: " << num_bytes << std::endl;
+
+  if (num_bytes == -1) {
+    num_bytes = (*input)->size;
+  }
+
+  std::cout << "num_bytes actual: " << num_bytes << std::endl;
+
   ErlNifBinary binary;
 
   if (!enif_alloc_binary(num_bytes, &binary)) {

@@ -57,7 +57,10 @@ defmodule NxIREE.VM do
   def allocate_buffer(binary, device_ref, shape, type) when is_binary(binary) do
     element_type = to_iree_type(type)
 
-    NxIREE.Native.allocate_buffer(binary, device_ref, Tuple.to_list(shape), element_type)
+    {:ok, buffer_ref} =
+      NxIREE.Native.allocate_buffer(binary, device_ref, Tuple.to_list(shape), element_type)
+
+    buffer_ref
   end
 
   def read_buffer(%NxIREE.Tensor{} = t) do
