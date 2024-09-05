@@ -1,8 +1,8 @@
 Mix.install([
   {:axon, github: "elixir-nx/axon", branch: "main"},
   {:nx_iree, path: "."},
-  {:nx, path: "~/coding/nx/nx", override: true},
-  {:exla, path: "~/coding/nx/exla", override: true}
+  {:nx, github: "elixir-nx/nx", sparse: "nx", override: true},
+  {:exla, github: "elixir-nx/nx", sparse: "exla", override: true}
 ], system_env: %{"NX_IREE_PREFER_PRECOMPILED" => false})
 
 NxIREE.list_drivers() |> IO.inspect(label: "drivers")
