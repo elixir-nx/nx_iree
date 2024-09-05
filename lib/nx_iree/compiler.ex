@@ -15,9 +15,7 @@ defmodule NxIREE.Compiler do
   @behaviour Nx.Defn.Compiler
 
   @impl true
-  def __compile__(key, vars, fun, opts) do
-    output_container = fun.(vars)
-
+  def __compile__(_key, vars, fun, opts) do
     {iree_compiler_flags, opts} = Keyword.pop(opts, :iree_compiler_flags, nil)
     {iree_runtime_options, opts} = Keyword.pop(opts, :iree_runtime_options, [])
     {output_mode, opts} = Keyword.pop(opts, :output_mode, nil)
@@ -26,7 +24,8 @@ defmodule NxIREE.Compiler do
       raise "missing :iree_compiler_flags option"
     end
 
-    mlir_module = EXLA.to_mlir_module(key, vars, opts)
+    %{mlir_module: mlir_module, output_container: output_container, used_inputs: used_inputs} =
+      EXLA.to_mlir_module(fun, vars, Keyword.put(opts, :within_defn_compiler, true))
 
     bytecode = NxIREE.compile(mlir_module, iree_compiler_flags)
 
@@ -34,12 +33,13 @@ defmodule NxIREE.Compiler do
       throw({:bytecode, %{bytecode: bytecode, output_container: output_container}})
     else
       fn [inputs] ->
+        filtered_inputs =
+          filter_inputs_by_indices(inputs, used_inputs)
+
         {:ok, results} =
           NxIREE.call(
             bytecode,
-            Enum.map(inputs, fn f ->
-              f.()
-            end),
+            filtered_inputs,
             iree_runtime_options
           )
 
@@ -68,4 +68,17 @@ defmodule NxIREE.Compiler do
 
   @impl true
   defdelegate __to_backend__(opts), to: EXLA.Defn
+
+  defp filter_inputs_by_indices(args, inputs) do
+    filter_by_indices_list(args, 0, Enum.sort(inputs), fn x, _ -> x end)
+  end
+
+  defp filter_by_indices_list([var | vars], i, [i | inputs], callback),
+    do: [callback.(var, i) | filter_by_indices_list(vars, i + 1, inputs, callback)]
+
+  defp filter_by_indices_list([_var | vars], i, inputs, callback),
+    do: filter_by_indices_list(vars, i + 1, inputs, callback)
+
+  defp filter_by_indices_list([], _i, [], _callback),
+    do: []
 end

@@ -23,7 +23,6 @@ defmodule NxIREE do
     {:ok, tmpfile} = create_temp_file(mlir_module)
 
     compiler_path = Path.join(:code.priv_dir(:nx_iree), "iree-compile")
-    IO.puts(mlir_module)
 
     try do
       {output, 0} =
@@ -71,8 +70,14 @@ defmodule NxIREE do
 
     input_refs =
       Enum.map(inputs, fn
-        %Nx.Tensor{data: %NxIREE.Tensor{ref: ref}} -> ref
-        t -> NxIREE.VM.allocate_buffer(t, device_ref)
+        %Nx.Tensor{data: %NxIREE.Tensor{ref: ref}} ->
+          ref
+
+        fun when is_function(fun, 0) ->
+          NxIREE.VM.allocate_buffer(fun.(), device_ref)
+
+        t ->
+          NxIREE.VM.allocate_buffer(t, device_ref)
       end)
 
     instance_ref = NxIREE.VM.get_instance()

@@ -30,4 +30,4 @@ nx_iree-*.tar
 
 /priv/iree-compile
 /priv/iree-runtime
-/priv/lbnx_iree.so
+/priv/libnx_iree.so
