@@ -25,7 +25,7 @@ defmodule NxIREE.Compiler do
     end
 
     %{mlir_module: mlir_module, output_container: output_container, used_inputs: used_inputs} =
-      EXLA.to_mlir_module(fun, vars, Keyword.put(opts, :nested_defn_compilation, true))
+      EXLA.to_mlir_module(fun, vars, Keyword.put(opts, :within_defn_compiler, true))
 
     bytecode = NxIREE.compile(mlir_module, iree_compiler_flags)
 
@@ -69,13 +69,9 @@ defmodule NxIREE.Compiler do
   @impl true
   defdelegate __to_backend__(opts), to: EXLA.Defn
 
-  defp filter_inputs_by_indices(args, inputs, callback \\ fn x, _ -> x end)
-
-  defp filter_inputs_by_indices(args, inputs, callback) when is_list(inputs),
-    do: filter_by_indices_list(args, 0, inputs, callback)
-
-  defp filter_inputs_by_indices(args, inputs, callback) when is_map(inputs),
-    do: filter_by_indices_map(args, 0, inputs, callback)
+  defp filter_inputs_by_indices(args, inputs) do
+    filter_by_indices_list(args, 0, Enum.sort(inputs), fn x, _ -> x end)
+  end
 
   defp filter_by_indices_list([var | vars], i, [i | inputs], callback),
     do: [callback.(var, i) | filter_by_indices_list(vars, i + 1, inputs, callback)]
@@ -84,14 +80,5 @@ defmodule NxIREE.Compiler do
     do: filter_by_indices_list(vars, i + 1, inputs, callback)
 
   defp filter_by_indices_list([], _i, [], _callback),
-    do: []
-
-  defp filter_by_indices_map([var | vars], i, inputs, callback) when is_map_key(inputs, i),
-    do: [callback.(var, i) | filter_by_indices_map(vars, i + 1, inputs, callback)]
-
-  defp filter_by_indices_map([_var | vars], i, inputs, callback),
-    do: filter_by_indices_map(vars, i + 1, inputs, callback)
-
-  defp filter_by_indices_map([], _i, _, _callback),
     do: []
 end
