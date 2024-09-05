@@ -15,7 +15,7 @@ defmodule NxIREE.Compiler do
   @behaviour Nx.Defn.Compiler
 
   @impl true
-  def __compile__(key, vars, _fun, opts) do
+  def __compile__(_key, vars, fun, opts) do
     {iree_compiler_flags, opts} = Keyword.pop(opts, :iree_compiler_flags, nil)
     {iree_runtime_options, opts} = Keyword.pop(opts, :iree_runtime_options, [])
     {output_mode, opts} = Keyword.pop(opts, :output_mode, nil)
@@ -25,7 +25,7 @@ defmodule NxIREE.Compiler do
     end
 
     %{mlir_module: mlir_module, output_container: output_container, used_inputs: used_inputs} =
-      EXLA.to_mlir_module(key, vars, opts)
+      EXLA.to_mlir_module(fun, vars, Keyword.put(opts, :nested_defn_compilation, true))
 
     bytecode = NxIREE.compile(mlir_module, iree_compiler_flags)
 
