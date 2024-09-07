@@ -41,7 +41,7 @@ defmodule NxIREE.VM do
     allocate_buffer(Nx.to_binary(t), device_ref, Nx.shape(t), Nx.type(t))
   end
 
-  def allocate_buffer(n, device_ref) when is_number(n) do
+  def allocate_buffer(n, device_ref) when is_number(n) or is_struct(n, Complex) do
     # allocate a binary backend tensor for data uniformity
     t = Nx.tensor(n, backend: Nx.BinaryBackend)
     data = Nx.to_binary(t)
