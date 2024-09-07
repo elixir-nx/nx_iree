@@ -131,7 +131,7 @@ defmodule LiveNxIREEWeb.HomeLive do
 
           t = %Nx.Tensor{
             node
-            | data: %NxIREE.Tensor{
+            | data: %NxIREE.Backend{
                 device_uri: uri,
                 device: device,
                 ref: ref

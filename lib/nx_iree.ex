@@ -70,14 +70,16 @@ defmodule NxIREE do
 
     input_refs =
       Enum.map(inputs, fn
-        %Nx.Tensor{data: %NxIREE.Tensor{ref: ref}} ->
+        %Nx.Tensor{data: %NxIREE.Backend{ref: ref}} ->
           ref
 
         fun when is_function(fun, 0) ->
-          NxIREE.VM.allocate_buffer(fun.(), device_ref)
+          {:ok, ref} = NxIREE.VM.allocate_buffer(fun.(), device_ref)
+          ref
 
         t ->
-          NxIREE.VM.allocate_buffer(t, device_ref)
+          {:ok, ref} = NxIREE.VM.allocate_buffer(t, device_ref)
+          ref
       end)
 
     instance_ref = NxIREE.VM.get_instance()
@@ -97,7 +99,7 @@ defmodule NxIREE do
               names: Enum.map(dims, fn _ -> nil end),
               type: type_str_to_nx(type_str),
               shape: List.to_tuple(dims),
-              data: %NxIREE.Tensor{
+              data: %NxIREE.Backend{
                 ref: ref,
                 data: nil,
                 device_uri: device,

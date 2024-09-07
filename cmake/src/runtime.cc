@@ -70,7 +70,24 @@ iree::runtime::IREETensor::IREETensor(char *buffer) {
   this->buffer_view = nullptr;
 }
 
-std::vector<char> *iree::runtime::IREETensor::serialize() {
+iree::runtime::IREETensor::~IREETensor() {
+  this->deallocate();
+}
+
+void iree::runtime::IREETensor::deallocate() {
+  if (data) {
+    std::free(data);
+    data = nullptr;
+  }
+
+  if (buffer_view) {
+    iree_hal_buffer_view_release(buffer_view);
+    buffer_view = nullptr;
+  }
+}
+
+std::vector<char> *
+iree::runtime::IREETensor::serialize() {
   auto buffer = new std::vector<char>();
 
   // Serialize 'type'

@@ -18,7 +18,7 @@ defmodule NxIREE.VM do
   end
 
   def allocate_buffer(
-        %Nx.Tensor{shape: shape, type: type, data: %NxIREE.Tensor{} = t},
+        %Nx.Tensor{shape: shape, type: type, data: %NxIREE.Backend{} = t},
         device_ref
       ) do
     case t do
@@ -29,7 +29,7 @@ defmodule NxIREE.VM do
       %{data: nil} ->
         # in this case, we're dealing with different devices,
         # so we'll copy data from one to the other
-        data = read_buffer(t)
+        {:ok, data} = read_buffer(t)
         allocate_buffer(data, device_ref, shape, type)
 
       %{data: binary} ->
@@ -48,28 +48,24 @@ defmodule NxIREE.VM do
     shape = {}
     element_type = to_iree_type(Nx.type(t))
 
-    {:ok, buffer_ref} =
-      NxIREE.Native.allocate_buffer(data, device_ref, Tuple.to_list(shape), element_type)
-
-    buffer_ref
+    NxIREE.Native.allocate_buffer(data, device_ref, Tuple.to_list(shape), element_type)
   end
 
   def allocate_buffer(binary, device_ref, shape, type) when is_binary(binary) do
     element_type = to_iree_type(type)
-
-    {:ok, buffer_ref} =
-      NxIREE.Native.allocate_buffer(binary, device_ref, Tuple.to_list(shape), element_type)
-
-    buffer_ref
+    NxIREE.Native.allocate_buffer(binary, device_ref, Tuple.to_list(shape), element_type)
   end
 
-  def read_buffer(%NxIREE.Tensor{} = t) do
+  def deallocate_buffer(%NxIREE.Backend{} = t) do
+    NxIREE.Native.deallocate_buffer(t.ref)
+  end
+
+  def read_buffer(%NxIREE.Backend{} = t) do
     read_buffer(t.device, t.ref)
   end
 
   def read_buffer(device_ref, buffer_ref, num_bytes \\ -1) do
-    {:ok, binary} = NxIREE.Native.read_buffer(device_ref, buffer_ref, num_bytes)
-    binary
+    NxIREE.Native.read_buffer(device_ref, buffer_ref, num_bytes)
   end
 
   defp to_iree_type(type) do

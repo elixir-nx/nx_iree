@@ -48,12 +48,9 @@ class IREETensor {
   IREETensor(void* data, size_t size, std::vector<int64_t> in_dims, iree_hal_element_type_t type);
 
   // Destructor
-  ~IREETensor() {
-    if (data) {
-      std::free(data);
-      data = nullptr;
-    }
-  }
+  ~IREETensor();
+
+  void deallocate();
 
   // Disable copy and move semantics for simplicity
   IREETensor(const IREETensor&) = delete;

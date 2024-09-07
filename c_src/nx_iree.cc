@@ -13,6 +13,10 @@ ERL_NIF_TERM error(ErlNifEnv* env, const char* error) {
   return enif_make_tuple2(env, enif_make_atom(env, "error"), enif_make_string(env, error, ERL_NIF_LATIN1));
 }
 
+ERL_NIF_TERM ok(ErlNifEnv* env) {
+  return enif_make_atom(env, "ok");
+}
+
 ERL_NIF_TERM ok(ErlNifEnv* env, ERL_NIF_TERM term) {
   return enif_make_tuple2(env, enif_make_atom(env, "ok"), term);
 }
@@ -315,13 +319,13 @@ iree_hal_element_type_t nx_type_to_iree_type(std::string type) {
     return type_enum::IREE_HAL_ELEMENT_TYPE_INT_32;
   } else if (type == "i64") {
     return type_enum::IREE_HAL_ELEMENT_TYPE_INT_64;
-  } else if (type == "u8") {
+  } else if (type == "ui8") {
     return type_enum::IREE_HAL_ELEMENT_TYPE_UINT_8;
-  } else if (type == "u16") {
+  } else if (type == "ui16") {
     return type_enum::IREE_HAL_ELEMENT_TYPE_UINT_16;
-  } else if (type == "u32") {
+  } else if (type == "ui32") {
     return type_enum::IREE_HAL_ELEMENT_TYPE_UINT_32;
-  } else if (type == "u64") {
+  } else if (type == "ui64") {
     return type_enum::IREE_HAL_ELEMENT_TYPE_UINT_64;
   } else if (type == "bf16") {
     return type_enum::IREE_HAL_ELEMENT_TYPE_BFLOAT_16;
@@ -355,13 +359,9 @@ DECLARE_NIF(read_buffer_nif) {
     return error(env, "invalid num_bytes");
   }
 
-  std::cout << "num_bytes input: " << num_bytes << std::endl;
-
   if (num_bytes == -1) {
     num_bytes = (*input)->size;
   }
-
-  std::cout << "num_bytes actual: " << num_bytes << std::endl;
 
   ErlNifBinary binary;
 
@@ -416,6 +416,22 @@ DECLARE_NIF(allocate_buffer) {
   auto input = new iree::runtime::IREETensor(binary.data, binary.size, dims, type);
 
   return ok(env, make<iree::runtime::IREETensor*>(env, input));
+}
+
+DECLARE_NIF(deallocate_buffer) {
+  if (argc != 1) {
+    return error(env, "invalid number of arguments");
+  }
+
+  iree::runtime::IREETensor** input;
+
+  if (!get<iree::runtime::IREETensor*>(env, argv[0], input)) {
+    return error(env, "invalid input");
+  }
+
+  (*input)->deallocate();
+
+  return ok(env);
 }
 
 DECLARE_NIF(serialize_tensor) {
@@ -510,6 +526,7 @@ static ErlNifFunc funcs[] = {
     {"list_devices", 1, list_devices},
     {"list_devices", 2, list_devices},
     {"list_drivers", 1, list_drivers},
+    {"deallocate_buffer", 1, deallocate_buffer},
     {"allocate_buffer", 4, allocate_buffer},
     {"serialize_tensor", 1, serialize_tensor},
     {"deserialize_tensor", 1, deserialize_tensor},

@@ -17,6 +17,7 @@ defmodule NxIREE.Native do
 
   def create_device(_registry, _device_uri), do: :erlang.nif_error(:undef)
 
+  def deallocate_buffer(_reference), do: :erlang.nif_error(:undef)
   def allocate_buffer(_data, _device_ref, _dims, _element_type), do: :erlang.nif_error(:undef)
   def read_buffer(_device_ref, _input_ref, _num_bytes), do: :erlang.nif_error(:undef)
 
