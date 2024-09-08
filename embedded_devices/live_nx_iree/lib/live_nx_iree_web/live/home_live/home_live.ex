@@ -150,7 +150,7 @@ defmodule LiveNxIREEWeb.HomeLive do
   def handle_event("nx-mounted", devices, socket) do
     devices =
       devices
-      |> Enum.reject(&String.ends_with?(&1, "://default"))
+      |> Enum.reject(&String.ends_with?(&1, "://"))
       |> Enum.sort_by(&get_device_priority/1, :asc)
       |> Enum.map(fn device ->
         key = get_device_key(device)

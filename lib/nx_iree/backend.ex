@@ -42,13 +42,7 @@ defmodule NxIREE.Backend do
 
   @impl true
   def constant(out, number, opts) do
-    device_uri = opts[:device] || "local-sync://default"
-
-    device_ref =
-      case NxIREE.Device.get(device_uri) do
-        {:ok, device_ref, _kind} -> device_ref
-        _ -> raise ArgumentError, "received unknown device URI: #{inspect(device_uri)}"
-      end
+    {:ok, %NxIREE.Device{ref: device_ref, uri: device_uri}} = NxIREE.Device.get(opts[:device])
 
     {:ok, ref} = NxIREE.VM.allocate_buffer(number, device_ref)
 
@@ -59,13 +53,7 @@ defmodule NxIREE.Backend do
 
   @impl true
   def from_binary(out, binary, opts) do
-    device_uri = opts[:device] || "local-sync://default"
-
-    device_ref =
-      case NxIREE.Device.get(device_uri) do
-        {:ok, device_ref, _kind} -> device_ref
-        _ -> raise ArgumentError, "received unknown device URI: #{inspect(device_uri)}"
-      end
+    {:ok, %NxIREE.Device{ref: device_ref, uri: device_uri}} = NxIREE.Device.get(opts[:device])
 
     {:ok, ref} = NxIREE.VM.allocate_buffer(binary, device_ref, out.shape, out.type)
 

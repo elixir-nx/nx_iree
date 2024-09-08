@@ -24,6 +24,31 @@ defmodule NxIREE.Compiler do
       raise "missing :iree_compiler_flags option"
     end
 
+    has_target_backend_flag? =
+      Enum.any?(iree_compiler_flags, &String.starts_with?(&1, "--iree-hal-target-backends"))
+
+    iree_compiler_flags =
+      cond do
+        is_nil(iree_runtime_options[:device]) and has_target_backend_flag? ->
+          Enum.map(iree_compiler_flags, fn
+            "--iree-hal-target-backends" <> _ ->
+              %{compiler_target_backend: backend} = NxIREE.Device.default_device()
+              "--iree-hal-target-backends=#{backend}"
+
+            flag ->
+              flag
+          end)
+
+        not has_target_backend_flag? ->
+          {:ok, %{compiler_target_backend: backend}} =
+            NxIREE.Device.get(iree_runtime_options[:device])
+
+          ["--iree-hal-target-backends=#{backend}" | iree_compiler_flags]
+
+        true ->
+          iree_compiler_flags
+      end
+
     %{mlir_module: mlir_module, output_container: output_container, used_inputs: used_inputs} =
       EXLA.to_mlir_module(fun, vars, Keyword.put(opts, :within_defn_compiler, true))
 

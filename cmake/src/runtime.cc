@@ -197,6 +197,9 @@ iree_status_t list_devices(iree_hal_driver_registry_t *registry, std::vector<ire
   return iree_ok_status();
 }
 
+iree_hal_device_t *get_default_device(iree_hal_driver_registry_t *registry) {
+}
+
 iree_status_t list_devices(iree_hal_driver_registry_t *registry, std::string driver_name, std::vector<iree::runtime::Device *> &devices) {
   size_t device_info_count;
   iree_hal_device_info_t *device_infos;
@@ -213,16 +216,6 @@ iree_status_t list_devices(iree_hal_driver_registry_t *registry, std::string dri
     return status;
   }
 
-  auto out_device = new iree::runtime::Device(driver_name);
-  status = iree_hal_driver_create_default_device(driver, iree_allocator_system(),
-                                                 &out_device->ref);
-  if (!iree_status_is_ok(status)) {
-    return status;
-  }
-
-  out_device->uri = driver_name + "://default";
-  devices.push_back(out_device);
-
   status = iree_hal_driver_query_available_devices(
       driver, iree_allocator_system(), &device_info_count, &device_infos);
 
@@ -234,7 +227,9 @@ iree_status_t list_devices(iree_hal_driver_registry_t *registry, std::string dri
   for (size_t i = 0; i < device_info_count; i++) {
     auto device = new iree::runtime::Device(driver_name);
     auto info = device_infos[i];
-    device->uri = driver_name + "://" + std::string(info.path.data, info.path.size);
+    std::string device_urn(info.path.data, info.path.size);
+    device->uri = driver_name + "://" + device_urn;
+    device->id = info.device_id;
 
     status = iree_hal_create_device(
         registry,

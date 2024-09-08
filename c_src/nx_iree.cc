@@ -237,7 +237,8 @@ DECLARE_NIF(list_devices) {
     auto ref_term = make<iree_hal_device_t*>(env, device->ref);
     auto driver_name_term = enif_make_string(env, device->driver_name.c_str(), ERL_NIF_LATIN1);
     auto uri_term = enif_make_string(env, device->uri.c_str(), ERL_NIF_LATIN1);
-    auto tuple = enif_make_tuple3(env, ref_term, driver_name_term, uri_term);
+    auto id_term = enif_make_uint64(env, device->id);
+    auto tuple = enif_make_tuple4(env, ref_term, driver_name_term, uri_term, id_term);
     device_terms.push_back(tuple);
   }
 

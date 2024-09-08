@@ -21,15 +21,21 @@ defmodule NxIREE.NxTest do
     expm1: 1,
     sigmoid: 1,
     standard_deviation: 2,
+    atanh: 1,
     tanh: 1,
     tan: 1,
     real: 1,
     asin: 1,
+    asinh: 1,
     atan: 1,
     acos: 1,
     acosh: 1,
     cos: 1,
     sin: 1,
+    phase: 1,
+    covariance: 3,
+    weighted_mean: 3,
+    variance: 2,
     # as_type tests on f64 which is not supported on metal
     as_type: 2
   ]
@@ -49,8 +55,18 @@ defmodule NxIREE.NxTest do
     window_sum: 3,
     window_min: 3,
     window_max: 3,
+    sort: 2,
     argsort: 2,
-    conv: 3
+    argmax: 2,
+    argmin: 2,
+    conv: 3,
+    all_close: 3,
+    is_nan: 1,
+    population_count: 1,
+    count_leading_zeros: 1,
+    mode: 2,
+    # Median has a halting bug
+    median: 2
   ]
 
   doctest Nx,
