@@ -37,6 +37,13 @@ IREE_BUILD_TARGET ?= host
 
 BUILD_TARGET_FLAGS = -S $(abspath cmake)
 
+CUDA_PRESENT := $(shell command -v nvcc >/dev/null 2>&1 && echo true || echo false)
+
+ifeq ($(CUDA_PRESENT), true)
+	CFLAGS += -DCUDA_ENABLED
+	CMAKE_CXX_FLAGS += -DCUDA_ENABLED
+endif
+
 # flags for xcode 15.4
 ifeq ($(IREE_BUILD_TARGET), host)
 else ifeq ($(IREE_BUILD_TARGET), ios)
@@ -106,6 +113,7 @@ $(IREE_INSTALL_DIR): $(NX_IREE_SOURCE_DIR) $(CMAKE_SOURCES)
 		-DIREE_RUNTIME_BUILD_DIR=$(IREE_RUNTIME_BUILD_DIR)\
 		-DIREE_RUNTIME_INCLUDE_PATH=$(IREE_RUNTIME_INCLUDE_PATH)\
 		-DNX_IREE_SOURCE_DIR=$(NX_IREE_SOURCE_DIR) \
+		-DCMAKE_CXX_FLAGS=$(CMAKE_CXX_FLAGS) \
 		$(BUILD_TARGET_FLAGS)
 
 	cmake --build $(IREE_CMAKE_BUILD_DIR) --config $(IREE_CMAKE_CONFIG)
@@ -119,6 +127,7 @@ iree_host:
 		-DCMAKE_INSTALL_PREFIX=$(IREE_HOST_INSTALL_DIR) \
 		-DIREE_BUILD_COMPILER=OFF\
 		-DCMAKE_BUILD_TYPE=$(IREE_CMAKE_CONFIG) \
+		-DCMAKE_CXX_FLAGS=$(CMAKE_CXX_FLAGS) \
 		-S $(NX_IREE_SOURCE_DIR)
 	cmake --build $(IREE_HOST_BUILD_DIR) --target install
 else
@@ -132,8 +141,9 @@ NX_IREE_SO ?= $(MIX_APP_PATH)/priv/libnx_iree.so
 NX_IREE_CACHE_SO ?= cache/libnx_iree.so
 NX_IREE_SO_LINK_PATH = $(CWD_RELATIVE_TO_PRIV_PATH)/$(NX_IREE_CACHE_SO)
 
-NX_IREE_RUNTIME_LIB = cache/iree-runtime/
+NX_IREE_RUNTIME_LIB = cache/iree-runtime
 NX_IREE__IREE_RUNTIME_INCLUDE_PATH = $(NX_IREE_RUNTIME_LIB)/include
+NX_IREE_RUNTIME_SO ?= $(MIX_APP_PATH)/priv/libnx_iree_runtime.so
 
 CFLAGS = -fPIC -I$(ERTS_INCLUDE_DIR) -I$(NX_IREE__IREE_RUNTIME_INCLUDE_PATH) -Wall -Wno-sign-compare \
 	 -Wno-unused-parameter -Wno-missing-field-initializers -Wno-comment \
@@ -157,14 +167,8 @@ else
 	LDFLAGS += -Wl,-rpath,'$$ORIGIN/iree-runtime'
 endif
 
-CUDA_PRESENT := $(shell command -v nvcc >/dev/null 2>&1 && echo true || echo false)
-
-ifeq ($(CUDA_PRESENT), true)
-	CFLAGS += -DCUDA_ENABLED
-endif
-
 NX_IREE_LIB_DIR = $(MIX_APP_PATH)/priv/iree-runtime
-NX_IREE_LIB_LINK_PATH = $(CWD_RELATIVE_TO_PRIV_PATH)/$(NX_IREE_RUNTIME_LIB)
+NX_IREE_LIB_LINK_PATH = $(abspath $(NX_IREE_RUNTIME_LIB))
 NX_IREE_CACHE_SO_LINK_PATH = $(NX_IREE_CACHE_SO)
 
 SOURCES = $(wildcard c_src/*.cc)

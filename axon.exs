@@ -5,11 +5,11 @@ Mix.install([
   {:exla, github: "elixir-nx/nx", sparse: "exla", override: true}
 ], system_env: %{"NX_IREE_PREFER_PRECOMPILED" => false})
 
-NxIREE.list_drivers() |> IO.inspect(label: "drivers")
+{:ok, drivers} = NxIREE.list_drivers() |> IO.inspect(label: "drivers")
 
-{:ok, [dev | _]} = NxIREE.list_devices("metal")
+{:ok, [dev | _]} = NxIREE.list_devices("cuda")
 
-flags = ["--iree-hal-target-backends=metal-spirv", "--iree-input-type=stablehlo_xla", "--iree-execution-model=async-internal"]
+flags = ["--iree-hal-target-backends=cuda", "--iree-input-type=stablehlo_xla", "--iree-execution-model=async-internal"]
 Nx.Defn.default_options(compiler: NxIREE.Compiler, iree_compiler_flags: flags, iree_runtime_options: [device: dev])
 
 model =
