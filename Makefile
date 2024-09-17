@@ -23,7 +23,8 @@ endif
 .PHONY: clone_iree
 clone_iree: $(NX_IREE_SOURCE_DIR)
 
-$(NX_IREE_SOURCE_DIR):
+.PHONY: iree_source_dir
+iree_source_dir:
 	./scripts/clone_iree.sh $(IREE_GIT_REV) $(NX_IREE_SOURCE_DIR)
 
 IREE_CMAKE_BUILD_DIR ?= $(abspath iree-runtime/iree-build)
@@ -106,7 +107,7 @@ install_runtime: iree_host $(IREE_INSTALL_DIR)
 
 CMAKE_SOURCES = $(abspath cmake/src/runtime.cc) $(abspath cmake/src/runtime.h)
 
-$(IREE_INSTALL_DIR): $(NX_IREE_SOURCE_DIR) $(CMAKE_SOURCES)
+$(IREE_INSTALL_DIR): iree_source_dir $(CMAKE_SOURCES)
 	cmake -G Ninja -B $(IREE_CMAKE_BUILD_DIR) \
 		-DCMAKE_BUILD_TYPE=$(IREE_CMAKE_CONFIG)\
 		-DIREE_BUILD_COMPILER=OFF\

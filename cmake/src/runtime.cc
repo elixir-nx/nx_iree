@@ -70,7 +70,24 @@ iree::runtime::IREETensor::IREETensor(char *buffer) {
   this->buffer_view = nullptr;
 }
 
-std::vector<char> *iree::runtime::IREETensor::serialize() {
+iree::runtime::IREETensor::~IREETensor() {
+  this->deallocate();
+}
+
+void iree::runtime::IREETensor::deallocate() {
+  if (data) {
+    std::free(data);
+    data = nullptr;
+  }
+
+  if (buffer_view) {
+    iree_hal_buffer_view_release(buffer_view);
+    buffer_view = nullptr;
+  }
+}
+
+std::vector<char> *
+iree::runtime::IREETensor::serialize() {
   auto buffer = new std::vector<char>();
 
   // Serialize 'type'
@@ -196,16 +213,6 @@ iree_status_t list_devices(iree_hal_driver_registry_t *registry, std::string dri
     return status;
   }
 
-  auto out_device = new iree::runtime::Device(driver_name);
-  status = iree_hal_driver_create_default_device(driver, iree_allocator_system(),
-                                                 &out_device->ref);
-  if (!iree_status_is_ok(status)) {
-    return status;
-  }
-
-  out_device->uri = driver_name + "://default";
-  devices.push_back(out_device);
-
   status = iree_hal_driver_query_available_devices(
       driver, iree_allocator_system(), &device_info_count, &device_infos);
 
@@ -217,7 +224,9 @@ iree_status_t list_devices(iree_hal_driver_registry_t *registry, std::string dri
   for (size_t i = 0; i < device_info_count; i++) {
     auto device = new iree::runtime::Device(driver_name);
     auto info = device_infos[i];
-    device->uri = driver_name + "://" + std::string(info.path.data, info.path.size);
+    std::string device_urn(info.path.data, info.path.size);
+    device->uri = driver_name + "://" + device_urn;
+    device->id = info.device_id;
 
     status = iree_hal_create_device(
         registry,

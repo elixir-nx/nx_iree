@@ -2,7 +2,7 @@ defmodule NxIREE.NativeTest do
   use ExUnit.Case, async: true
 
   test "serializes and deserializes a tensor" do
-    tensor = Nx.tensor([[[1, 2], [3, 4], [5, 6]]], type: :s32, backend: NxIREE.Tensor)
+    tensor = Nx.tensor([[[1, 2], [3, 4], [5, 6]]], type: :s32, backend: NxIREE.Backend)
 
     {:ok, serialized} = NxIREE.Native.serialize_tensor(tensor.data.ref)
 

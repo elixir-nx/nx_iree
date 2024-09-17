@@ -29,6 +29,7 @@ class Device {
   std::string uri;
   iree_hal_device_t* ref;
   std::string driver_name;
+  uint64_t id;
 
   Device(std::string driver_name) : driver_name(driver_name) {}
   ~Device();
@@ -48,12 +49,9 @@ class IREETensor {
   IREETensor(void* data, size_t size, std::vector<int64_t> in_dims, iree_hal_element_type_t type);
 
   // Destructor
-  ~IREETensor() {
-    if (data) {
-      std::free(data);
-      data = nullptr;
-    }
-  }
+  ~IREETensor();
+
+  void deallocate();
 
   // Disable copy and move semantics for simplicity
   IREETensor(const IREETensor&) = delete;

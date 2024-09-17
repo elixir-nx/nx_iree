@@ -24,31 +24,51 @@ defmodule NxIREE.Compiler do
       raise "missing :iree_compiler_flags option"
     end
 
+    has_target_backend_flag? =
+      Enum.any?(iree_compiler_flags, &String.starts_with?(&1, "--iree-hal-target-backends"))
+
+    iree_compiler_flags =
+      cond do
+        is_nil(iree_runtime_options[:device]) and has_target_backend_flag? ->
+          Enum.map(iree_compiler_flags, fn
+            "--iree-hal-target-backends" <> _ ->
+              %{compiler_target_backend: backend} = NxIREE.Device.default_device()
+              "--iree-hal-target-backends=#{backend}"
+
+            flag ->
+              flag
+          end)
+
+        not has_target_backend_flag? ->
+          {:ok, %{compiler_target_backend: backend}} =
+            NxIREE.Device.get(iree_runtime_options[:device])
+
+          ["--iree-hal-target-backends=#{backend}" | iree_compiler_flags]
+
+        true ->
+          iree_compiler_flags
+      end
+
     %{mlir_module: mlir_module, output_container: output_container, used_inputs: used_inputs} =
       EXLA.to_mlir_module(fun, vars, Keyword.put(opts, :within_defn_compiler, true))
 
-    bytecode = NxIREE.compile(mlir_module, iree_compiler_flags)
+    nx_iree_module = NxIREE.compile(mlir_module, iree_compiler_flags, output_container)
 
     if output_mode == :bytecode do
-      throw({:bytecode, %{bytecode: bytecode, output_container: output_container}})
+      throw({:bytecode, nx_iree_module})
     else
       fn [inputs] ->
         filtered_inputs =
           filter_inputs_by_indices(inputs, used_inputs)
 
-        {:ok, results} =
+        {:ok, result} =
           NxIREE.call(
-            bytecode,
+            nx_iree_module,
             filtered_inputs,
             iree_runtime_options
           )
 
-        {res, []} =
-          Nx.Defn.Composite.traverse(output_container, results, fn _, [r | acc] ->
-            {r, acc}
-          end)
-
-        [res]
+        [result]
       end
     end
   end
