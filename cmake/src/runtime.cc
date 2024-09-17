@@ -197,9 +197,6 @@ iree_status_t list_devices(iree_hal_driver_registry_t *registry, std::vector<ire
   return iree_ok_status();
 }
 
-iree_hal_device_t *get_default_device(iree_hal_driver_registry_t *registry) {
-}
-
 iree_status_t list_devices(iree_hal_driver_registry_t *registry, std::string driver_name, std::vector<iree::runtime::Device *> &devices) {
   size_t device_info_count;
   iree_hal_device_info_t *device_infos;
