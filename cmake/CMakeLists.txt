@@ -36,19 +36,21 @@ if($ENV{IREE_BUILD_TARGET} STREQUAL "webassembly")
   set(IREE_HAL_EXECUTABLE_PLUGIN_EMBEDDED_ELF OFF)
 
   set(HAVE_POSIX_REGEX 0)
-  # Either WASM=1 SIDE_MODULE=1 or WASM=<0|2> MAIN_MODULE=1
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s WASM=1 -s SIDE_MODULE=1")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s EXIT_RUNTIME=1")
 
-   # Define the output files for both WebAssembly and JavaScript
+  file(GLOB iree_runtime_main_dummy CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/dummy.c")
+  # Either WASM=1 SIDE_MODULE=1 or WASM=<0|2> MAIN_MODULE=1
+  # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s WASM=1 -s SIDE_MODULE=1")
+  # set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s EXIT_RUNTIME=1")
+
+  # Define the output files for both WebAssembly and JavaScript
   set(WASM_OUTPUT "${CMAKE_BINARY_DIR}/${_NAME}.wasm")
+  set(JS_OUTPUT "${CMAKE_BINARY_DIR}/${_NAME}.js")
 
   # Build the WebAssembly executable
   add_executable(${_NAME} ${iree_runtime_sources})
-  set_target_properties(${_NAME} PROPERTIES SUFFIX ".wasm")
 
   install(
-    TARGETS ${_NAME}
+    FILES ${WASM_OUTPUT} ${JS_OUTPUT}
     DESTINATION "."
   )
 else()
