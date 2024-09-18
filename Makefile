@@ -23,8 +23,7 @@ endif
 .PHONY: clone_iree
 clone_iree: $(NX_IREE_SOURCE_DIR)
 
-.PHONY: iree_source_dir
-iree_source_dir:
+$(NX_IREE_SOURCE_DIR):
 	./scripts/clone_iree.sh $(IREE_GIT_REV) $(NX_IREE_SOURCE_DIR)
 
 IREE_CMAKE_BUILD_DIR ?= $(abspath iree-runtime/iree-build)
@@ -45,8 +44,13 @@ ifeq ($(CUDA_PRESENT), true)
 	CMAKE_CXX_FLAGS += -DCUDA_ENABLED
 endif
 
-# flags for xcode 15.4
+BUILD_HOST_COMPILER=OFF
+
+# apple target flags specified for xcode 15.4
 ifeq ($(IREE_BUILD_TARGET), host)
+else ifeq ($(IREE_BUILD_TARGET), webassembly)
+  BUILD_TARGET_FLAGS += \
+		-DIREE_HOST_BIN_DIR=$(abspath $(IREE_HOST_BIN_DIR))
 else ifeq ($(IREE_BUILD_TARGET), ios)
 	BUILD_TARGET_FLAGS += \
 		-DCMAKE_SYSTEM_NAME=iOS\
@@ -102,13 +106,12 @@ else
 endif
 
 .PHONY: install_runtime
-install_runtime: iree_host $(IREE_INSTALL_DIR)
-
+install_runtime: $(IREE_HOST_INSTALL_DIR)/bin/iree-flatcc-cli $(IREE_INSTALL_DIR)
 
 CMAKE_SOURCES = $(abspath cmake/src/runtime.cc) $(abspath cmake/src/runtime.h)
 
-$(IREE_INSTALL_DIR): iree_source_dir $(CMAKE_SOURCES)
-	cmake -G Ninja -B $(IREE_CMAKE_BUILD_DIR) \
+$(IREE_INSTALL_DIR): $(NX_IREE_SOURCE_DIR) $(CMAKE_SOURCES)
+	$(EMCMAKE) cmake -G Ninja -B $(IREE_CMAKE_BUILD_DIR) \
 		-DCMAKE_BUILD_TYPE=$(IREE_CMAKE_CONFIG)\
 		-DIREE_BUILD_COMPILER=OFF\
 		-DIREE_RUNTIME_BUILD_DIR=$(IREE_RUNTIME_BUILD_DIR)\
@@ -116,25 +119,21 @@ $(IREE_INSTALL_DIR): iree_source_dir $(CMAKE_SOURCES)
 		-DNX_IREE_SOURCE_DIR=$(NX_IREE_SOURCE_DIR) \
 		-DCMAKE_CXX_FLAGS=$(CMAKE_CXX_FLAGS) \
 		$(BUILD_TARGET_FLAGS)
-
 	cmake --build $(IREE_CMAKE_BUILD_DIR) --config $(IREE_CMAKE_CONFIG)
 	cmake --install $(IREE_CMAKE_BUILD_DIR) --config $(IREE_CMAKE_CONFIG) --prefix $(IREE_INSTALL_DIR)
 
 .PHONY: iree_host
-ifeq ($(BUILD_IREE_RUNTIME), true)
-iree_host:
+iree_host: $(IREE_HOST_INSTALL_DIR)/bin/iree-flatcc-cli
+
+$(IREE_HOST_INSTALL_DIR)/bin/iree-flatcc-cli: $(NX_IREE_SOURCE_DIR) $(CMAKE_SOURCES)
 	@echo "Building IREE runtime host binaries at $(IREE_HOST_BUILD_DIR)."
 	cmake -G Ninja -B $(IREE_HOST_BUILD_DIR) \
 		-DCMAKE_INSTALL_PREFIX=$(IREE_HOST_INSTALL_DIR) \
-		-DIREE_BUILD_COMPILER=OFF\
+		-DIREE_BUILD_COMPILER=$(BUILD_HOST_COMPILER)\
 		-DCMAKE_BUILD_TYPE=$(IREE_CMAKE_CONFIG) \
 		-DCMAKE_CXX_FLAGS=$(CMAKE_CXX_FLAGS) \
 		-S $(NX_IREE_SOURCE_DIR)
 	cmake --build $(IREE_HOST_BUILD_DIR) --target install
-else
-iree_host:
-	@echo "Not building IREE runtime host binaries. Skipping."
-endif
 
 ### NxIREE Runtime NIF library
 

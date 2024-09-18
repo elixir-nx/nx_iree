@@ -10,11 +10,22 @@ get_nproc() {
     fi
 }
 
+MAKE_RULE=install_runtime
+BUILD_HOST_COMPILER=OFF
+
 # Parse options
 while [[ $# -gt 0 ]]; do
   case $1 in
     --target=*)
       IREE_BUILD_TARGET="${1#*=}"
+      shift # Shift past the argument
+      ;;
+    --make-rule=*)
+      MAKE_RULE="${1#*=}"
+      shift # Shift past the argument
+      ;;
+    --build-compiler)
+      BUILD_HOST_COMPILER=ON
       shift # Shift past the argument
       ;;
     *)
@@ -39,7 +50,7 @@ build() {
     local IREE_RUNTIME_BUILD_DIR=iree-runtime/$1/build
     local IREE_INSTALL_DIR=$(install_dir $1)
 
-    export IREE_HOST_BUILD_DIR=iree-runtime/host-build
+    export IREE_HOST_BUILD_DIR=iree-runtime/host-toolchain
     export IREE_HOST_INSTALL_DIR=${IREE_HOST_BUILD_DIR}/install
     export IREE_HOST_BIN_DIR=${IREE_HOST_BUILD_DIR}/install/bin
 
@@ -48,27 +59,19 @@ build() {
     echo "IREE_INSTALL_DIR: $IREE_INSTALL_DIR"
     echo "IREE_HOST_BIN_DIR: $IREE_HOST_BIN_DIR"
     echo "IREE_HOST_INSTALL_DIR: $IREE_HOST_INSTALL_DIR"
-    echo "IREE_HOST_BUILD_DIR: $IREE_HOST_BUILD_DIR"
 
-    if [[ $1 -eq "host" ]]; then
-        make ${NUM_JOBS} install_runtime \
-            IREE_GIT_REV=$(mix iree.version) \
-            IREE_INSTALL_DIR=${IREE_INSTALL_DIR} \
-            IREE_CMAKE_BUILD_DIR=${IREE_CMAKE_BUILD_DIR} \
-            IREE_RUNTIME_BUILD_DIR=${IREE_RUNTIME_BUILD_DIR} \
-            IREE_BUILD_TARGET=$1
-    else
-        make ${NUM_JOBS} install_runtime \
-            IREE_GIT_REV=$(mix iree.version) \
-            IREE_INSTALL_DIR=${IREE_INSTALL_DIR} \
-            IREE_HOST_BIN_DIR=${IREE_HOST_BIN_DIR} \
-            IREE_CMAKE_BUILD_DIR=${IREE_CMAKE_BUILD_DIR} \
-            IREE_RUNTIME_BUILD_DIR=${IREE_RUNTIME_BUILD_DIR} \
-            IREE_BUILD_TARGET=$1
-    fi
+    make ${NUM_JOBS} ${MAKE_RULE} \
+        IREE_GIT_REV=$(mix iree.version) \
+        IREE_INSTALL_DIR=${IREE_INSTALL_DIR} \
+        IREE_HOST_BIN_DIR=${IREE_HOST_BIN_DIR} \
+        IREE_CMAKE_BUILD_DIR=${IREE_CMAKE_BUILD_DIR} \
+        IREE_RUNTIME_BUILD_DIR=${IREE_RUNTIME_BUILD_DIR} \
+        IREE_BUILD_TARGET=$1 \
+        BUILD_HOST_COMPILER=$2 \
+        EMCMAKE=${EMCMAKE}
 }
 
-build $IREE_BUILD_TARGET
+build $IREE_BUILD_TARGET $BUILD_HOST_COMPILER
 IREE_INSTALL_DIR=$(install_dir $IREE_BUILD_TARGET)
 
 TAR_NAME=iree-runtime/artifacts/nx_iree-embedded-macos-${IREE_BUILD_TARGET}.tar.gz

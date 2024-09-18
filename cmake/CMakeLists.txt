@@ -24,33 +24,63 @@ if(CMAKE_BUILD_TYPE MATCHES MinSizeRel)
 endif()
 
 file(GLOB iree_runtime_sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc" "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h")
-add_library(${_NAME} SHARED ${iree_runtime_sources})
 
-set(__BUILD_DIR "${IREE_RUNTIME_BUILD_DIR}")
+if($ENV{IREE_BUILD_TARGET} STREQUAL "webassembly")
+  message("Compiling for WebAssembly/Emscripten")
+  set(EMSCRIPTEN ON)
+  set(IREE_BUILD_COMPILER OFF)
+  set(IREE_BUILD_TESTS OFF)
 
-add_subdirectory("${NX_IREE_SOURCE_DIR}" ${__BUILD_DIR} EXCLUDE_FROM_ALL)
+  # Emscripten builds don't support embedded ELF libraries.
+  set(IREE_HAL_EXECUTABLE_LOADER_EMBEDDED_ELF OFF)
+  set(IREE_HAL_EXECUTABLE_PLUGIN_EMBEDDED_ELF OFF)
 
-install(
+  set(HAVE_POSIX_REGEX 0)
+  # Either WASM=1 SIDE_MODULE=1 or WASM=<0|2> MAIN_MODULE=1
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s WASM=1 -s SIDE_MODULE=1")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s EXIT_RUNTIME=1")
+
+   # Define the output files for both WebAssembly and JavaScript
+  set(WASM_OUTPUT "${CMAKE_BINARY_DIR}/${_NAME}.wasm")
+
+  # Build the WebAssembly executable
+  add_executable(${_NAME} ${iree_runtime_sources})
+  set_target_properties(${_NAME} PROPERTIES SUFFIX ".wasm")
+
+  install(
+    TARGETS ${_NAME}
+    DESTINATION "."
+  )
+else()
+  set_target_properties(${_NAME} PROPERTIES SUFFIX ".so")
+  set(EMSCRIPTEN OFF)
+  add_library(${_NAME} SHARED ${iree_runtime_sources})
+
+  install(
     TARGETS ${_NAME}
     DESTINATION "."
 )
-
-set_target_properties(${_NAME} PROPERTIES SUFFIX ".so")
+endif()
 
 set_target_properties(${_NAME} PROPERTIES
     INSTALL_RPATH_USE_LINK_PATH TRUE
     BUILD_WITH_INSTALL_RPATH TRUE
 )
 
+set(__BUILD_DIR "${IREE_RUNTIME_BUILD_DIR}")
+
+add_subdirectory("${NX_IREE_SOURCE_DIR}" ${__BUILD_DIR} EXCLUDE_FROM_ALL)
+
+
+
 if($ENV{DEBUG})
   set(CMAKE_BUILD_TYPE Debug)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 endif()
 
-if(NOT APPLE)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -shared -fvisibility=default")
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--export-dynamic")
-else()
+if(EMSCRIPTEN)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static -fvisibility=default")
+elseif(APPLE)
   # Although the compiler complains about not using these,
   # things only work with them set
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -undefined dynamic_lookup -fvisibility=default")
@@ -59,6 +89,9 @@ else()
   if(ARM64_SUPPORTED)
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMAC_ARM64")
   endif()
+else()
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -shared -fvisibility=default")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--export-dynamic")
 endif()
 
 # Ensure visibility of all symbols
@@ -75,11 +108,13 @@ target_link_libraries(${_NAME} iree_tooling_context_util)
 # Install the header files - this will make it easier to copy them over
 # to the final bundle.
 
-install(DIRECTORY "${IREE_RUNTIME_INCLUDE_PATH}"
-        DESTINATION "include"
-        FILES_MATCHING PATTERN "*.h")
+if(NOT EMSCRIPTEN)
+  install(DIRECTORY "${IREE_RUNTIME_INCLUDE_PATH}"
+          DESTINATION "include"
+          FILES_MATCHING PATTERN "*.h")
 
-file(GLOB HEADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h")
+  file(GLOB HEADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h")
 
-install(FILES ${HEADER_FILES}
-        DESTINATION "include/nx_iree")
+  install(FILES ${HEADER_FILES}
+          DESTINATION "include/nx_iree")
+endif()
