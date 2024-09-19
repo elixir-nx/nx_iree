@@ -31,6 +31,7 @@ class Device {
   std::string driver_name;
   uint64_t id;
 
+  Device(iree_hal_device_t* ref) : ref(ref) {}
   Device(std::string driver_name) : driver_name(driver_name) {}
   ~Device();
 };

@@ -22,6 +22,7 @@ endif
 
 .PHONY: clone_iree
 clone_iree: $(NX_IREE_SOURCE_DIR)
+	@echo "Cloned IREE into $(NX_IREE_SOURCE_DIR)"
 
 $(NX_IREE_SOURCE_DIR):
 	./scripts/clone_iree.sh $(IREE_GIT_REV) $(NX_IREE_SOURCE_DIR)
@@ -108,7 +109,7 @@ endif
 .PHONY: install_runtime
 install_runtime: $(IREE_HOST_INSTALL_DIR)/bin/iree-flatcc-cli $(IREE_INSTALL_DIR)
 
-CMAKE_SOURCES = $(abspath cmake/src/runtime.cc) $(abspath cmake/src/runtime.h)
+CMAKE_SOURCES = $(abspath cmake/src/runtime.cpp) $(abspath cmake/src/emscripten_api.cpp) $(abspath cmake/src/runtime.h) $(abspath cmake/src/emscripten_api.h)
 
 $(IREE_INSTALL_DIR): $(NX_IREE_SOURCE_DIR) $(CMAKE_SOURCES)
 	$(EMCMAKE) cmake -G Ninja -B $(IREE_CMAKE_BUILD_DIR) \

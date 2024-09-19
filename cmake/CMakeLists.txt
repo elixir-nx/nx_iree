@@ -23,7 +23,7 @@ if(CMAKE_BUILD_TYPE MATCHES MinSizeRel)
   set(IREE_SIZE_OPTIMIZED ON)
 endif()
 
-file(GLOB iree_runtime_sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc" "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h")
+file(GLOB iree_runtime_sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h")
 
 if($ENV{IREE_BUILD_TARGET} STREQUAL "webassembly")
   message("Compiling for WebAssembly/Emscripten")
@@ -34,20 +34,40 @@ if($ENV{IREE_BUILD_TARGET} STREQUAL "webassembly")
   # Emscripten builds don't support embedded ELF libraries.
   set(IREE_HAL_EXECUTABLE_LOADER_EMBEDDED_ELF OFF)
   set(IREE_HAL_EXECUTABLE_PLUGIN_EMBEDDED_ELF OFF)
+  set(IREE_HAL_DRIVER_VULKAN OFF)
 
   set(HAVE_POSIX_REGEX 0)
 
-  file(GLOB iree_runtime_main_dummy CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/dummy.c")
   # Either WASM=1 SIDE_MODULE=1 or WASM=<0|2> MAIN_MODULE=1
-  # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s WASM=1 -s SIDE_MODULE=1")
-  # set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s EXIT_RUNTIME=1")
+  set(EXPORTED_RUNTIME_METHODS_LIST "ccall" "cwrap" "getValue" "setValue")
+  set(EXPORTED_RUNTIME_METHODS "")
+  foreach(METHOD IN LISTS EXPORTED_RUNTIME_METHODS_LIST)
+    set(EXPORTED_RUNTIME_METHODS "${EXPORTED_RUNTIME_METHODS}\"${METHOD}\", ")
+  endforeach()
+  string(REGEX REPLACE ", $" "" EXPORTED_RUNTIME_METHODS "${EXPORTED_RUNTIME_METHODS}")
+  set(EXPORTED_RUNTIME_METHODS "[${EXPORTED_RUNTIME_METHODS}]")
+
+  set(EXPORTED_FUNCTIONS_LIST "_malloc" "_free" "_ensure_malloc_free")
+  set(EXPORTED_FUNCTIONS "")
+  foreach(METHOD IN LISTS EXPORTED_FUNCTIONS_LIST)
+    set(EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS}\"${METHOD}\", ")
+  endforeach()
+  string(REGEX REPLACE ", $" "" EXPORTED_FUNCTIONS "${EXPORTED_FUNCTIONS}")
+  set(EXPORTED_FUNCTIONS "[${EXPORTED_FUNCTIONS}]")
+
+  message("EXPORTED_RUNTIME_METHODS: ${EXPORTED_RUNTIME_METHODS}")
+  message("EXPORTED_FUNCTIONS: ${EXPORTED_FUNCTIONS}")
+
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 --no-entry -s ALLOW_MEMORY_GROWTH=1 -sEXPORTED_FUNCTIONS='${EXPORTED_FUNCTIONS}' -sEXPORTED_RUNTIME_METHODS='${EXPORTED_RUNTIME_METHODS}' -sDEFAULT_LIBRARY_FUNCS_TO_INCLUDE=free,malloc")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lembind")
 
   # Define the output files for both WebAssembly and JavaScript
   set(WASM_OUTPUT "${CMAKE_BINARY_DIR}/${_NAME}.wasm")
-  set(JS_OUTPUT "${CMAKE_BINARY_DIR}/${_NAME}.js")
+  set(JS_OUTPUT "${CMAKE_BINARY_DIR}/${_NAME}.mjs")
 
   # Build the WebAssembly executable
   add_executable(${_NAME} ${iree_runtime_sources})
+  set_target_properties(${_NAME} PROPERTIES SUFFIX ".mjs")
 
   install(
     FILES ${WASM_OUTPUT} ${JS_OUTPUT}
@@ -81,7 +101,7 @@ if($ENV{DEBUG})
 endif()
 
 if(EMSCRIPTEN)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static -fvisibility=default")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DEMSCRIPTEN -fvisibility=default")
 elseif(APPLE)
   # Although the compiler complains about not using these,
   # things only work with them set
