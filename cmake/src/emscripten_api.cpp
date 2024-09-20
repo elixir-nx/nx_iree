@@ -50,15 +50,6 @@ struct nx_iree_tensor_t {
   }
 };
 
-struct nx_iree_data_buffer_t {
-  void* data;
-  size_t size;
-
-  ~nx_iree_data_buffer_t() {
-    free(data);
-  }
-};
-
 template <typename T>
 std::shared_ptr<T> make_shared(T* ptr) {
   return std::shared_ptr<T>(ptr);
@@ -92,8 +83,7 @@ std::pair<std::shared_ptr<nx_iree_status_t>, std::vector<std::shared_ptr<nx_iree
     std::shared_ptr<nx_iree_vm_instance_t> instance,
     std::shared_ptr<nx_iree_device_t> device,
     std::string driver_name,
-    unsigned char* bytecode,
-    size_t bytecode_size,
+    std::shared_ptr<nx_iree_data_buffer_t> bytecode,
     std::vector<std::shared_ptr<nx_iree_tensor_t>> wrapped_inputs) {
   std::vector<iree::runtime::IREETensor*> inputs;
   for (auto wrapped_input : wrapped_inputs) {
@@ -104,8 +94,8 @@ std::pair<std::shared_ptr<nx_iree_status_t>, std::vector<std::shared_ptr<nx_iree
       instance->ptr,
       device->ptr->ref,
       driver_name,
-      bytecode,
-      bytecode_size,
+      bytecode->data,
+      bytecode->size,
       inputs);
 
   auto wrapped_outputs = std::vector<std::shared_ptr<nx_iree_tensor_t>>();
@@ -124,21 +114,18 @@ std::pair<std::shared_ptr<nx_iree_status_t>, std::vector<std::shared_ptr<nx_iree
 }
 
 std::pair<std::shared_ptr<nx_iree_status_t>, std::shared_ptr<nx_iree_data_buffer_t>> nx_iree_read_buffer(std::shared_ptr<nx_iree_device_t> device, std::shared_ptr<nx_iree_tensor_t> tensor, size_t num_bytes) {
-  void* output_buffer = malloc(num_bytes);
+  auto data_buffer = make_shared(new nx_iree_data_buffer_t(num_bytes));
+  void* output_buffer = static_cast<void*>(data_buffer->data);
   auto status = read_buffer(device->ptr->ref, tensor->ptr->buffer_view, output_buffer, num_bytes);
   nx_iree_status_t* status_handle = new nx_iree_status_t;
   status_handle->ptr = status;
 
   auto shared_status = make_shared(status_handle);
   if (!nx_iree_status_is_ok(shared_status)) {
-    free(output_buffer);
     return std::make_pair(shared_status, nullptr);
   }
 
-  auto data_buffer = new nx_iree_data_buffer_t;
-  data_buffer->data = output_buffer;
-  data_buffer->size = num_bytes;
-  return std::make_pair(shared_status, make_shared(data_buffer));
+  return std::make_pair(shared_status, data_buffer);
 }
 
 std::string nx_iree_get_status_message(std::shared_ptr<nx_iree_status_t> status) {
