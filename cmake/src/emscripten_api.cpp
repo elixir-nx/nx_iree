@@ -4,65 +4,67 @@
 
 struct nx_iree_vm_instance_t {
   iree_vm_instance_t* ptr;
+
+  ~nx_iree_vm_instance_t() {
+    iree_vm_instance_release(ptr);
+  }
 };
 
 struct nx_iree_driver_registry_t {
   iree_hal_driver_registry_t* ptr;
+
+  ~nx_iree_driver_registry_t() {
+    iree_hal_driver_registry_free(ptr);
+  }
 };
 
 struct nx_iree_device_t {
   iree::runtime::Device* ptr;
+
+  ~nx_iree_device_t() {
+    delete ptr;
+  }
 };
 
 struct nx_iree_driver_t {
   iree::runtime::Driver* ptr;
+
+  ~nx_iree_driver_t() {
+    delete ptr;
+  }
 };
 
 struct nx_iree_status_t {
   iree_status_t ptr;
+
+  ~nx_iree_status_t() {
+    iree_status_free(ptr);
+  }
 };
 
 struct nx_iree_tensor_t {
   iree::runtime::IREETensor* ptr;
+
+  ~nx_iree_tensor_t() {
+    delete ptr;
+  }
 };
 
-void free_shared(nx_iree_vm_instance_t* handle) {
-  iree_vm_instance_release(handle->ptr);
-  delete handle;
-}
+struct nx_iree_data_buffer_t {
+  void* data;
+  size_t size;
 
-void free_shared(nx_iree_driver_registry_t* handle) {
-  iree_hal_driver_registry_free(handle->ptr);
-  delete handle;
-}
-
-void free_shared(nx_iree_driver_t* handle) {
-  delete handle->ptr;
-  delete handle;
-}
-
-void free_shared(nx_iree_device_t* handle) {
-  delete handle->ptr;
-  delete handle;
-}
-
-void free_shared(nx_iree_tensor_t* handle) {
-  delete handle->ptr;
-  delete handle;
-}
-
-void free_shared(nx_iree_status_t* handle) {
-  iree_status_free(handle->ptr);
-  delete handle;
-}
+  ~nx_iree_data_buffer_t() {
+    free(data);
+  }
+};
 
 template <typename T>
 std::shared_ptr<T> make_shared(T* ptr) {
-  return std::shared_ptr<T>(ptr, [](T* ptr) { free_shared(ptr); });
+  return std::shared_ptr<T>(ptr);
 }
 
-std::shared_ptr<nx_iree_vm_instance_t>
-nx_iree_create_vm_instance() {
+std::shared_ptr<nx_iree_vm_instance_t> nx_iree_create_vm_instance() {
   auto instance = new nx_iree_vm_instance_t;
   instance->ptr = create_instance();
   return make_shared(instance);
@@ -121,7 +123,7 @@ std::pair<std::shared_ptr<nx_iree_status_t>, std::vector<std::shared_ptr<nx_iree
   return std::make_pair(make_shared(status_handle), wrapped_outputs);
 }
 
-std::pair<std::shared_ptr<nx_iree_status_t>, void*> nx_iree_read_buffer(std::shared_ptr<nx_iree_device_t> device, std::shared_ptr<nx_iree_tensor_t> tensor, size_t num_bytes) {
+std::pair<std::shared_ptr<nx_iree_status_t>, std::shared_ptr<nx_iree_data_buffer_t>> nx_iree_read_buffer(std::shared_ptr<nx_iree_device_t> device, std::shared_ptr<nx_iree_tensor_t> tensor, size_t num_bytes) {
   void* output_buffer = malloc(num_bytes);
   auto status = read_buffer(device->ptr->ref, tensor->ptr->buffer_view, output_buffer, num_bytes);
   nx_iree_status_t* status_handle = new nx_iree_status_t;
@@ -133,7 +135,10 @@ std::pair<std::shared_ptr<nx_iree_status_t>, void*> nx_iree_read_buffer(std::sha
     return std::make_pair(shared_status, nullptr);
   }
 
-  return std::make_pair(shared_status, output_buffer);
+  auto data_buffer = new nx_iree_data_buffer_t;
+  data_buffer->data = output_buffer;
+  data_buffer->size = num_bytes;
+  return std::make_pair(shared_status, make_shared(data_buffer));
 }
 
 std::string nx_iree_get_status_message(std::shared_ptr<nx_iree_status_t> status) {

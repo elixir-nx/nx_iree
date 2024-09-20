@@ -78,6 +78,11 @@ else()
   set(EMSCRIPTEN OFF)
   add_library(${_NAME} SHARED ${iree_runtime_sources})
 
+  list(REMOVE_ITEM iree_runtime_sources
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/emscripten_api.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/emscripten_api.h"
+  )
+
   install(
     TARGETS ${_NAME}
     DESTINATION "."
