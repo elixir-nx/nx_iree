@@ -1,6 +1,39 @@
 #include "emscripten_api.h"
 
-#include "runtime.h"
+iree::runtime::IREETensor::IREETensor(emscripten::val input_data, emscripten::val in_dims, std::string type_string) {
+  // Convert the data to a byte array
+  this->size = input_data["byteLength"].as<size_t>();
+  this->data = std::malloc(size);
+  auto offset = input_data["byteOffset"].as<uintptr_t>();
+  emscripten::val memory = emscripten::val::module_property("HEAPU8")
+                               .call<emscripten::val>("subarray", offset, offset + this->size);
+
+  std::memcpy(this->data, reinterpret_cast<const void*>(memory.as<uintptr_t>()), this->size);
+
+  // Convert the type string to an element type
+  this->type = nx_type_to_iree_type(type_string);
+
+  // Convert the dimensions to a vector
+
+  // Get the length of the JS array
+  unsigned length = in_dims["length"].as<unsigned>();
+
+  this->dims.reserve(length);
+  for (size_t i = 0; i < length; i++) {
+    this->dims.push_back(static_cast<iree_hal_dim_t>(in_dims[i].as<int64_t>()));
+  }
+
+  this->device = nullptr;
+  this->buffer_view = nullptr;
+}
+
+std::string serialize_iree_tensor(iree::runtime::IREETensor& tensor) {
+  auto serialized = tensor.serialize();
+  auto result = std::string(serialized->begin(), serialized->end());
+
+  delete serialized;
+  return result;
+}
 
 struct nx_iree_vm_instance_t {
   iree_vm_instance_t* ptr;
@@ -42,14 +75,6 @@ struct nx_iree_status_t {
   }
 };
 
-struct nx_iree_tensor_t {
-  iree::runtime::IREETensor* ptr;
-
-  ~nx_iree_tensor_t() {
-    delete ptr;
-  }
-};
-
 template <typename T>
 std::shared_ptr<T> make_shared(T* ptr) {
   return std::shared_ptr<T>(ptr);
@@ -79,15 +104,15 @@ std::shared_ptr<nx_iree_device_t> nx_iree_create_device(std::shared_ptr<nx_iree_
   return make_shared(device);
 }
 
-std::pair<std::shared_ptr<nx_iree_status_t>, std::vector<std::shared_ptr<nx_iree_tensor_t>>> nx_iree_call(
+std::pair<std::shared_ptr<nx_iree_status_t>, std::vector<std::shared_ptr<iree::runtime::IREETensor>>> nx_iree_call(
     std::shared_ptr<nx_iree_vm_instance_t> instance,
     std::shared_ptr<nx_iree_device_t> device,
     std::string driver_name,
     std::shared_ptr<nx_iree_data_buffer_t> bytecode,
-    std::vector<std::shared_ptr<nx_iree_tensor_t>> wrapped_inputs) {
+    std::vector<std::shared_ptr<iree::runtime::IREETensor>> wrapped_inputs) {
   std::vector<iree::runtime::IREETensor*> inputs;
   for (auto wrapped_input : wrapped_inputs) {
-    inputs.push_back(wrapped_input->ptr);
+    inputs.push_back(wrapped_input.get());
   }
 
   auto [status, opt_outputs] = call(
@@ -98,13 +123,11 @@ std::pair<std::shared_ptr<nx_iree_status_t>, std::vector<std::shared_ptr<nx_iree
       bytecode->size,
       inputs);
 
-  auto wrapped_outputs = std::vector<std::shared_ptr<nx_iree_tensor_t>>();
+  auto wrapped_outputs = std::vector<std::shared_ptr<iree::runtime::IREETensor>>();
   if (opt_outputs.has_value()) {
     auto outputs = opt_outputs.value();
-    for (size_t i = 0; i < outputs.size(); i++) {
-      auto out = new nx_iree_tensor_t;
-      out->ptr = outputs[i];
-      wrapped_outputs.push_back(make_shared(out));
+    for (auto entry : outputs) {
+      wrapped_outputs.push_back(make_shared(entry));
     }
   }
 
@@ -113,10 +136,10 @@ std::pair<std::shared_ptr<nx_iree_status_t>, std::vector<std::shared_ptr<nx_iree
   return std::make_pair(make_shared(status_handle), wrapped_outputs);
 }
 
-std::pair<std::shared_ptr<nx_iree_status_t>, std::shared_ptr<nx_iree_data_buffer_t>> nx_iree_read_buffer(std::shared_ptr<nx_iree_device_t> device, std::shared_ptr<nx_iree_tensor_t> tensor, size_t num_bytes) {
+std::pair<std::shared_ptr<nx_iree_status_t>, std::shared_ptr<nx_iree_data_buffer_t>> nx_iree_read_buffer(std::shared_ptr<nx_iree_device_t> device, std::shared_ptr<iree::runtime::IREETensor> tensor, size_t num_bytes) {
   auto data_buffer = make_shared(new nx_iree_data_buffer_t(num_bytes));
   void* output_buffer = static_cast<void*>(data_buffer->data);
-  auto status = read_buffer(device->ptr->ref, tensor->ptr->buffer_view, output_buffer, num_bytes);
+  auto status = read_buffer(device->ptr->ref, tensor->buffer_view, output_buffer, num_bytes);
   nx_iree_status_t* status_handle = new nx_iree_status_t;
   status_handle->ptr = status;
 

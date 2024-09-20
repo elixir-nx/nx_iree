@@ -11,12 +11,13 @@
 #include <string>
 #include <vector>
 
+#include "runtime.h"
+
 typedef struct nx_iree_vm_instance_t nx_iree_vm_instance_t;
 typedef struct nx_iree_driver_registry_t nx_iree_driver_registry_t;
 typedef struct nx_iree_device_t nx_iree_device_t;
 typedef struct nx_iree_driver_t nx_iree_driver_t;
 typedef struct nx_iree_status_t nx_iree_status_t;
-typedef struct nx_iree_tensor_t nx_iree_tensor_t;
 
 class nx_iree_data_buffer_t {
  public:
@@ -28,6 +29,11 @@ class nx_iree_data_buffer_t {
     if (data == nullptr) {
       throw std::runtime_error("Failed to allocate memory.");
     }
+  }
+
+  static std::shared_ptr<nx_iree_data_buffer_t> allocate(size_t size) {
+    auto ptr = new nx_iree_data_buffer_t(size);
+    return std::shared_ptr<nx_iree_data_buffer_t>(ptr);
   }
 
   // Call using something like:
@@ -52,6 +58,11 @@ class nx_iree_data_buffer_t {
     }
   }
 
+  static std::shared_ptr<nx_iree_data_buffer_t> create(emscripten::val array, bool should_copy = true) {
+    auto ptr = new nx_iree_data_buffer_t(array, should_copy);
+    return std::shared_ptr<nx_iree_data_buffer_t>(ptr);
+  }
+
   ~nx_iree_data_buffer_t() {
     free(data);
   }
@@ -62,10 +73,14 @@ class nx_iree_data_buffer_t {
 };
 
 using namespace emscripten;
+using iree::runtime::IREETensor;
 using std::pair, std::shared_ptr;
 
+std::string serialize_iree_tensor(iree::runtime::IREETensor& tensor);
+
 EMSCRIPTEN_KEEPALIVE
-shared_ptr<nx_iree_vm_instance_t> nx_iree_create_vm_instance();
+shared_ptr<nx_iree_vm_instance_t>
+nx_iree_create_vm_instance();
 
 EMSCRIPTEN_KEEPALIVE
 shared_ptr<nx_iree_driver_registry_t> nx_iree_create_driver_registry();
@@ -74,15 +89,15 @@ EMSCRIPTEN_KEEPALIVE
 shared_ptr<nx_iree_device_t> nx_iree_create_device(shared_ptr<nx_iree_driver_registry_t> registry, std::string(device_uri));
 
 EMSCRIPTEN_KEEPALIVE
-pair<shared_ptr<nx_iree_status_t>, std::vector<shared_ptr<nx_iree_tensor_t>>> nx_iree_call(
+pair<shared_ptr<nx_iree_status_t>, std::vector<shared_ptr<IREETensor>>> nx_iree_call(
     shared_ptr<nx_iree_vm_instance_t> instance,
     shared_ptr<nx_iree_device_t> device,
     std::string driver_name,
     shared_ptr<nx_iree_data_buffer_t> bytecode,
-    std::vector<shared_ptr<nx_iree_tensor_t>> inputs);
+    std::vector<shared_ptr<IREETensor>> inputs);
 
 EMSCRIPTEN_KEEPALIVE
-pair<shared_ptr<nx_iree_status_t>, shared_ptr<nx_iree_data_buffer_t>> nx_iree_read_buffer(shared_ptr<nx_iree_device_t> device, shared_ptr<nx_iree_tensor_t> buffer_view, size_t num_bytes);
+pair<shared_ptr<nx_iree_status_t>, shared_ptr<nx_iree_data_buffer_t>> nx_iree_read_buffer(shared_ptr<nx_iree_device_t> device, shared_ptr<IREETensor> buffer_view, size_t num_bytes);
 
 EMSCRIPTEN_KEEPALIVE
 std::string nx_iree_get_status_message(shared_ptr<nx_iree_status_t> status);
@@ -131,26 +146,30 @@ EMSCRIPTEN_BINDINGS(my_module) {
   register_opaque_type<nx_iree_device_t>("Device");
   register_opaque_type<nx_iree_driver_t>("Driver");
   register_opaque_type<nx_iree_status_t>("Status");
-  register_opaque_type<nx_iree_tensor_t>("Tensor");
-  register_opaque_type<nx_iree_data_buffer_t>("DataBuffer");
+
+  class_<IREETensor>("Tensor")
+      .smart_ptr<shared_ptr<IREETensor>>("Tensor*")
+      .class_function("create", &IREETensor::build)
+      .function("deallocate", &IREETensor::deallocate)
+      .function("serialize", &serialize_iree_tensor);
 
   class_<nx_iree_data_buffer_t>("DataBuffer")
-      .smart_ptr<shared_ptr<nx_iree_data_buffer_t>>("DataBuffer*")
-      .constructor<size_t>()
-      .constructor<emscripten::val, bool>()
+      .smart_ptr<shared_ptr<nx_iree_data_buffer_t>>("DataBuffer")
+      .class_function("allocate", &nx_iree_data_buffer_t::allocate)
+      .class_function("create", &nx_iree_data_buffer_t::create)
       .property("size", &nx_iree_data_buffer_t::size)
       .function("data", &nx_iree_data_buffer_t::get_data);
 
-  register_pair<pair<shared_ptr<nx_iree_status_t>, std::vector<shared_ptr<nx_iree_tensor_t>>>>("StatusVectorOfTensorPair");
-  register_pair<pair<shared_ptr<nx_iree_status_t>, shared_ptr<nx_iree_data_buffer_t>>>("StatusDataBufferPtrPair");
-  register_pair<pair<std::string, shared_ptr<nx_iree_device_t>>>("StringDevicePair");
-  register_pair<pair<std::string, shared_ptr<nx_iree_driver_t>>>("StringDriverPair");
-  register_pair<pair<shared_ptr<nx_iree_status_t>, std::vector<pair<std::string, shared_ptr<nx_iree_driver_t>>>>>("StatusStringDriverPair");
-  register_pair<pair<shared_ptr<nx_iree_status_t>, std::vector<pair<std::string, shared_ptr<nx_iree_device_t>>>>>("StatusStringDevicePair");
+  register_pair<pair<shared_ptr<nx_iree_status_t>, std::vector<shared_ptr<IREETensor>>>>("[Status, std::vector<Tensor>]");
+  register_pair<pair<shared_ptr<nx_iree_status_t>, shared_ptr<nx_iree_data_buffer_t>>>("[Status, DataBuffer*]");
+  register_pair<pair<std::string, shared_ptr<nx_iree_device_t>>>("[String, Device*]");
+  register_pair<pair<std::string, shared_ptr<nx_iree_driver_t>>>("[String, Driver*]");
+  register_pair<pair<shared_ptr<nx_iree_status_t>, std::vector<pair<std::string, shared_ptr<nx_iree_driver_t>>>>>("[Status, Driver*]");
+  register_pair<pair<shared_ptr<nx_iree_status_t>, std::vector<pair<std::string, shared_ptr<nx_iree_device_t>>>>>("[Status, Device*]");
 
-  register_vector<pair<std::string, shared_ptr<nx_iree_driver_t>>>("VectorOfStringDriverPair");
-  register_vector<pair<std::string, shared_ptr<nx_iree_device_t>>>("VectorOfStringDevicePair");
-  register_vector<shared_ptr<nx_iree_tensor_t>>("VectorOfTensor");
+  register_vector<pair<std::string, shared_ptr<nx_iree_driver_t>>>("vector_string_Driver");
+  register_vector<pair<std::string, shared_ptr<nx_iree_device_t>>>("vector_string_Device");
+  register_vector<shared_ptr<IREETensor>>("vector_Tensor");
 
   // raw null-pointer getters for functions that need to receive pointers as references
   // function("get")
@@ -159,7 +178,7 @@ EMSCRIPTEN_BINDINGS(my_module) {
   function("createVMInstance", &nx_iree_create_vm_instance);
   function("createDriverRegistry", &nx_iree_create_driver_registry);
   function("createDevice", &nx_iree_create_device);
-  function("call", &nx_iree_call, allow_raw_pointers());
+  function("call", &nx_iree_call);
   function("readBuffer", &nx_iree_read_buffer);
   function("getStatusMessage", &nx_iree_get_status_message);
   function("registerAllDrivers", &nx_iree_register_all_drivers);

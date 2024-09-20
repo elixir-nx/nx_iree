@@ -18,6 +18,7 @@ defmodule NxIREE.Device do
         {:ok, devices} = NxIREE.Native.list_devices(driver_registry, name)
         devices
       end)
+      |> dbg()
 
     cache =
       devices

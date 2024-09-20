@@ -107,7 +107,11 @@ else
 endif
 
 .PHONY: install_runtime
+ifneq ($(strip $(IREE_HOST_BUILD_DIR)),)
 install_runtime: $(IREE_HOST_INSTALL_DIR)/bin/iree-flatcc-cli $(IREE_INSTALL_DIR)
+else
+install_runtime: $(IREE_INSTALL_DIR)
+endif
 
 CMAKE_SOURCES = $(abspath cmake/src/runtime.cpp) $(abspath cmake/src/emscripten_api.cpp) $(abspath cmake/src/runtime.h) $(abspath cmake/src/emscripten_api.h)
 
@@ -124,10 +128,15 @@ $(IREE_INSTALL_DIR): $(NX_IREE_SOURCE_DIR) $(CMAKE_SOURCES)
 	cmake --install $(IREE_CMAKE_BUILD_DIR) --config $(IREE_CMAKE_CONFIG) --prefix $(IREE_INSTALL_DIR)
 
 .PHONY: iree_host
-iree_host: $(IREE_HOST_INSTALL_DIR)/bin/iree-flatcc-cli
+ifneq ($(strip $(IREE_HOST_BUILD_DIR)),)
+iree_host: $(IREE_HOST_BUILD_DIR)/bin/iree-flatcc-cli
+else
+iree_host:
+	@echo "IREE_HOST_BUILD_DIR not set. Skipping host binaries build."
+endif
 
 $(IREE_HOST_INSTALL_DIR)/bin/iree-flatcc-cli: $(NX_IREE_SOURCE_DIR) $(CMAKE_SOURCES)
-	@echo "Building IREE runtime host binaries at $(IREE_HOST_BUILD_DIR)."
+	@echo "Building IREE runtime host binaries at `$(IREE_HOST_BUILD_DIR)`."
 	cmake -G Ninja -B $(IREE_HOST_BUILD_DIR) \
 		-DCMAKE_INSTALL_PREFIX=$(IREE_HOST_INSTALL_DIR) \
 		-DIREE_BUILD_COMPILER=$(BUILD_HOST_COMPILER)\

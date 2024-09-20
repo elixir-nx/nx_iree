@@ -123,6 +123,42 @@ iree::runtime::IREETensor::serialize() {
   return buffer;
 }
 
+iree_hal_element_type_t nx_type_to_iree_type(std::string type) {
+  using type_enum = iree_hal_element_types_t;
+
+  if (type == "i8") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_INT_8;
+  } else if (type == "i16") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_INT_16;
+  } else if (type == "i32") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_INT_32;
+  } else if (type == "i64") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_INT_64;
+  } else if (type == "ui8") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_UINT_8;
+  } else if (type == "ui16") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_UINT_16;
+  } else if (type == "ui32") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_UINT_32;
+  } else if (type == "ui64") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_UINT_64;
+  } else if (type == "bf16") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_BFLOAT_16;
+  } else if (type == "f16") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_FLOAT_16;
+  } else if (type == "f32") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_FLOAT_32;
+  } else if (type == "f64") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_FLOAT_64;
+  } else if (type == "c64") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_COMPLEX_FLOAT_64;
+  } else if (type == "c128") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_COMPLEX_FLOAT_128;
+  }
+
+  return type_enum::IREE_HAL_ELEMENT_TYPE_NONE;
+}
+
 iree_vm_instance_t *create_instance() {
   iree_vm_instance_t *instance = nullptr;
   iree_status_t status = iree_vm_instance_create(IREE_VM_TYPE_CAPACITY_DEFAULT, iree_allocator_system(), &instance);

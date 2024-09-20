@@ -25,7 +25,7 @@ endif()
 
 file(GLOB iree_runtime_sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h")
 
-if($ENV{IREE_BUILD_TARGET} STREQUAL "webassembly")
+if("$ENV{IREE_BUILD_TARGET}" STREQUAL "webassembly")
   message("Compiling for WebAssembly/Emscripten")
   set(EMSCRIPTEN ON)
   set(IREE_BUILD_COMPILER OFF)
@@ -58,7 +58,7 @@ if($ENV{IREE_BUILD_TARGET} STREQUAL "webassembly")
   message("EXPORTED_RUNTIME_METHODS: ${EXPORTED_RUNTIME_METHODS}")
   message("EXPORTED_FUNCTIONS: ${EXPORTED_FUNCTIONS}")
 
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 --no-entry -s ALLOW_MEMORY_GROWTH=1 -sEXPORTED_FUNCTIONS='${EXPORTED_FUNCTIONS}' -sEXPORTED_RUNTIME_METHODS='${EXPORTED_RUNTIME_METHODS}' -sDEFAULT_LIBRARY_FUNCS_TO_INCLUDE=free,malloc")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 --no-entry -sWASM_BIGINT -sALLOW_MEMORY_GROWTH=1 -sEXPORTED_FUNCTIONS='${EXPORTED_FUNCTIONS}' -sEXPORTED_RUNTIME_METHODS='${EXPORTED_RUNTIME_METHODS}' -sDEFAULT_LIBRARY_FUNCS_TO_INCLUDE=free,malloc")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lembind")
 
   # Define the output files for both WebAssembly and JavaScript
@@ -74,14 +74,15 @@ if($ENV{IREE_BUILD_TARGET} STREQUAL "webassembly")
     DESTINATION "."
   )
 else()
-  set_target_properties(${_NAME} PROPERTIES SUFFIX ".so")
-  set(EMSCRIPTEN OFF)
-  add_library(${_NAME} SHARED ${iree_runtime_sources})
-
   list(REMOVE_ITEM iree_runtime_sources
     "${CMAKE_CURRENT_SOURCE_DIR}/src/emscripten_api.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/emscripten_api.h"
   )
+
+  add_library(${_NAME} SHARED ${iree_runtime_sources})
+  set_target_properties(${_NAME} PROPERTIES SUFFIX ".so")
+  set(EMSCRIPTEN OFF)
+
 
   install(
     TARGETS ${_NAME}
