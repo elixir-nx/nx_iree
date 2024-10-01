@@ -7,6 +7,7 @@
 
 #include <cstdbool>
 #include <cstddef>
+#include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -40,24 +41,22 @@ class nx_iree_data_buffer_t {
   // dataBuffer = Module.DataBuffer(array)
   // or Module.DataBuffer(array, false) if you don't want to copy the data
   // (but you must keep the reference to the array for as long as this buffer is used);
-  nx_iree_data_buffer_t(emscripten::val array, bool should_copy = true) {
+  nx_iree_data_buffer_t(emscripten::val array) {
     size = array["byteLength"].as<size_t>();
-    if (should_copy) {
-      this->data = static_cast<uint8_t*>(malloc(size));
-      if (data == nullptr) {
-        throw std::runtime_error("Failed to allocate memory.");
-      }
-      emscripten::val memoryView = emscripten::val::global("Uint8Array").new_(size, data);
-      memoryView.call<void>("set", array);
-    } else {
-      uint8_t* buffer = reinterpret_cast<uint8_t*>(array["buffer"].as<uintptr_t>());
-      size_t byteOffset = array["byteOffset"].as<size_t>();
-      data = buffer + byteOffset;
+    data = static_cast<uint8_t*>(malloc(size));
+    if (data == nullptr) {
+      throw std::runtime_error("Failed to allocate memory.");
     }
+
+    // Access the WebAssembly memory (HEAPU8) as a Uint8Array from JavaScript
+    emscripten::val heapU8 = emscripten::val::module_property("HEAPU8");
+
+    // Copy data from the JavaScript Uint8Array (array) to the WebAssembly memory (data pointer)
+    heapU8.call<void>("set", array, reinterpret_cast<uintptr_t>(data));
   }
 
-  static std::shared_ptr<nx_iree_data_buffer_t> create(emscripten::val array, bool should_copy = true) {
-    auto ptr = new nx_iree_data_buffer_t(array, should_copy);
+  static std::shared_ptr<nx_iree_data_buffer_t> create(emscripten::val array) {
+    auto ptr = new nx_iree_data_buffer_t(array);
     return std::shared_ptr<nx_iree_data_buffer_t>(ptr);
   }
 
@@ -81,8 +80,8 @@ EMSCRIPTEN_KEEPALIVE
 shared_ptr<nx_iree_vm_instance_t>
 nx_iree_create_vm_instance();
 
-EMSCRIPTEN_KEEPALIVE
-shared_ptr<nx_iree_driver_registry_t> nx_iree_create_driver_registry();
+// EMSCRIPTEN_KEEPALIVE
+// shared_ptr<nx_iree_driver_registry_t> nx_iree_create_driver_registry();
 
 EMSCRIPTEN_KEEPALIVE
 shared_ptr<Device> nx_iree_create_local_sync_device();
@@ -129,6 +128,48 @@ void register_opaque_type(const char* name) {
   class_<T>(name).template smart_ptr<shared_ptr<T>>(ss.str().c_str());
 }
 
+emscripten::val iree_tensor_to_flat_js_array(shared_ptr<IREETensor> tensor) {
+  if (!tensor->data) {
+    if (tensor->device == nullptr) {
+      throw std::runtime_error("Tensor does not have a device.");
+    }
+    if (!tensor->buffer_view) {
+      throw std::runtime_error("Tensor does not have a buffer_view.");
+    }
+
+    auto status = read_buffer(tensor->device, tensor->buffer_view, tensor->data, tensor->size);
+
+    if (!iree_status_is_ok(status)) {
+      throw std::runtime_error("Failed to read buffer: " + get_status_message(status));
+    }
+  }
+
+  switch (tensor->type) {
+    case IREE_HAL_ELEMENT_TYPE_INT_8:
+      return emscripten::val::array(reinterpret_cast<int8_t*>(tensor->data), reinterpret_cast<int8_t*>(tensor->data) + tensor->size);
+    case IREE_HAL_ELEMENT_TYPE_UINT_8:
+      return emscripten::val::array(reinterpret_cast<uint8_t*>(tensor->data), reinterpret_cast<uint8_t*>(tensor->data) + tensor->size);
+    case IREE_HAL_ELEMENT_TYPE_INT_16:
+      return emscripten::val::array(reinterpret_cast<int16_t*>(tensor->data), reinterpret_cast<int16_t*>(tensor->data) + tensor->size / 2);
+    case IREE_HAL_ELEMENT_TYPE_UINT_16:
+      return emscripten::val::array(reinterpret_cast<uint16_t*>(tensor->data), reinterpret_cast<uint16_t*>(tensor->data) + tensor->size / 2);
+    case IREE_HAL_ELEMENT_TYPE_INT_32:
+      return emscripten::val::array(reinterpret_cast<int32_t*>(tensor->data), reinterpret_cast<int32_t*>(tensor->data) + tensor->size / 4);
+    case IREE_HAL_ELEMENT_TYPE_UINT_32:
+      return emscripten::val::array(reinterpret_cast<uint32_t*>(tensor->data), reinterpret_cast<uint32_t*>(tensor->data) + tensor->size / 4);
+    case IREE_HAL_ELEMENT_TYPE_INT_64:
+      return emscripten::val::array(reinterpret_cast<int64_t*>(tensor->data), reinterpret_cast<int64_t*>(tensor->data) + tensor->size / 8);
+    case IREE_HAL_ELEMENT_TYPE_UINT_64:
+      return emscripten::val::array(reinterpret_cast<uint64_t*>(tensor->data), reinterpret_cast<uint64_t*>(tensor->data) + tensor->size / 8);
+    case IREE_HAL_ELEMENT_TYPE_FLOAT_32:
+      return emscripten::val::array(reinterpret_cast<float*>(tensor->data), reinterpret_cast<float*>(tensor->data) + tensor->size / 4);
+    case IREE_HAL_ELEMENT_TYPE_FLOAT_64:
+      return emscripten::val::array(reinterpret_cast<double*>(tensor->data), reinterpret_cast<double*>(tensor->data) + tensor->size / 8);
+    default:
+      throw std::runtime_error("Unsupported element type: " + std::to_string(tensor->type));
+  }
+}
+
 EMSCRIPTEN_BINDINGS(my_module) {
   register_opaque_type<nx_iree_vm_instance_t>("VMInstance");
   register_opaque_type<nx_iree_driver_registry_t>("DriverRegistry");
@@ -143,6 +184,7 @@ EMSCRIPTEN_BINDINGS(my_module) {
   class_<IREETensor>("Tensor")
       .smart_ptr<shared_ptr<IREETensor>>("Tensor*")
       .class_function("create", &IREETensor::build)
+      .function("toFlatArray", &iree_tensor_to_flat_js_array)
       .function("deallocate", &IREETensor::deallocate)
       .function("serialize", &serialize_iree_tensor);
 
@@ -163,7 +205,7 @@ EMSCRIPTEN_BINDINGS(my_module) {
 
   function("ensureMallocFree", &ensure_malloc_free);
   function("createVMInstance", &nx_iree_create_vm_instance);
-  function("createDriverRegistry", &nx_iree_create_driver_registry);
+  // function("createDriverRegistry", &nx_iree_create_driver_registry);
   function("createDevice", &nx_iree_create_local_sync_device);
   function("call", &nx_iree_call);
   function("readBuffer", &nx_iree_read_buffer);

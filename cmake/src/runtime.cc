@@ -26,9 +26,22 @@ iree::runtime::Device::~Device() {
   }
 }
 
-iree::runtime::IREETensor::IREETensor(iree_hal_buffer_view_t *buffer_view, iree_hal_element_type_t type, iree_hal_device_t *device) : buffer_view(buffer_view), type(type), device(device) {
-  size = iree_hal_buffer_view_byte_length(buffer_view);
-  // TODO: fill in dim metadata
+iree::runtime::IREETensor::IREETensor(iree_hal_buffer_view_t *buffer_view, iree_hal_element_type_t type, iree_hal_device_t *device, bool copy_buffer) {
+  this->buffer_view = buffer_view;
+  this->type = type;
+  this->device = device;
+  size = iree_hal_buffer_view_byte_length(this->buffer_view);
+
+  iree_host_size_t shape_rank = iree_hal_buffer_view_shape_rank(this->buffer_view);
+  const iree_hal_dim_t *hal_dims = iree_hal_buffer_view_shape_dims(this->buffer_view);
+
+  dims = std::vector<iree_hal_dim_t>();
+  dims.reserve(shape_rank);
+  for (int i = 0; i < shape_rank; i++) {
+    dims.push_back(hal_dims[i]);
+  }
+
+  data = nullptr;
 }
 
 iree::runtime::IREETensor::IREETensor(void *data, size_t size, std::vector<int64_t> in_dims, iree_hal_element_type_t type) : size(size), type(type) {
@@ -126,21 +139,23 @@ iree::runtime::IREETensor::serialize() {
 iree_hal_element_type_t nx_type_to_iree_type(std::string type) {
   using type_enum = iree_hal_element_types_t;
 
-  if (type == "i8") {
+  std::cout << "Type: " << type << std::endl;
+
+  if (type == "s8") {
     return type_enum::IREE_HAL_ELEMENT_TYPE_INT_8;
-  } else if (type == "i16") {
+  } else if (type == "s16") {
     return type_enum::IREE_HAL_ELEMENT_TYPE_INT_16;
-  } else if (type == "i32") {
+  } else if (type == "s32") {
     return type_enum::IREE_HAL_ELEMENT_TYPE_INT_32;
-  } else if (type == "i64") {
+  } else if (type == "s64") {
     return type_enum::IREE_HAL_ELEMENT_TYPE_INT_64;
-  } else if (type == "ui8") {
+  } else if (type == "u8") {
     return type_enum::IREE_HAL_ELEMENT_TYPE_UINT_8;
-  } else if (type == "ui16") {
+  } else if (type == "u16") {
     return type_enum::IREE_HAL_ELEMENT_TYPE_UINT_16;
-  } else if (type == "ui32") {
+  } else if (type == "u32") {
     return type_enum::IREE_HAL_ELEMENT_TYPE_UINT_32;
-  } else if (type == "ui64") {
+  } else if (type == "u64") {
     return type_enum::IREE_HAL_ELEMENT_TYPE_UINT_64;
   } else if (type == "bf16") {
     return type_enum::IREE_HAL_ELEMENT_TYPE_BFLOAT_16;
@@ -156,6 +171,7 @@ iree_hal_element_type_t nx_type_to_iree_type(std::string type) {
     return type_enum::IREE_HAL_ELEMENT_TYPE_COMPLEX_FLOAT_128;
   }
 
+  std::cout << "Unknown type" << std::endl;
   return type_enum::IREE_HAL_ELEMENT_TYPE_NONE;
 }
 
@@ -332,7 +348,6 @@ call(iree_vm_instance_t *instance, iree_hal_device_t *device, std::string driver
       instance, /*device_count=*/1, &device, IREE_HAL_MODULE_FLAG_SYNCHRONOUS,
       iree_allocator_system(), &hal_module));
 
-  // (kFloat4, sizeof(kFloat4))
   const iree_const_byte_span_t module_data = iree_make_const_byte_span(bytecode, bytecode_size);
 
   RETURN_PAIR_IF_ERROR(iree_vm_bytecode_module_create(
@@ -410,7 +425,9 @@ call(iree_vm_instance_t *instance, iree_hal_device_t *device, std::string driver
 
   iree_vm_list_release(inputs);
   iree_vm_list_release(outputs);
-  iree_vm_context_release(context);
+  // if (context) {
+  //   iree_vm_context_release(context);
+  // };
   return {iree_ok_status(), results};
 }
 

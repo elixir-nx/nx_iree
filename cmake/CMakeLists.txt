@@ -14,16 +14,11 @@ set(IREE_INPUT_STABLEHLO ON)
 set(IREE_BUILD_TESTS OFF)
 set(IREE_BUILD_SAMPLES OFF)
 
-set(IREE_HAL_DRIVER_DEFAULTS ON)
-set(IREE_HAL_DRIVER_LOCAL_SYNC ON)
-set(IREE_HAL_EXECUTABLE_LOADER_DEFAULTS OFF)
-# set(IREE_HAL_EXECUTABLE_LOADER_EMBEDDED_ELF ON)
-
 if(CMAKE_BUILD_TYPE MATCHES MinSizeRel)
   set(IREE_SIZE_OPTIMIZED ON)
 endif()
 
-file(GLOB iree_runtime_sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h")
+file(GLOB iree_runtime_sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc" "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h")
 
 if("$ENV{IREE_BUILD_TARGET}" STREQUAL "webassembly")
   message("Compiling for WebAssembly/Emscripten")
@@ -37,6 +32,7 @@ if("$ENV{IREE_BUILD_TARGET}" STREQUAL "webassembly")
   set(IREE_HAL_EXECUTABLE_PLUGIN_EMBEDDED_ELF OFF)
   set(IREE_HAL_EXECUTABLE_PLUGIN_DEFAULTS OFF)
   set(IREE_HAL_EXECUTABLE_LOADER_SYSTEM_LIBRARY ON)
+  set(IREE_HAL_DRIVER_LOCAL_SYNC ON)
 
   set(HAVE_POSIX_REGEX 0)
 
@@ -60,7 +56,7 @@ if("$ENV{IREE_BUILD_TARGET}" STREQUAL "webassembly")
   message("EXPORTED_RUNTIME_METHODS: ${EXPORTED_RUNTIME_METHODS}")
   message("EXPORTED_FUNCTIONS: ${EXPORTED_FUNCTIONS}")
 
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 --no-entry -sWASM_BIGINT -sALLOW_MEMORY_GROWTH=1 -sEXPORTED_FUNCTIONS='${EXPORTED_FUNCTIONS}' -sEXPORTED_RUNTIME_METHODS='${EXPORTED_RUNTIME_METHODS}' -sDEFAULT_LIBRARY_FUNCS_TO_INCLUDE=free,malloc")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sMAIN_MODULE=2 -sNO_DISABLE_EXCEPTION_CATCHING --no-entry -sWASM_BIGINT -sALLOW_MEMORY_GROWTH=1 -sEXPORTED_FUNCTIONS='${EXPORTED_FUNCTIONS}' -sEXPORTED_RUNTIME_METHODS='${EXPORTED_RUNTIME_METHODS}' -sDEFAULT_LIBRARY_FUNCS_TO_INCLUDE=free,malloc")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lembind")
 
   # Define the output files for both WebAssembly and JavaScript
@@ -75,9 +71,22 @@ if("$ENV{IREE_BUILD_TARGET}" STREQUAL "webassembly")
     FILES ${WASM_OUTPUT} ${JS_OUTPUT}
     DESTINATION "."
   )
+
+  target_link_libraries(${_NAME}
+    iree_runtime_runtime
+    iree_hal_local_executable_plugin_manager
+    iree_hal_local_loaders_system_library_loader
+    iree_hal_local_loaders_vmvx_module_loader
+    iree_hal_drivers_local_sync_sync_driver
+  )
 else()
+  set(IREE_HAL_DRIVER_DEFAULTS ON)
+  set(IREE_HAL_DRIVER_LOCAL_SYNC ON)
+  set(IREE_HAL_EXECUTABLE_LOADER_DEFAULTS OFF)
+  set(IREE_HAL_EXECUTABLE_LOADER_EMBEDDED_ELF ON)
+
   list(REMOVE_ITEM iree_runtime_sources
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/emscripten_api.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/emscripten_api.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/emscripten_api.h"
   )
 
@@ -89,7 +98,11 @@ else()
   install(
     TARGETS ${_NAME}
     DESTINATION "."
-)
+  )
+
+
+  target_link_libraries(${_NAME} iree_runtime_runtime)
+  target_link_libraries(${_NAME} iree_tooling_context_util)
 endif()
 
 set_target_properties(${_NAME} PROPERTIES
@@ -100,8 +113,6 @@ set_target_properties(${_NAME} PROPERTIES
 set(__BUILD_DIR "${IREE_RUNTIME_BUILD_DIR}")
 
 add_subdirectory("${NX_IREE_SOURCE_DIR}" ${__BUILD_DIR} EXCLUDE_FROM_ALL)
-
-
 
 if($ENV{DEBUG})
   set(CMAKE_BUILD_TYPE Debug)
@@ -131,15 +142,6 @@ set(CMAKE_VISIBILITY_INLINES_HIDDEN OFF)
 target_compile_options(${_NAME} PUBLIC ${IREE_DEFAULT_COPTS})
 
 add_definitions(-DLLVM_DISABLE_ABI_BREAKING_CHECKS_ENFORCING=1)
-
-target_link_libraries(${_NAME} iree_runtime_runtime)
-target_link_libraries(${_NAME} iree_tooling_context_util)
-target_link_libraries(${_NAME}
-  iree_hal_local_executable_plugin_manager
-  iree_hal_local_loaders_system_library_loader
-  iree_hal_local_loaders_vmvx_module_loader
-  iree_hal_drivers_local_sync_sync_driver
-)
 
 # Install the header files - this will make it easier to copy them over
 # to the final bundle.

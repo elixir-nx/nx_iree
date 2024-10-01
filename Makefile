@@ -41,8 +41,10 @@ BUILD_TARGET_FLAGS = -S $(abspath cmake)
 CUDA_PRESENT := $(shell command -v nvcc >/dev/null 2>&1 && echo true || echo false)
 
 ifeq ($(CUDA_PRESENT), true)
-	CFLAGS += -DCUDA_ENABLED
-	CMAKE_CXX_FLAGS += -DCUDA_ENABLED
+	ifeq ($(IREE_BUILD_TARGET), host)
+		CFLAGS += -DCUDA_ENABLED
+		CMAKE_CXX_FLAGS += -DCUDA_ENABLED
+	endif
 endif
 
 BUILD_HOST_COMPILER=OFF
@@ -113,7 +115,7 @@ else
 install_runtime: $(IREE_INSTALL_DIR)
 endif
 
-CMAKE_SOURCES = $(abspath cmake/src/runtime.cpp) $(abspath cmake/src/emscripten_api.cpp) $(abspath cmake/src/runtime.h) $(abspath cmake/src/emscripten_api.h)
+CMAKE_SOURCES = $(abspath cmake/src/runtime.cc) $(abspath cmake/src/emscripten_api.cc) $(abspath cmake/src/runtime.h) $(abspath cmake/src/emscripten_api.h)
 
 $(IREE_INSTALL_DIR): $(NX_IREE_SOURCE_DIR) $(CMAKE_SOURCES)
 	$(EMCMAKE) cmake -G Ninja -B $(IREE_CMAKE_BUILD_DIR) \

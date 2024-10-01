@@ -102,6 +102,10 @@ defmodule NxIREE.Device do
     {:ok, default_device()}
   end
 
+  def get(%__MODULE__{} = device) do
+    {:ok, device}
+  end
+
   def get(device_uri) do
     devices = :persistent_term.get(@device_key)
 

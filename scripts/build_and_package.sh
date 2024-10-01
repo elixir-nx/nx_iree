@@ -62,7 +62,7 @@ build() {
     echo "IREE_HOST_INSTALL_DIR: $IREE_HOST_INSTALL_DIR"
 
     if [ $1 = "webassembly" ]; then
-      EMCMAKE="/usr/bin/env emcmake"
+      EMCMAKE=$(command -v emcmake)
       if command -v ${EMCMAKE} >/dev/null 2>&1; then
         echo "${EMCMAKE} is a valid executable."
       else
@@ -79,7 +79,8 @@ build() {
         IREE_RUNTIME_BUILD_DIR=${IREE_RUNTIME_BUILD_DIR} \
         IREE_BUILD_TARGET=$1 \
         BUILD_HOST_COMPILER=$2 \
-        EMCMAKE=${EMCMAKE}
+        EMCMAKE=${EMCMAKE} \
+        DEBUG=${DEBUG}
 }
 
 build $IREE_BUILD_TARGET $BUILD_HOST_COMPILER

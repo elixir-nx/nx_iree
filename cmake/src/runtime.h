@@ -50,7 +50,7 @@ class IREETensor {
   iree_hal_device_t* device;
 
   IREETensor(char* serialized_data);
-  IREETensor(iree_hal_buffer_view_t* buffer_view, iree_hal_element_type_t type, iree_hal_device_t* device);
+  IREETensor(iree_hal_buffer_view_t* buffer_view, iree_hal_element_type_t type, iree_hal_device_t* device, bool copy_buffer = false);
   IREETensor(void* data, size_t size, std::vector<int64_t> in_dims, iree_hal_element_type_t type);
 
 #ifdef __EMSCRIPTEN__

@@ -47,7 +47,8 @@ defmodule NxIREE.Compiler do
     %{mlir_module: mlir_module, output_container: output_container, used_inputs: used_inputs} =
       EXLA.to_mlir_module(fun, vars, Keyword.put(opts, :within_defn_compiler, true))
 
-    nx_iree_module = NxIREE.compile(mlir_module, iree_compiler_flags, output_container)
+    nx_iree_module =
+      NxIREE.compile(mlir_module, iree_compiler_flags, output_container: output_container)
 
     if output_mode == :bytecode do
       throw({:bytecode, nx_iree_module})
