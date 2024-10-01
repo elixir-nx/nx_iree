@@ -146,26 +146,25 @@ emscripten::val iree_tensor_to_flat_js_array(shared_ptr<IREETensor> tensor) {
 
   switch (tensor->type) {
     case IREE_HAL_ELEMENT_TYPE_INT_8:
-      return emscripten::val::array(reinterpret_cast<int8_t*>(tensor->data), reinterpret_cast<int8_t*>(tensor->data) + tensor->size);
+      return emscripten::val::global("Int8Array").new_(emscripten::typed_memory_view(tensor->size, reinterpret_cast<int8_t*>(tensor->data)));
     case IREE_HAL_ELEMENT_TYPE_UINT_8:
-      return emscripten::val::array(reinterpret_cast<uint8_t*>(tensor->data), reinterpret_cast<uint8_t*>(tensor->data) + tensor->size);
+      return emscripten::val::global("Uint8Array").new_(emscripten::typed_memory_view(tensor->size, reinterpret_cast<uint8_t*>(tensor->data)));
     case IREE_HAL_ELEMENT_TYPE_INT_16:
-      return emscripten::val::array(reinterpret_cast<int16_t*>(tensor->data), reinterpret_cast<int16_t*>(tensor->data) + tensor->size / 2);
+      return emscripten::val::global("Int16Array").new_(emscripten::typed_memory_view(tensor->size / 2, reinterpret_cast<int16_t*>(tensor->data)));
     case IREE_HAL_ELEMENT_TYPE_UINT_16:
-      return emscripten::val::array(reinterpret_cast<uint16_t*>(tensor->data), reinterpret_cast<uint16_t*>(tensor->data) + tensor->size / 2);
+      return emscripten::val::global("Uint16Array").new_(emscripten::typed_memory_view(tensor->size / 2, reinterpret_cast<uint16_t*>(tensor->data)));
     case IREE_HAL_ELEMENT_TYPE_INT_32:
-      return emscripten::val::array(reinterpret_cast<int32_t*>(tensor->data), reinterpret_cast<int32_t*>(tensor->data) + tensor->size / 4);
+      return emscripten::val::global("Int32Array").new_(emscripten::typed_memory_view(tensor->size / 4, reinterpret_cast<int32_t*>(tensor->data)));
     case IREE_HAL_ELEMENT_TYPE_UINT_32:
-      return emscripten::val::array(reinterpret_cast<uint32_t*>(tensor->data), reinterpret_cast<uint32_t*>(tensor->data) + tensor->size / 4);
+      return emscripten::val::global("Uint32Array").new_(emscripten::typed_memory_view(tensor->size / 4, reinterpret_cast<uint32_t*>(tensor->data)));
     case IREE_HAL_ELEMENT_TYPE_INT_64:
-      return emscripten::val::array(reinterpret_cast<int64_t*>(tensor->data), reinterpret_cast<int64_t*>(tensor->data) + tensor->size / 8);
+      return emscripten::val::global("BigInt64Array").new_(emscripten::typed_memory_view(tensor->size / 8, reinterpret_cast<int64_t*>(tensor->data)));
     case IREE_HAL_ELEMENT_TYPE_UINT_64:
-      return emscripten::val::array(reinterpret_cast<uint64_t*>(tensor->data), reinterpret_cast<uint64_t*>(tensor->data) + tensor->size / 8);
+      return emscripten::val::global("BigUint64Array").new_(emscripten::typed_memory_view(tensor->size / 8, reinterpret_cast<uint64_t*>(tensor->data)));
     case IREE_HAL_ELEMENT_TYPE_FLOAT_32:
       return emscripten::val::global("Float32Array").new_(emscripten::typed_memory_view(tensor->size / 4, reinterpret_cast<float*>(tensor->data)));
-      return emscripten::val::array(reinterpret_cast<float*>(tensor->data), reinterpret_cast<float*>(tensor->data) + tensor->size / 4);
     case IREE_HAL_ELEMENT_TYPE_FLOAT_64:
-      return emscripten::val::array(reinterpret_cast<double*>(tensor->data), reinterpret_cast<double*>(tensor->data) + tensor->size / 8);
+      return emscripten::val::global("Float64Array").new_(emscripten::typed_memory_view(tensor->size / 8, reinterpret_cast<double*>(tensor->data)));
     default:
       throw std::runtime_error("Unsupported element type: " + std::to_string(tensor->type));
   }
