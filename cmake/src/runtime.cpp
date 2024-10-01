@@ -336,7 +336,7 @@ call(iree_vm_instance_t *instance, iree_hal_device_t *device, std::string driver
   const iree_const_byte_span_t module_data = iree_make_const_byte_span(bytecode, bytecode_size);
 
   RETURN_PAIR_IF_ERROR(iree_vm_bytecode_module_create(
-      instance, module_data, iree_allocator_null(), iree_allocator_system(),
+      instance, module_data, iree_allocator_system(), iree_allocator_system(),
       &bytecode_module));
 
   iree_vm_module_t *modules[] = {hal_module, bytecode_module};

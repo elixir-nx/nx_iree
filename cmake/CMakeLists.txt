@@ -17,7 +17,7 @@ set(IREE_BUILD_SAMPLES OFF)
 set(IREE_HAL_DRIVER_DEFAULTS ON)
 set(IREE_HAL_DRIVER_LOCAL_SYNC ON)
 set(IREE_HAL_EXECUTABLE_LOADER_DEFAULTS OFF)
-set(IREE_HAL_EXECUTABLE_LOADER_EMBEDDED_ELF ON)
+# set(IREE_HAL_EXECUTABLE_LOADER_EMBEDDED_ELF ON)
 
 if(CMAKE_BUILD_TYPE MATCHES MinSizeRel)
   set(IREE_SIZE_OPTIMIZED ON)
@@ -32,9 +32,12 @@ if("$ENV{IREE_BUILD_TARGET}" STREQUAL "webassembly")
   set(IREE_BUILD_TESTS OFF)
 
   # Emscripten builds don't support embedded ELF libraries.
+  set(IREE_HAL_DRIVER_DEFAULTS_OFF OFF)
+  set(IREE_HAL_EXECUTABLE_LOADER_DEFAULTS ON)
   set(IREE_HAL_EXECUTABLE_LOADER_EMBEDDED_ELF OFF)
   set(IREE_HAL_EXECUTABLE_PLUGIN_EMBEDDED_ELF OFF)
-  set(IREE_HAL_DRIVER_VULKAN OFF)
+  set(IREE_HAL_EXECUTABLE_PLUGIN_DEFAULTS OFF)
+  set(IREE_HAL_EXECUTABLE_LOADER_SYSTEM_LIBRARY ON)
 
   set(HAVE_POSIX_REGEX 0)
 
@@ -132,6 +135,12 @@ add_definitions(-DLLVM_DISABLE_ABI_BREAKING_CHECKS_ENFORCING=1)
 
 target_link_libraries(${_NAME} iree_runtime_runtime)
 target_link_libraries(${_NAME} iree_tooling_context_util)
+target_link_libraries(${_NAME}
+  iree_hal_local_executable_plugin_manager
+  iree_hal_local_loaders_system_library_loader
+  iree_hal_local_loaders_vmvx_module_loader
+  iree_hal_drivers_local_sync_sync_driver
+)
 
 # Install the header files - this will make it easier to copy them over
 # to the final bundle.

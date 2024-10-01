@@ -29,15 +29,10 @@ defmodule NxIREE.Compiler do
 
     iree_compiler_flags =
       cond do
-        is_nil(iree_runtime_options[:device]) and has_target_backend_flag? ->
-          Enum.map(iree_compiler_flags, fn
-            "--iree-hal-target-backends" <> _ ->
-              %{compiler_target_backend: backend} = NxIREE.Device.default_device()
-              "--iree-hal-target-backends=#{backend}"
-
-            flag ->
-              flag
-          end)
+        is_nil(iree_runtime_options[:device]) and not has_target_backend_flag? ->
+          %{compiler_target_backend: backend} = NxIREE.Device.default_device()
+          flag = "--iree-hal-target-backends=#{backend}"
+          [flag | iree_compiler_flags]
 
         not has_target_backend_flag? ->
           {:ok, %{compiler_target_backend: backend}} =

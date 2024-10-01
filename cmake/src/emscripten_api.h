@@ -15,8 +15,6 @@
 
 typedef struct nx_iree_vm_instance_t nx_iree_vm_instance_t;
 typedef struct nx_iree_driver_registry_t nx_iree_driver_registry_t;
-typedef struct nx_iree_device_t nx_iree_device_t;
-typedef struct nx_iree_driver_t nx_iree_driver_t;
 typedef struct nx_iree_status_t nx_iree_status_t;
 
 class nx_iree_data_buffer_t {
@@ -43,7 +41,7 @@ class nx_iree_data_buffer_t {
   // or Module.DataBuffer(array, false) if you don't want to copy the data
   // (but you must keep the reference to the array for as long as this buffer is used);
   nx_iree_data_buffer_t(emscripten::val array, bool should_copy = true) {
-    size = array["length"].as<size_t>();
+    size = array["byteLength"].as<size_t>();
     if (should_copy) {
       this->data = static_cast<uint8_t*>(malloc(size));
       if (data == nullptr) {
@@ -73,10 +71,11 @@ class nx_iree_data_buffer_t {
 };
 
 using namespace emscripten;
+using iree::runtime::Device;
 using iree::runtime::IREETensor;
 using std::pair, std::shared_ptr;
 
-std::string serialize_iree_tensor(iree::runtime::IREETensor& tensor);
+std::string serialize_iree_tensor(IREETensor& tensor);
 
 EMSCRIPTEN_KEEPALIVE
 shared_ptr<nx_iree_vm_instance_t>
@@ -86,33 +85,23 @@ EMSCRIPTEN_KEEPALIVE
 shared_ptr<nx_iree_driver_registry_t> nx_iree_create_driver_registry();
 
 EMSCRIPTEN_KEEPALIVE
-shared_ptr<nx_iree_device_t> nx_iree_create_device(shared_ptr<nx_iree_driver_registry_t> registry, std::string(device_uri));
+shared_ptr<Device> nx_iree_create_local_sync_device();
 
 EMSCRIPTEN_KEEPALIVE
 pair<shared_ptr<nx_iree_status_t>, std::vector<shared_ptr<IREETensor>>> nx_iree_call(
     shared_ptr<nx_iree_vm_instance_t> instance,
-    shared_ptr<nx_iree_device_t> device,
-    std::string driver_name,
+    shared_ptr<Device> device,
     shared_ptr<nx_iree_data_buffer_t> bytecode,
     std::vector<shared_ptr<IREETensor>> inputs);
 
 EMSCRIPTEN_KEEPALIVE
-pair<shared_ptr<nx_iree_status_t>, shared_ptr<nx_iree_data_buffer_t>> nx_iree_read_buffer(shared_ptr<nx_iree_device_t> device, shared_ptr<IREETensor> buffer_view, size_t num_bytes);
+pair<shared_ptr<nx_iree_status_t>, shared_ptr<nx_iree_data_buffer_t>> nx_iree_read_buffer(shared_ptr<Device> device, shared_ptr<IREETensor> buffer_view, size_t num_bytes);
 
 EMSCRIPTEN_KEEPALIVE
 std::string nx_iree_get_status_message(shared_ptr<nx_iree_status_t> status);
 
 EMSCRIPTEN_KEEPALIVE
 shared_ptr<nx_iree_status_t> nx_iree_register_all_drivers(shared_ptr<nx_iree_driver_registry_t>);
-
-EMSCRIPTEN_KEEPALIVE
-pair<shared_ptr<nx_iree_status_t>, std::vector<pair<std::string, shared_ptr<nx_iree_driver_t>>>> nx_iree_list_drivers(shared_ptr<nx_iree_driver_registry_t>);
-
-EMSCRIPTEN_KEEPALIVE
-pair<shared_ptr<nx_iree_status_t>, std::vector<pair<std::string, shared_ptr<nx_iree_device_t>>>> nx_iree_list_devices(shared_ptr<nx_iree_driver_registry_t>);
-
-EMSCRIPTEN_KEEPALIVE
-pair<shared_ptr<nx_iree_status_t>, std::vector<pair<std::string, shared_ptr<nx_iree_device_t>>>> nx_iree_list_devices_for_driver(shared_ptr<nx_iree_driver_registry_t>, std::string driver_name);
 
 EMSCRIPTEN_KEEPALIVE
 bool nx_iree_status_is_ok(shared_ptr<nx_iree_status_t> status);
@@ -143,9 +132,13 @@ void register_opaque_type(const char* name) {
 EMSCRIPTEN_BINDINGS(my_module) {
   register_opaque_type<nx_iree_vm_instance_t>("VMInstance");
   register_opaque_type<nx_iree_driver_registry_t>("DriverRegistry");
-  register_opaque_type<nx_iree_device_t>("Device");
-  register_opaque_type<nx_iree_driver_t>("Driver");
   register_opaque_type<nx_iree_status_t>("Status");
+
+  class_<Device>("Device")
+      .smart_ptr<shared_ptr<Device>>("Device")
+      .property("uri", &Device::uri)
+      .property("driver_name", &Device::driver_name)
+      .property("id", &Device::id);
 
   class_<IREETensor>("Tensor")
       .smart_ptr<shared_ptr<IREETensor>>("Tensor*")
@@ -162,13 +155,7 @@ EMSCRIPTEN_BINDINGS(my_module) {
 
   register_pair<pair<shared_ptr<nx_iree_status_t>, std::vector<shared_ptr<IREETensor>>>>("[Status, std::vector<Tensor>]");
   register_pair<pair<shared_ptr<nx_iree_status_t>, shared_ptr<nx_iree_data_buffer_t>>>("[Status, DataBuffer*]");
-  register_pair<pair<std::string, shared_ptr<nx_iree_device_t>>>("[String, Device*]");
-  register_pair<pair<std::string, shared_ptr<nx_iree_driver_t>>>("[String, Driver*]");
-  register_pair<pair<shared_ptr<nx_iree_status_t>, std::vector<pair<std::string, shared_ptr<nx_iree_driver_t>>>>>("[Status, Driver*]");
-  register_pair<pair<shared_ptr<nx_iree_status_t>, std::vector<pair<std::string, shared_ptr<nx_iree_device_t>>>>>("[Status, Device*]");
 
-  register_vector<pair<std::string, shared_ptr<nx_iree_driver_t>>>("vector_string_Driver");
-  register_vector<pair<std::string, shared_ptr<nx_iree_device_t>>>("vector_string_Device");
   register_vector<shared_ptr<IREETensor>>("vector_Tensor");
 
   // raw null-pointer getters for functions that need to receive pointers as references
@@ -177,14 +164,11 @@ EMSCRIPTEN_BINDINGS(my_module) {
   function("ensureMallocFree", &ensure_malloc_free);
   function("createVMInstance", &nx_iree_create_vm_instance);
   function("createDriverRegistry", &nx_iree_create_driver_registry);
-  function("createDevice", &nx_iree_create_device);
+  function("createDevice", &nx_iree_create_local_sync_device);
   function("call", &nx_iree_call);
   function("readBuffer", &nx_iree_read_buffer);
   function("getStatusMessage", &nx_iree_get_status_message);
   function("registerAllDrivers", &nx_iree_register_all_drivers);
-  function("listDrivers", &nx_iree_list_drivers);
-  function("listDevices", &nx_iree_list_devices);
-  function("listDevicesForDriver", &nx_iree_list_devices_for_driver);
   function("statusIsOK", &nx_iree_status_is_ok);
 }
 
