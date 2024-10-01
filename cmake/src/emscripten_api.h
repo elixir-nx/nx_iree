@@ -162,6 +162,7 @@ emscripten::val iree_tensor_to_flat_js_array(shared_ptr<IREETensor> tensor) {
     case IREE_HAL_ELEMENT_TYPE_UINT_64:
       return emscripten::val::array(reinterpret_cast<uint64_t*>(tensor->data), reinterpret_cast<uint64_t*>(tensor->data) + tensor->size / 8);
     case IREE_HAL_ELEMENT_TYPE_FLOAT_32:
+      return emscripten::val::global("Float32Array").new_(emscripten::typed_memory_view(tensor->size / 4, reinterpret_cast<float*>(tensor->data)));
       return emscripten::val::array(reinterpret_cast<float*>(tensor->data), reinterpret_cast<float*>(tensor->data) + tensor->size / 4);
     case IREE_HAL_ELEMENT_TYPE_FLOAT_64:
       return emscripten::val::array(reinterpret_cast<double*>(tensor->data), reinterpret_cast<double*>(tensor->data) + tensor->size / 8);

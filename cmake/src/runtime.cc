@@ -425,9 +425,9 @@ call(iree_vm_instance_t *instance, iree_hal_device_t *device, std::string driver
 
   iree_vm_list_release(inputs);
   iree_vm_list_release(outputs);
-  // if (context) {
-  //   iree_vm_context_release(context);
-  // };
+  if (context) {
+    iree_vm_context_release(context);
+  };
   return {iree_ok_status(), results};
 }
 
