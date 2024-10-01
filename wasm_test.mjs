@@ -1,10 +1,9 @@
 // const __dirname = '/Users/paulo.valente/coding/nx_iree/iree-runtime/webassembly/install';
 let path =
-  "/Users/paulo.valente/coding/nx_iree/iree-runtime/webassembly/install/./nx_iree_runtime.mjs";
-let bytecode_path = "/tmp/add.vmfb";
-// let bytecode_path = "./module.fb";
+  "/home/valente/coding/nx_iree/iree-runtime/webassembly/install/./nx_iree_runtime.mjs";
+let bytecode_path = "/tmp/add_wasm.bin";
 
-const fs = await import("fs");
+import fs from "fs";
 
 function readFileToStringSync(filePath) {
   try {
@@ -16,7 +15,12 @@ function readFileToStringSync(filePath) {
   }
 }
 
-const Module = await import(path).then((x) => x.default());
+const Module = await import(path)
+  .then((mod) => mod.default) // Assuming the default export is a function or value
+  .catch((err) => {
+    console.error("Error importing module:", err);
+    throw err;
+  });
 
 let device = Module.createDevice();
 console.log(device.$$, device.uri, device.driver_name);

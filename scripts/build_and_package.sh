@@ -44,6 +44,7 @@ HOST_ARCH=$(uname -s)-$(uname -m)
 install_dir() {
     echo "iree-runtime/$1/install"
 }
+
 build() {
     echo "Building for target: $1"
     local IREE_CMAKE_BUILD_DIR=iree-runtime/$1/iree-build
@@ -59,6 +60,16 @@ build() {
     echo "IREE_INSTALL_DIR: $IREE_INSTALL_DIR"
     echo "IREE_HOST_BIN_DIR: $IREE_HOST_BIN_DIR"
     echo "IREE_HOST_INSTALL_DIR: $IREE_HOST_INSTALL_DIR"
+
+    if [ $1 = "webassembly" ]; then
+      EMCMAKE="/usr/bin/env emcmake"
+      if command -v ${EMCMAKE} >/dev/null 2>&1; then
+        echo "${EMCMAKE} is a valid executable."
+      else
+        echo "${EMCMAKE} is not a valid executable or not found."
+        exit 1
+      fi
+    fi
 
     make ${NUM_JOBS} ${MAKE_RULE} \
         IREE_GIT_REV=$(mix iree.version) \
