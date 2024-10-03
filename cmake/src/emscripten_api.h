@@ -35,12 +35,6 @@ class nx_iree_data_buffer_t {
     return std::shared_ptr<nx_iree_data_buffer_t>(ptr);
   }
 
-  // Call using something like:
-  // decoded = atob(base64_string);
-  // array = Uint8Array.from(decoded, c => c.charCodeAt(0));
-  // dataBuffer = Module.DataBuffer(array)
-  // or Module.DataBuffer(array, false) if you don't want to copy the data
-  // (but you must keep the reference to the array for as long as this buffer is used);
   nx_iree_data_buffer_t(emscripten::val array) {
     size = array["byteLength"].as<size_t>();
     data = static_cast<uint8_t*>(malloc(size));
@@ -80,9 +74,6 @@ EMSCRIPTEN_KEEPALIVE
 shared_ptr<nx_iree_vm_instance_t>
 nx_iree_create_vm_instance();
 
-// EMSCRIPTEN_KEEPALIVE
-// shared_ptr<nx_iree_driver_registry_t> nx_iree_create_driver_registry();
-
 EMSCRIPTEN_KEEPALIVE
 shared_ptr<Device> nx_iree_create_local_sync_device();
 
@@ -106,11 +97,6 @@ EMSCRIPTEN_KEEPALIVE
 bool nx_iree_status_is_ok(shared_ptr<nx_iree_status_t> status);
 
 EMSCRIPTEN_KEEPALIVE
-
-// Reference malloc and free so that they
-// are not pruned by emscripten
-EMSCRIPTEN_KEEPALIVE
-
 extern "C" void ensure_malloc_free();
 
 template <typename T>
@@ -199,9 +185,6 @@ EMSCRIPTEN_BINDINGS(my_module) {
   register_pair<pair<shared_ptr<nx_iree_status_t>, shared_ptr<nx_iree_data_buffer_t>>>("[Status, DataBuffer*]");
 
   register_vector<shared_ptr<IREETensor>>("vector_Tensor");
-
-  // raw null-pointer getters for functions that need to receive pointers as references
-  // function("get")
 
   function("ensureMallocFree", &ensure_malloc_free);
   function("createVMInstance", &nx_iree_create_vm_instance);

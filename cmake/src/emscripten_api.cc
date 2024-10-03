@@ -128,12 +128,6 @@ std::shared_ptr<nx_iree_vm_instance_t> nx_iree_create_vm_instance() {
   return make_shared(instance);
 }
 
-// std::shared_ptr<nx_iree_driver_registry_t> nx_iree_create_driver_registry() {
-//   auto driver_registry = new nx_iree_driver_registry_t;
-//   driver_registry->ptr = get_driver_registry();
-//   return make_shared(driver_registry);
-// }
-
 iree_status_t create_device_with_loaders(iree_allocator_t host_allocator,
                                          iree_hal_device_t** out_device) {
   iree_hal_sync_device_params_t params;
