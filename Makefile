@@ -17,7 +17,7 @@ PRIV_DIR = $(MIX_APP_PATH)/priv
 ifeq ($(NX_IREE_PREFER_PRECOMPILED), true)
 all: nx_iree
 else
-all: install_runtime nx_iree
+all: clone_iree install_runtime nx_iree
 endif
 
 .PHONY: clone_iree
@@ -31,8 +31,6 @@ IREE_CMAKE_BUILD_DIR ?= $(abspath iree-runtime/iree-build)
 IREE_RUNTIME_INCLUDE_PATH := $(abspath $(NX_IREE_SOURCE_DIR)/runtime/src/iree)
 IREE_RUNTIME_BUILD_DIR ?= $(abspath iree-runtime/build)
 IREE_INSTALL_DIR ?= $(abspath iree-runtime/host/install)
-
-IREE_CMAKE_CONFIG ?= Release
 
 IREE_BUILD_TARGET ?= host
 
@@ -125,6 +123,7 @@ $(IREE_INSTALL_DIR): $(NX_IREE_SOURCE_DIR) $(CMAKE_SOURCES)
 		-DIREE_RUNTIME_INCLUDE_PATH=$(IREE_RUNTIME_INCLUDE_PATH)\
 		-DNX_IREE_SOURCE_DIR=$(NX_IREE_SOURCE_DIR) \
 		-DCMAKE_CXX_FLAGS=$(CMAKE_CXX_FLAGS) \
+		-DIREE_ENABLE_RUNTIME_TRACING=$(IREE_ENABLE_RUNTIME_TRACING) \
 		$(BUILD_TARGET_FLAGS)
 	cmake --build $(IREE_CMAKE_BUILD_DIR) --config $(IREE_CMAKE_CONFIG)
 	cmake --install $(IREE_CMAKE_BUILD_DIR) --config $(IREE_CMAKE_CONFIG) --prefix $(IREE_INSTALL_DIR)
@@ -144,6 +143,7 @@ $(IREE_HOST_INSTALL_DIR)/bin/iree-flatcc-cli: $(NX_IREE_SOURCE_DIR) $(CMAKE_SOUR
 		-DIREE_BUILD_COMPILER=$(BUILD_HOST_COMPILER)\
 		-DCMAKE_BUILD_TYPE=$(IREE_CMAKE_CONFIG) \
 		-DCMAKE_CXX_FLAGS=$(CMAKE_CXX_FLAGS) \
+		-DIREE_ENABLE_RUNTIME_TRACING=$(IREE_ENABLE_RUNTIME_TRACING) \
 		-S $(NX_IREE_SOURCE_DIR)
 	cmake --build $(IREE_HOST_BUILD_DIR) --target install
 
@@ -157,12 +157,15 @@ NX_IREE_RUNTIME_LIB = cache/iree-runtime
 NX_IREE__IREE_RUNTIME_INCLUDE_PATH = $(NX_IREE_RUNTIME_LIB)/include
 NX_IREE_RUNTIME_SO ?= $(MIX_APP_PATH)/priv/libnx_iree_runtime.so
 
-CFLAGS = -fPIC -I$(ERTS_INCLUDE_DIR) -I$(NX_IREE__IREE_RUNTIME_INCLUDE_PATH) -Wall -Wno-sign-compare \
-	 -Wno-unused-parameter -Wno-missing-field-initializers -Wno-comment \
-	 -std=c++17 -w
+CFLAGS = -fPIC -I$(ERTS_INCLUDE_DIR) -I$(NX_IREE__IREE_RUNTIME_INCLUDE_PATH) -Wall -std=c++17 -w
+
+IREE_CMAKE_CONFIG ?= Release
+IREE_ENABLE_RUNTIME_TRACING ?= OFF
 
 ifdef DEBUG
+	IREE_CMAKE_CONFIG = RelWithDebInfo
 	CFLAGS += -g
+	IREE_ENABLE_RUNTIME_TRACING = ON
 else
 	CFLAGS += -O3
 endif

@@ -2,6 +2,7 @@
 
 #include <iostream>
 
+// #include "iree/base/tracing/tracy.h"
 #include "iree/hal/drivers/local_sync/sync_device.h"
 #include "iree/hal/local/executable_plugin_manager.h"
 #include "iree/hal/local/loaders/system_library_loader.h"
@@ -12,7 +13,7 @@
     return {status, std::nullopt};   \
   }
 
-iree::runtime::IREETensor::IREETensor(emscripten::val input_data, emscripten::val in_dims, std::string type_string) {
+iree::runtime::IREETensor::IREETensor(emscripten::val input_data, emscripten::val in_dims, std::string type_string, std::shared_ptr<iree::runtime::Device> device) {
   // Convert the data to a byte array
   this->size = input_data["byteLength"].as<size_t>();
   this->data = std::malloc(size);
@@ -72,7 +73,7 @@ iree::runtime::IREETensor::IREETensor(emscripten::val input_data, emscripten::va
     this->dims.push_back(static_cast<iree_hal_dim_t>(in_dims[i].as<int64_t>()));
   }
 
-  this->device = nullptr;
+  this->device = device->ref;
   this->buffer_view = nullptr;
 }
 
@@ -204,161 +205,12 @@ std::shared_ptr<iree::runtime::Device> nx_iree_create_local_sync_device() {
   return make_shared(device);
 }
 
-typedef struct iree_program_state_t {
-  iree_runtime_session_t* session;
-  iree_vm_module_t* module;
-} iree_program_state_t;
-
-void unload_program(iree_program_state_t* program_state) {
-  iree_vm_module_release(program_state->module);
-  iree_runtime_session_release(program_state->session);
-  free(program_state);
-}
-
-std::pair<iree_status_t, iree_program_state_t*> load_program(iree_hal_device_t* device, iree_runtime_instance_t* instance,
-                                                             uint8_t* vmfb_data, size_t length) {
-  iree_program_state_t* program_state = NULL;
-  iree_status_t status = iree_allocator_malloc(iree_allocator_system(),
-                                               sizeof(iree_program_state_t),
-                                               (void**)&program_state);
-
-  if (!iree_status_is_ok(status)) {
-    unload_program(program_state);
-    return {status, nullptr};
-  }
-
-  iree_runtime_session_options_t session_options;
-  iree_runtime_session_options_initialize(&session_options);
-
-  status = iree_runtime_session_create_with_device(
-      instance, &session_options, device,
-      iree_runtime_instance_host_allocator(instance),
-      &program_state->session);
-
-  if (!iree_status_is_ok(status)) {
-    unload_program(program_state);
-    return {status, nullptr};
-  }
-
-  status = iree_vm_bytecode_module_create(
-      iree_runtime_instance_vm_instance(instance),
-      iree_make_const_byte_span(vmfb_data, length),
-      /*flatbuffer_allocator=*/iree_allocator_system(),
-      iree_allocator_system(), &program_state->module);
-
-  if (!iree_status_is_ok(status)) {
-    unload_program(program_state);
-    return {status, nullptr};
-  }
-
-  status = iree_runtime_session_append_module(program_state->session,
-                                              program_state->module);
-
-  if (!iree_status_is_ok(status)) {
-    unload_program(program_state);
-    return {status, nullptr};
-  }
-  return {status, program_state};
-}
-
-std::pair<iree_status_t, std::optional<std::vector<iree::runtime::IREETensor*>>>
-runtime_call(iree_vm_instance_t* instance, iree_hal_device_t* device, std::string driver_name, unsigned char* bytecode, size_t bytecode_size, std::vector<iree::runtime::IREETensor*> exla_inputs) {
-  iree_vm_module_t* hal_module = nullptr;
-  iree_vm_module_t* bytecode_module = nullptr;
-  iree_vm_context_t* context = nullptr;
-  const char kMainFunctionName[] = "module.main";
-
-  iree_runtime_instance_t* runtime_instance = nullptr;
-
-  iree_runtime_instance_options_t instance_options;
-  iree_runtime_instance_options_initialize(&instance_options);
-
-  RETURN_PAIR_IF_ERROR(iree_runtime_instance_create(
-      &instance_options, iree_allocator_system(), &runtime_instance))
-
-  auto result = load_program(device, runtime_instance, bytecode, bytecode_size);
-  iree_status_t status = result.first;
-  iree_program_state_t* program_state = result.second;
-
-  if (!iree_status_is_ok(status)) {
-    return {status, std::nullopt};
-  }
-
-  if (!program_state) {
-    return {iree_make_status(IREE_STATUS_NOT_FOUND, "can't load program"), std::nullopt};
-  }
-
-  iree_runtime_call_t call;
-  RETURN_PAIR_IF_ERROR(iree_runtime_call_initialize_by_name(
-      program_state->session, iree_make_cstring_view(kMainFunctionName), &call));
-
-  RETURN_PAIR_IF_ERROR(iree_vm_list_create(iree_vm_make_undefined_type_def(), exla_inputs.size(), iree_allocator_system(), &call.inputs));
-
-  for (auto input : exla_inputs) {
-    iree_vm_ref_t arg_buffer_view_ref;
-
-    if (input->buffer_view) {
-      arg_buffer_view_ref = iree_hal_buffer_view_move_ref(input->buffer_view);
-    } else {
-      iree_hal_buffer_view_t* arg_buffer_view = nullptr;
-      RETURN_PAIR_IF_ERROR(iree_hal_buffer_view_allocate_buffer_copy(
-          device, iree_hal_device_allocator(device), input->dims.size(), input->dims.data(),
-          input->type, IREE_HAL_ENCODING_TYPE_DENSE_ROW_MAJOR,
-          (iree_hal_buffer_params_t){
-              .usage = IREE_HAL_BUFFER_USAGE_DEFAULT,
-              .type = IREE_HAL_MEMORY_TYPE_DEVICE_LOCAL,
-          },
-          input->data_byte_span(), &arg_buffer_view));
-
-      arg_buffer_view_ref = iree_hal_buffer_view_move_ref(arg_buffer_view);
-    }
-    RETURN_PAIR_IF_ERROR(iree_vm_list_push_ref_move(call.inputs, &arg_buffer_view_ref));
-  }
-
-  iree_vm_function_signature_t signature =
-      iree_vm_function_signature(&call.function);
-  iree_string_view_t input_signature;
-  iree_string_view_t output_signature;
-
-  RETURN_PAIR_IF_ERROR(iree_vm_function_call_get_cconv_fragments(
-      &signature, &input_signature, &output_signature));
-
-  RETURN_PAIR_IF_ERROR(iree_vm_list_create(iree_vm_make_undefined_type_def(), output_signature.size, iree_allocator_system(), &call.outputs));
-
-  // Synchronously invoke the function.
-  RETURN_PAIR_IF_ERROR(iree_runtime_call_invoke(&call, /*flags=*/0));
-
-  std::vector<iree::runtime::IREETensor*> results;
-  results.resize(output_signature.size);
-  for (int i = 0; i < output_signature.size; i++) {
-    iree_hal_buffer_view_t* output_buffer_view = iree_vm_list_get_buffer_view_retain(call.outputs, i);
-    if (!output_buffer_view) {
-      return {iree_make_status(IREE_STATUS_NOT_FOUND, "can't get output buffer view [index=%d]", i), std::nullopt};
-    }
-
-    iree_hal_element_type_t out_type = iree_hal_buffer_view_element_type(output_buffer_view);
-
-    auto tensor = new iree::runtime::IREETensor(output_buffer_view, out_type, device);
-    tensor->data = malloc(tensor->size);
-    RETURN_PAIR_IF_ERROR(read_buffer(device, output_buffer_view, tensor->data, -1));
-
-    printf("output tensor size: %zu\n", tensor->size);
-    printf("output tensor data: ");
-    for (auto i = 0; i < tensor->size; i++) {
-      printf("tensor[%d]: %d\n", i, ((uint8_t*)tensor->data)[i]);
-    }
-
-    results[i] = tensor;
-  }
-
-  return {iree_ok_status(), results};
-}
-
 std::pair<std::shared_ptr<nx_iree_status_t>, std::vector<std::shared_ptr<iree::runtime::IREETensor>>> nx_iree_call(
     std::shared_ptr<nx_iree_vm_instance_t> instance,
     std::shared_ptr<iree::runtime::Device> device,
     std::shared_ptr<nx_iree_data_buffer_t> bytecode,
     std::vector<std::shared_ptr<iree::runtime::IREETensor>> wrapped_inputs) {
+  IREE_TRACE_ZONE_BEGIN(nx_iree_call);
   std::vector<iree::runtime::IREETensor*> inputs;
   for (auto wrapped_input : wrapped_inputs) {
     inputs.push_back(wrapped_input.get());
@@ -376,12 +228,16 @@ std::pair<std::shared_ptr<nx_iree_status_t>, std::vector<std::shared_ptr<iree::r
   if (opt_outputs.has_value()) {
     auto outputs = opt_outputs.value();
     for (auto entry : outputs) {
+      entry->size = iree_hal_buffer_byte_length(iree_hal_buffer_view_buffer(entry->buffer_view));
+      entry->data = std::malloc(entry->size);
+      read_buffer(device->ref, entry->buffer_view, entry->data, entry->size);
       wrapped_outputs.push_back(make_shared(entry));
     }
   }
 
   nx_iree_status_t* status_handle = new nx_iree_status_t;
   status_handle->ptr = status;
+  IREE_TRACE_ZONE_END(nx_iree_call);
   return std::make_pair(make_shared(status_handle), wrapped_outputs);
 }
 

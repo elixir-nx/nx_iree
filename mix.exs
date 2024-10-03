@@ -6,7 +6,7 @@ defmodule NxIREE.MixProject do
 
   @version File.read!(Path.join([__DIR__, "priv", "VERSION"]))
 
-  import NxIREE.MixHelpers, only: [download!: 3, github_release_path: 1]
+  import NxIREE.MixHelpers, only: [download!: 3, github_release_path: 2]
 
   def project do
     n_jobs = to_string(max(System.schedulers_online() - 2, 1))
@@ -52,7 +52,8 @@ defmodule NxIREE.MixProject do
     [
       {:elixir_make, "~> 0.6", runtime: false},
       {:exla, github: "elixir-nx/nx", sparse: "exla"},
-      {:nx, github: "elixir-nx/nx", sparse: "nx", override: true}
+      {:nx, github: "elixir-nx/nx", sparse: "nx", override: true},
+      {:req, "~> 0.5"}
     ]
   end
 
@@ -64,7 +65,17 @@ defmodule NxIREE.MixProject do
     :ok = download_and_unzip_iree_release(args)
 
     if nx_iree_config().use_precompiled and not File.exists?(nx_iree_config().nx_iree_so_path) do
-      download_precompiled_nx_iree_lib()
+      case download_precompiled_nx_iree_lib() do
+        :ok ->
+          :ok
+
+        {:error, :not_found} ->
+          System.put_env("NX_IREE_PREFER_PRECOMPILED", "false")
+          :ok
+
+        {:error, reason} ->
+          raise "unable to download nx_iree: #{inspect(reason)}"
+      end
     else
       :ok
     end
@@ -157,11 +168,11 @@ defmodule NxIREE.MixProject do
       download!("IREE", url, nx_iree_zip)
     end
 
-    # Unpack libtorch and move to the target cache dir
+    # Unpack iree and move to the target cache dir
     parent_iree_dir = Path.dirname(nx_iree_config.dir)
     File.mkdir_p!(parent_iree_dir)
 
-    # Extract to the parent directory (it will be inside the libtorch directory)
+    # Extract to the parent directory (it will be inside the iree directory)
     {:ok, _} =
       nx_iree_zip
       |> String.to_charlist()
@@ -222,32 +233,39 @@ defmodule NxIREE.MixProject do
     source_tar_path = "#{version_path}.tar.gz"
     zip_name = nx_iree_config.nx_iree_tar_gz_path
 
-    download!(
-      "NxIREE NIFs",
-      github_release_path(source_tar_path),
-      zip_name
-    )
+    result =
+      download!(
+        "NxIREE NIFs",
+        github_release_path(source_tar_path, @version),
+        zip_name
+      )
 
-    parent_dir = Path.dirname(zip_name)
+    case result do
+      {:error, reason} ->
+        {:error, reason}
 
-    :ok =
-      zip_name
-      |> String.to_charlist()
-      |> :erl_tar.extract([:compressed, cwd: String.to_charlist(parent_dir)])
+      :ok ->
+        parent_dir = Path.dirname(zip_name)
 
-    File.rename(
-      Path.join([parent_dir, version_path, "libnx_iree.so"]),
-      Path.join(parent_dir, "libnx_iree.so")
-    )
+        :ok =
+          zip_name
+          |> String.to_charlist()
+          |> :erl_tar.extract([:compressed, cwd: String.to_charlist(parent_dir)])
 
-    File.rename(
-      Path.join([parent_dir, version_path, "iree-runtime"]),
-      Path.join(parent_dir, "iree-runtime")
-    )
+        File.rename(
+          Path.join([parent_dir, version_path, "libnx_iree.so"]),
+          Path.join(parent_dir, "libnx_iree.so")
+        )
 
-    File.rmdir(Path.join(parent_dir, version_path))
+        File.rename(
+          Path.join([parent_dir, version_path, "iree-runtime"]),
+          Path.join(parent_dir, "iree-runtime")
+        )
 
-    :ok
+        File.rmdir(Path.join(parent_dir, version_path))
+
+        :ok
+    end
   end
 
   # Returns `path` relative to the `from` directory.

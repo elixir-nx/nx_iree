@@ -129,7 +129,7 @@ void register_opaque_type(const char* name) {
 }
 
 emscripten::val iree_tensor_to_flat_js_array(shared_ptr<IREETensor> tensor) {
-  if (!tensor->data) {
+  if (tensor->data == nullptr) {
     if (tensor->device == nullptr) {
       throw std::runtime_error("Tensor does not have a device.");
     }
@@ -205,7 +205,6 @@ EMSCRIPTEN_BINDINGS(my_module) {
 
   function("ensureMallocFree", &ensure_malloc_free);
   function("createVMInstance", &nx_iree_create_vm_instance);
-  // function("createDriverRegistry", &nx_iree_create_driver_registry);
   function("createDevice", &nx_iree_create_local_sync_device);
   function("call", &nx_iree_call);
   function("readBuffer", &nx_iree_read_buffer);

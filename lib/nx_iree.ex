@@ -69,7 +69,7 @@ defmodule NxIREE do
     opts = Keyword.validate!(opts, function: "main", device: nil)
 
     {:ok, %NxIREE.Device{driver_name: driver_name, ref: device_ref, uri: device_uri}} =
-      NxIREE.Device.get(dbg(opts[:device]))
+      NxIREE.Device.get(opts[:device])
 
     input_refs =
       Enum.map(inputs, fn

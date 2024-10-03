@@ -54,11 +54,11 @@ class IREETensor {
   IREETensor(void* data, size_t size, std::vector<int64_t> in_dims, iree_hal_element_type_t type);
 
 #ifdef __EMSCRIPTEN__
-  IREETensor(emscripten::val data, emscripten::val in_dims, std::string type_string);
+  IREETensor(emscripten::val data, emscripten::val in_dims, std::string type_string, std::shared_ptr<iree::runtime::Device> device);
 
   // Static method to wrap a raw pointer into a shared_ptr
-  static std::shared_ptr<IREETensor> build(emscripten::val data, emscripten::val in_dims, std::string type_string) {
-    auto ptr = new IREETensor(data, in_dims, type_string);
+  static std::shared_ptr<IREETensor> build(emscripten::val data, emscripten::val in_dims, std::string type_string, std::shared_ptr<iree::runtime::Device> device) {
+    auto ptr = new IREETensor(data, in_dims, type_string, device);
     return std::shared_ptr<IREETensor>(ptr);
   }
 #endif
