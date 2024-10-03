@@ -2,7 +2,10 @@
 
 #include <iostream>
 
-// #include "iree/base/tracing/tracy.h"
+#ifdef DEBUG
+#include "iree/base/tracing/tracy.h"
+#endif
+
 #include "iree/hal/drivers/local_sync/sync_device.h"
 #include "iree/hal/local/executable_plugin_manager.h"
 #include "iree/hal/local/loaders/system_library_loader.h"

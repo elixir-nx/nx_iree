@@ -4,6 +4,10 @@
 #include <iree/hal/drivers/init.h>
 #include <iree/tooling/device_util.h>
 
+#ifdef DEBUG
+#include <iree/base/tracing/tracy.h>
+#endif
+
 #include <iostream>
 #include <sstream>
 #include <vector>

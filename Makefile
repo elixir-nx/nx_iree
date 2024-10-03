@@ -45,7 +45,17 @@ ifeq ($(CUDA_PRESENT), true)
 	endif
 endif
 
-BUILD_HOST_COMPILER=OFF
+BUILD_HOST_COMPILER ?= OFF
+BUILD_HOST_COMPILER_FLAGS := ""
+
+ifeq ($(BUILD_HOST_COMPILER), ON)
+	BUILD_HOST_COMPILER_FLAGS += \
+		-DIREE_BUILD_COMPILER=ON \
+		-DIREE_INPUT_TORCH=OFF \
+		-DIREE_INPUT_TOSA=OFF \
+		-DIREE_BUILD_SAMPLES=OFF \
+		-DIREE_BUILD_TESTS=OFF
+endif
 
 # apple target flags specified for xcode 15.4
 ifeq ($(IREE_BUILD_TARGET), host)
@@ -113,7 +123,7 @@ else
 install_runtime: $(IREE_INSTALL_DIR)
 endif
 
-CMAKE_SOURCES = $(abspath cmake/src/runtime.cc) $(abspath cmake/src/emscripten_api.cc) $(abspath cmake/src/runtime.h) $(abspath cmake/src/emscripten_api.h)
+CMAKE_SOURCES = $(wildcard cmake/src/*.cc cmake/src/*.h)
 
 $(IREE_INSTALL_DIR): $(NX_IREE_SOURCE_DIR) $(CMAKE_SOURCES)
 	$(EMCMAKE) cmake -G Ninja -B $(IREE_CMAKE_BUILD_DIR) \
@@ -123,7 +133,6 @@ $(IREE_INSTALL_DIR): $(NX_IREE_SOURCE_DIR) $(CMAKE_SOURCES)
 		-DIREE_RUNTIME_INCLUDE_PATH=$(IREE_RUNTIME_INCLUDE_PATH)\
 		-DNX_IREE_SOURCE_DIR=$(NX_IREE_SOURCE_DIR) \
 		-DCMAKE_CXX_FLAGS=$(CMAKE_CXX_FLAGS) \
-		-DIREE_ENABLE_RUNTIME_TRACING=$(IREE_ENABLE_RUNTIME_TRACING) \
 		$(BUILD_TARGET_FLAGS)
 	cmake --build $(IREE_CMAKE_BUILD_DIR) --config $(IREE_CMAKE_CONFIG)
 	cmake --install $(IREE_CMAKE_BUILD_DIR) --config $(IREE_CMAKE_CONFIG) --prefix $(IREE_INSTALL_DIR)
@@ -140,10 +149,9 @@ $(IREE_HOST_INSTALL_DIR)/bin/iree-flatcc-cli: $(NX_IREE_SOURCE_DIR) $(CMAKE_SOUR
 	@echo "Building IREE runtime host binaries at `$(IREE_HOST_BUILD_DIR)`."
 	cmake -G Ninja -B $(IREE_HOST_BUILD_DIR) \
 		-DCMAKE_INSTALL_PREFIX=$(IREE_HOST_INSTALL_DIR) \
-		-DIREE_BUILD_COMPILER=$(BUILD_HOST_COMPILER)\
+		-DIREE_BUILD_COMPILER=$(BUILD_HOST_COMPILER) $(BUILD_HOST_COMPILER_FLAGS) \
 		-DCMAKE_BUILD_TYPE=$(IREE_CMAKE_CONFIG) \
 		-DCMAKE_CXX_FLAGS=$(CMAKE_CXX_FLAGS) \
-		-DIREE_ENABLE_RUNTIME_TRACING=$(IREE_ENABLE_RUNTIME_TRACING) \
 		-S $(NX_IREE_SOURCE_DIR)
 	cmake --build $(IREE_HOST_BUILD_DIR) --target install
 
@@ -160,12 +168,10 @@ NX_IREE_RUNTIME_SO ?= $(MIX_APP_PATH)/priv/libnx_iree_runtime.so
 CFLAGS = -fPIC -I$(ERTS_INCLUDE_DIR) -I$(NX_IREE__IREE_RUNTIME_INCLUDE_PATH) -Wall -std=c++17 -w
 
 IREE_CMAKE_CONFIG ?= Release
-IREE_ENABLE_RUNTIME_TRACING ?= OFF
 
 ifdef DEBUG
 	IREE_CMAKE_CONFIG = RelWithDebInfo
 	CFLAGS += -g
-	IREE_ENABLE_RUNTIME_TRACING = ON
 else
 	CFLAGS += -O3
 endif
@@ -229,13 +235,19 @@ $(NX_IREE_SO): $(NX_IREE_CACHE_SO)
 $(NX_IREE__IREE_RUNTIME_INCLUDE_PATH):
 	cp -r iree-runtime/host/install $(dir $@)
 
-cache/objs/%.o: c_src/%.cc
+cache/objs/%.o: c_src/%.cc $(CMAKE_SOURCES)
 	@ mkdir -p $(dir $@)
 	$(CXX) $(CFLAGS) -o $@ -c $<
 
 # Print IREE Dir
+.PHONY: PTD
 PTD:
 	@ echo $(NX_IREE_SOURCE_DIR)
+
+.PHONY: wasm_build
+webassembly:
+	./scripts/build_and_package.sh --target=host --build-compiler
+	./scripts/build_and_package.sh --target=webassembly
 
 clean:
 	rm -rf cache/objs
