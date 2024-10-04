@@ -37,7 +37,8 @@ defmodule NxIREE.NxTest do
     weighted_mean: 3,
     variance: 2,
     # as_type tests on f64 which is not supported on metal
-    as_type: 2
+    as_type: 2,
+    rsqrt: 1
   ]
 
   @partial_support [
@@ -66,7 +67,8 @@ defmodule NxIREE.NxTest do
     count_leading_zeros: 1,
     mode: 2,
     # Median has a halting bug
-    median: 2
+    median: 2,
+    take: 3
   ]
 
   doctest Nx,

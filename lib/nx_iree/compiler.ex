@@ -29,15 +29,10 @@ defmodule NxIREE.Compiler do
 
     iree_compiler_flags =
       cond do
-        is_nil(iree_runtime_options[:device]) and has_target_backend_flag? ->
-          Enum.map(iree_compiler_flags, fn
-            "--iree-hal-target-backends" <> _ ->
-              %{compiler_target_backend: backend} = NxIREE.Device.default_device()
-              "--iree-hal-target-backends=#{backend}"
-
-            flag ->
-              flag
-          end)
+        is_nil(iree_runtime_options[:device]) and not has_target_backend_flag? ->
+          %{compiler_target_backend: backend} = NxIREE.Device.default_device()
+          flag = "--iree-hal-target-backends=#{backend}"
+          [flag | iree_compiler_flags]
 
         not has_target_backend_flag? ->
           {:ok, %{compiler_target_backend: backend}} =
@@ -49,10 +44,13 @@ defmodule NxIREE.Compiler do
           iree_compiler_flags
       end
 
-    %{mlir_module: mlir_module, output_container: output_container, used_inputs: used_inputs} =
-      EXLA.to_mlir_module(fun, vars, Keyword.put(opts, :within_defn_compiler, true))
+    exla_opts = opts |> Keyword.put(:within_defn_compiler, true) |> Keyword.put(:client, :host)
 
-    nx_iree_module = NxIREE.compile(mlir_module, iree_compiler_flags, output_container)
+    %{mlir_module: mlir_module, output_container: output_container, used_inputs: used_inputs} =
+      EXLA.to_mlir_module(fun, vars, exla_opts)
+
+    nx_iree_module =
+      NxIREE.compile(mlir_module, iree_compiler_flags, output_container: output_container)
 
     if output_mode == :bytecode do
       throw({:bytecode, nx_iree_module})

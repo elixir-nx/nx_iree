@@ -70,8 +70,8 @@ defmodule NxIREE.VM do
 
   defp to_iree_type(type) do
     case type do
-      {:s, size} -> ~c"i#{size}"
-      {:u, size} -> ~c"ui#{size}"
+      {:s, size} -> ~c"s#{size}"
+      {:u, size} -> ~c"u#{size}"
       {:bf, 16} -> ~c"bf16"
       {:f, size} -> ~c"f#{size}"
       {:c, size} -> ~c"c#{size}"

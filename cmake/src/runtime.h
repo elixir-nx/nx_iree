@@ -10,6 +10,10 @@
 #include <optional>
 #include <vector>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten/val.h>
+#endif
+
 namespace iree {
 namespace runtime {
 
@@ -31,6 +35,7 @@ class Device {
   std::string driver_name;
   uint64_t id;
 
+  Device(iree_hal_device_t* ref) : ref(ref) {}
   Device(std::string driver_name) : driver_name(driver_name) {}
   ~Device();
 };
@@ -45,8 +50,18 @@ class IREETensor {
   iree_hal_device_t* device;
 
   IREETensor(char* serialized_data);
-  IREETensor(iree_hal_buffer_view_t* buffer_view, iree_hal_element_type_t type, iree_hal_device_t* device);
+  IREETensor(iree_hal_buffer_view_t* buffer_view, iree_hal_element_type_t type, iree_hal_device_t* device, bool copy_buffer = false);
   IREETensor(void* data, size_t size, std::vector<int64_t> in_dims, iree_hal_element_type_t type);
+
+#ifdef __EMSCRIPTEN__
+  IREETensor(emscripten::val data, emscripten::val in_dims, std::string type_string, std::shared_ptr<iree::runtime::Device> device);
+
+  // Static method to wrap a raw pointer into a shared_ptr
+  static std::shared_ptr<IREETensor> build(emscripten::val data, emscripten::val in_dims, std::string type_string, std::shared_ptr<iree::runtime::Device> device) {
+    auto ptr = new IREETensor(data, in_dims, type_string, device);
+    return std::shared_ptr<IREETensor>(ptr);
+  }
+#endif
 
   // Destructor
   ~IREETensor();
@@ -70,6 +85,8 @@ class IREETensor {
 
 }  // namespace runtime
 }  // namespace iree
+
+iree_hal_element_type_t nx_type_to_iree_type(std::string type_string);
 
 iree_vm_instance_t* create_instance();
 iree_hal_driver_registry_t* get_driver_registry();

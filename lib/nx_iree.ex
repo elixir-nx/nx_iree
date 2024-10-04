@@ -19,10 +19,11 @@ defmodule NxIREE do
       iex> flags = ["--iree-hal-target-backends=llvm-cpu", "--iree-input-type=stablehlo_xla", "--iree-execution-model=async-internal"]
       iex> NxIREE.compile(mlir_module, flags)
   """
-  def compile(mlir_module, flags, output_container \\ nil) do
+  def compile(mlir_module, flags, opts \\ []) do
+    output_container = opts[:output_container]
     {:ok, tmpfile} = create_temp_file(mlir_module)
 
-    compiler_path = Path.join(:code.priv_dir(:nx_iree), "iree-compile")
+    compiler_path = opts[:compiler_path] || Path.join(:code.priv_dir(:nx_iree), "iree-compile")
 
     try do
       {output, 0} =

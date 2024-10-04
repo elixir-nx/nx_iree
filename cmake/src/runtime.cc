@@ -4,6 +4,10 @@
 #include <iree/hal/drivers/init.h>
 #include <iree/tooling/device_util.h>
 
+#ifdef DEBUG
+#include <iree/base/tracing/tracy.h>
+#endif
+
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -26,9 +30,22 @@ iree::runtime::Device::~Device() {
   }
 }
 
-iree::runtime::IREETensor::IREETensor(iree_hal_buffer_view_t *buffer_view, iree_hal_element_type_t type, iree_hal_device_t *device) : buffer_view(buffer_view), type(type), device(device) {
-  size = iree_hal_buffer_view_byte_length(buffer_view);
-  // TODO: fill in dim metadata
+iree::runtime::IREETensor::IREETensor(iree_hal_buffer_view_t *buffer_view, iree_hal_element_type_t type, iree_hal_device_t *device, bool copy_buffer) {
+  this->buffer_view = buffer_view;
+  this->type = type;
+  this->device = device;
+  size = iree_hal_buffer_view_byte_length(this->buffer_view);
+
+  iree_host_size_t shape_rank = iree_hal_buffer_view_shape_rank(this->buffer_view);
+  const iree_hal_dim_t *hal_dims = iree_hal_buffer_view_shape_dims(this->buffer_view);
+
+  dims = std::vector<iree_hal_dim_t>();
+  dims.reserve(shape_rank);
+  for (int i = 0; i < shape_rank; i++) {
+    dims.push_back(hal_dims[i]);
+  }
+
+  data = nullptr;
 }
 
 iree::runtime::IREETensor::IREETensor(void *data, size_t size, std::vector<int64_t> in_dims, iree_hal_element_type_t type) : size(size), type(type) {
@@ -75,12 +92,12 @@ iree::runtime::IREETensor::~IREETensor() {
 }
 
 void iree::runtime::IREETensor::deallocate() {
-  if (data) {
+  if (data != nullptr) {
     std::free(data);
     data = nullptr;
   }
 
-  if (buffer_view) {
+  if (buffer_view != nullptr) {
     iree_hal_buffer_view_release(buffer_view);
     buffer_view = nullptr;
   }
@@ -121,6 +138,43 @@ iree::runtime::IREETensor::serialize() {
   buffer->insert(buffer->end(), reinterpret_cast<const char *>(dims.data()), reinterpret_cast<const char *>(dims.data()) + dims_size);
 
   return buffer;
+}
+
+iree_hal_element_type_t nx_type_to_iree_type(std::string type) {
+  using type_enum = iree_hal_element_types_t;
+
+  if (type == "s8") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_INT_8;
+  } else if (type == "s16") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_INT_16;
+  } else if (type == "s32") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_INT_32;
+  } else if (type == "s64") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_INT_64;
+  } else if (type == "u8") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_UINT_8;
+  } else if (type == "u16") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_UINT_16;
+  } else if (type == "u32") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_UINT_32;
+  } else if (type == "u64") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_UINT_64;
+  } else if (type == "bf16") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_BFLOAT_16;
+  } else if (type == "f16") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_FLOAT_16;
+  } else if (type == "f32") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_FLOAT_32;
+  } else if (type == "f64") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_FLOAT_64;
+  } else if (type == "c64") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_COMPLEX_FLOAT_64;
+  } else if (type == "c128") {
+    return type_enum::IREE_HAL_ELEMENT_TYPE_COMPLEX_FLOAT_128;
+  }
+
+  std::cout << "Unknown type" << std::endl;
+  return type_enum::IREE_HAL_ELEMENT_TYPE_NONE;
 }
 
 iree_vm_instance_t *create_instance() {
@@ -285,6 +339,7 @@ call(iree_vm_instance_t *instance, iree_hal_device_t *device, std::string driver
   iree_vm_list_t *inputs = nullptr;
   iree_vm_list_t *outputs = nullptr;
 
+  IREE_TRACE_ZONE_BEGIN(call_module_create);
   RUN_IF_CUDA_ENABLED(
       if (driver_name == "cuda") {
         const iree_hal_cuda_dynamic_symbols_t *cuda_symbols = iree_hal_cuda_device_dynamic_symbols(device);
@@ -296,25 +351,26 @@ call(iree_vm_instance_t *instance, iree_hal_device_t *device, std::string driver
       instance, /*device_count=*/1, &device, IREE_HAL_MODULE_FLAG_SYNCHRONOUS,
       iree_allocator_system(), &hal_module));
 
-  // (kFloat4, sizeof(kFloat4))
   const iree_const_byte_span_t module_data = iree_make_const_byte_span(bytecode, bytecode_size);
 
   RETURN_PAIR_IF_ERROR(iree_vm_bytecode_module_create(
-      instance, module_data, iree_allocator_null(), iree_allocator_system(),
+      instance, module_data, iree_allocator_system(), iree_allocator_system(),
       &bytecode_module));
+  IREE_TRACE_ZONE_END(call_module_create);
 
+  IREE_TRACE_ZONE_BEGIN(call_context_create);
   iree_vm_module_t *modules[] = {hal_module, bytecode_module};
   RETURN_PAIR_IF_ERROR(iree_vm_context_create_with_modules(
       instance, IREE_VM_CONTEXT_FLAG_NONE, IREE_ARRAYSIZE(modules), &modules[0],
       iree_allocator_system(), &context));
-  iree_vm_module_release(hal_module);
-  iree_vm_module_release(bytecode_module);
+  IREE_TRACE_ZONE_END(call_module_create);
 
   RETURN_PAIR_IF_ERROR(iree_vm_context_resolve_function(
       context, iree_make_cstring_view(kMainFunctionName), &main_function));
 
   RETURN_PAIR_IF_ERROR(iree_vm_list_create(iree_vm_make_undefined_type_def(), exla_inputs.size(), iree_allocator_system(), &inputs));
 
+  IREE_TRACE_ZONE_BEGIN(call_input_allocation);
   for (auto input : exla_inputs) {
     iree_vm_ref_t arg_buffer_view_ref;
 
@@ -335,6 +391,7 @@ call(iree_vm_instance_t *instance, iree_hal_device_t *device, std::string driver
     }
     RETURN_PAIR_IF_ERROR(iree_vm_list_push_ref_move(inputs, &arg_buffer_view_ref));
   }
+  IREE_TRACE_ZONE_END(call_input_allocation);
 
   iree_vm_function_signature_t signature =
       iree_vm_function_signature(&main_function);
@@ -346,11 +403,14 @@ call(iree_vm_instance_t *instance, iree_hal_device_t *device, std::string driver
 
   RETURN_PAIR_IF_ERROR(iree_vm_list_create(iree_vm_make_undefined_type_def(), output_signature.size, iree_allocator_system(), &outputs));
 
+  IREE_TRACE_ZONE_BEGIN(call_invoke);
   // Synchronously invoke the function.
   RETURN_PAIR_IF_ERROR(iree_vm_invoke(
       context, main_function, IREE_VM_INVOCATION_FLAG_NONE,
       /*policy=*/NULL, inputs, outputs, iree_allocator_system()));
+  IREE_TRACE_ZONE_END(call_invoke);
 
+  IREE_TRACE_ZONE_BEGIN(call_outputs);
   std::vector<iree::runtime::IREETensor *> results;
   results.resize(output_signature.size);
   for (int i = 0; i < output_signature.size; i++) {
@@ -371,14 +431,21 @@ call(iree_vm_instance_t *instance, iree_hal_device_t *device, std::string driver
 
     results[i] = tensor;
   }
+  IREE_TRACE_ZONE_END(call_outputs);
 
   iree_vm_list_release(inputs);
   iree_vm_list_release(outputs);
-  iree_vm_context_release(context);
+  if (context != nullptr) {
+    iree_vm_context_release(context);
+  };
   return {iree_ok_status(), results};
 }
 
 iree_status_t read_buffer(iree_hal_device_t *device, iree_hal_buffer_view_t *buffer_view, void *output_buffer, size_t num_bytes) {
+  if (!buffer_view) {
+    return iree_make_status(IREE_STATUS_OK);
+  }
+
   iree_hal_buffer_t *buffer = iree_hal_buffer_view_buffer(buffer_view);
 
   iree_device_size_t num_bytes_actual = num_bytes == -1 ? iree_hal_buffer_byte_length(buffer) : (iree_device_size_t)num_bytes;
