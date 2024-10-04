@@ -1,6 +1,24 @@
 defmodule NxIREE do
   @moduledoc """
-  Documentation for `NxIREE`.
+  IREE compiler and runtime bindings for Nx.
+
+  NxIREE provides an `Nx.Defn` compiler which runs on [IREE](https://iree.dev).
+  The following example shows how we can compile a function to run on the CPU:
+
+      f = &Nx.add/2
+      compiler_flags = ["--iree-hal-target-backends=llvm-cpu", "--iree-input-type=stablehlo_xla", "--iree-execution-model=async-internal"]
+      opts = [compiler: NxIREE.Compiler, iree_compiler_flags: compiler_flags, iree_runtime_options: [device: "local-sync://"])
+      Nx.Defn.compile(f, [Nx.template({1}, :f32), Nx.template({3}, :f32)], opts)
+
+  And this next example compiles the same function for running on the Apple GPU through Metal:
+
+      f = &Nx.add/2
+      compiler_flags = ["--iree-hal-target-backends=metal-spirv", "--iree-input-type=stablehlo_xla", "--iree-execution-model=async-internal"]
+      opts = [compiler: NxIREE.Compiler, iree_compiler_flags: compiler_flags, iree_runtime_options: [device: "metal://"])
+      Nx.Defn.compile(f, [Nx.template({1}, :f32), Nx.template({3}, :f32)], opts)
+
+  `NxIREE.Compiler` also provides a `to_bytecode` function which outputs the bytecode for usage with embedded devices,
+  such as the iOS devices usable through [`LiveNxIREE`](https://github.com/elixir-nx/nx_iree/tree/main/embedded_devices/live_nx_iree).
   """
 
   @doc """
@@ -58,7 +76,7 @@ defmodule NxIREE do
   ## Options
 
     # `:function` - The name of the function to call in the module. If not provided, will default to `"main"`.
-    * `:device` - The device to run the module on. If not provided, will default to `"local-sync://".
+    * `:device` - The device to run the module on. If not provided, will default to known GPU devices (CUDA, ROCm, Metal, Vulkan) over others.
       Valid values can be obtained through `list_devices/0` or `list_devices/1`.
   """
   def call(

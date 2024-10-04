@@ -5,6 +5,7 @@ defmodule NxIREE.MixProject do
   use Mix.Project
 
   @version File.read!(Path.join([__DIR__, "priv", "VERSION"]))
+  @source_url "https://github.com/elixir-nx/nx_iree"
 
   import NxIREE.MixHelpers, only: [download!: 3, github_release_path: 2]
 
@@ -17,6 +18,14 @@ defmodule NxIREE.MixProject do
       elixir: "~> 1.15",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
+      docs: docs(),
+      name: "NxIREE",
+      description: "IREE compiler and runtime facilities for Nx",
+      package: package(),
+      preferred_cli_env: [
+        docs: :docs,
+        "hex.publish": :docs
+      ],
       compilers: [:nx_iree, :elixir_make] ++ Mix.compilers(),
       aliases: [
         "compile.nx_iree": &compile/1,
@@ -53,7 +62,27 @@ defmodule NxIREE.MixProject do
       {:elixir_make, "~> 0.6", runtime: false},
       {:exla, github: "elixir-nx/nx", sparse: "exla"},
       {:nx, github: "elixir-nx/nx", sparse: "nx", override: true},
+      {:ex_doc, "~> 0.34"},
       {:req, "~> 0.5"}
+    ]
+  end
+
+  defp package do
+    [
+      maintainers: ["Paulo Valente"],
+      licenses: ["Apache-2.0"],
+      links: %{"GitHub" => @source_url}
+    ]
+  end
+
+  defp docs do
+    [
+      main: "NxIREE",
+      source_url_pattern: "#{@source_url}/blob/v#{@version}/nx_iree/%{path}#L%{line}",
+      extras: [
+        "CHANGELOG.md"
+      ],
+      skip_undefined_reference_warnings_on: ["CHANGELOG.md"]
     ]
   end
 
