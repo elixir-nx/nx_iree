@@ -72,7 +72,7 @@ defmodule NxIREE.MixProject do
       maintainers: ["Paulo Valente"],
       licenses: ["Apache-2.0"],
       links: %{"GitHub" => @source_url},
-      files: ["lib", "priv", "mix.exs", "README.md", "LICENSE", "CHANGELOG.md", "cmake", "c_src"]
+      files: ["lib", "priv", "mix.exs", "README.md", "LICENSE", "CHANGELOG.md", "cmake", "c_src", "Makefile"]
     ]
   end
 
