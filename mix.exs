@@ -60,8 +60,8 @@ defmodule NxIREE.MixProject do
   defp deps do
     [
       {:elixir_make, "~> 0.6", runtime: false},
-      {:exla, github: "elixir-nx/nx", sparse: "exla"},
-      {:nx, github: "elixir-nx/nx", sparse: "nx", override: true},
+      {:exla, "~> 0.9"},
+      {:nx, "~> 0.9"},
       {:ex_doc, "~> 0.34"},
       {:req, "~> 0.5"}
     ]
@@ -71,7 +71,8 @@ defmodule NxIREE.MixProject do
     [
       maintainers: ["Paulo Valente"],
       licenses: ["Apache-2.0"],
-      links: %{"GitHub" => @source_url}
+      links: %{"GitHub" => @source_url},
+      files: ["lib", "priv", "mix.exs", "README.md", "LICENSE", "CHANGELOG.md", "cmake", "c_src"]
     ]
   end
 
