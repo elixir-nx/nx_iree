@@ -8,8 +8,8 @@ defmodule NxIREE.Compiler do
 
     Nx.Defn.compile(fun, templates, opts)
   catch
-    {:bytecode, %{bytecode: bytecode, output_container: output_container}} ->
-      {:ok, %{bytecode: bytecode, output_container: output_container}}
+    {:bytecode, result} ->
+      {:ok, result}
   end
 
   @behaviour Nx.Defn.Compiler
