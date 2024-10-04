@@ -63,7 +63,7 @@ defmodule NxIREE.MixProject do
       {:exla, "~> 0.9"},
       {:nx, "~> 0.9"},
       {:ex_doc, "~> 0.34"},
-      {:req, "~> 0.5"}
+      {:req, "~> 0.5", runtime: false}
     ]
   end
 
@@ -72,7 +72,17 @@ defmodule NxIREE.MixProject do
       maintainers: ["Paulo Valente"],
       licenses: ["Apache-2.0"],
       links: %{"GitHub" => @source_url},
-      files: ["lib", "priv", "mix.exs", "README.md", "LICENSE", "CHANGELOG.md", "cmake", "c_src", "Makefile"]
+      files: [
+        "lib",
+        "priv",
+        "mix.exs",
+        "README.md",
+        "LICENSE",
+        "CHANGELOG.md",
+        "cmake",
+        "c_src",
+        "Makefile"
+      ]
     ]
   end
 
