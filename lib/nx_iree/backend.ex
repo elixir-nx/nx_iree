@@ -112,6 +112,44 @@ defmodule NxIREE.Backend do
   end
 
   @impl true
+  def to_batched(out, tensor, opts) do
+    leftover = opts[:leftover]
+
+    batch_size = elem(out.shape, 0)
+    axis_size = elem(tensor.shape, 0)
+
+    remainder = rem(axis_size, batch_size)
+    num_full_batches = div(axis_size, batch_size)
+
+    range =
+      if remainder != 0 and leftover == :repeat do
+        0..num_full_batches
+      else
+        0..(num_full_batches - 1)
+      end
+
+    Stream.map(range, fn
+      ^num_full_batches ->
+        expr_fun = fn tensor ->
+          Nx.concatenate([
+            Nx.slice_along_axis(tensor, num_full_batches * batch_size, remainder),
+            Nx.slice_along_axis(tensor, 0, batch_size - remainder)
+          ])
+        end
+
+        jit([], expr_fun, [tensor])
+
+      i ->
+        expr_fun = fn tensor, start_idx ->
+          Nx.slice_along_axis(tensor, start_idx, batch_size)
+        end
+
+        start_idx = i * batch_size
+        jit([], expr_fun, [tensor, start_idx])
+    end)
+  end
+
+  @impl true
   def concatenate(out, tensors, axis) do
     copied = Enum.map(tensors, &Nx.backend_copy(&1, Nx.BinaryBackend))
     result = Nx.BinaryBackend.concatenate(out, copied, axis)
@@ -187,11 +225,6 @@ defmodule NxIREE.Backend do
 
   @impl true
   def from_pointer(_, _, _, _, _) do
-    raise "function not supported yet by NxIREE"
-  end
-
-  @impl true
-  def to_batched(_, _, _) do
     raise "function not supported yet by NxIREE"
   end
 

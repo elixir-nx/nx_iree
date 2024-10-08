@@ -42,35 +42,48 @@ defmodule NxIREE.NxTest do
   ]
 
   @partial_support [
+    # stable: true is not supported
+    argsort: 2,
     # tensor/2 tests on f8 which is not supported yet
     tensor: 2,
+    # bit_size/1 tests on u2 which is not supported yet
+    bit_size: 1,
     # iota/2 tests on f64 which is not supported on metal
-    iota: 2
+    iota: 2,
+    # does not support complex tensors
+    conv: 3
   ]
 
   @errors_to_be_fixed [
-    to_batched: 3,
+    # bug on filter_by_indices_list in the Nx compiler
     top_k: 2,
+    # window_* crashes on iree-compile
     window_product: 3,
     window_mean: 3,
     window_sum: 3,
     window_min: 3,
     window_max: 3,
-    sort: 2,
-    argsort: 2,
-    argmax: 2,
-    argmin: 2,
-    conv: 3,
-    all_close: 3,
-    is_nan: 1,
-    population_count: 1,
-    count_leading_zeros: 1,
-    mode: 2,
-    # Median has a halting bug
-    median: 2,
-    take: 3
   ]
 
+  if Nx.Defn.default_options()[:iree_runtime_options][:device].driver_name == "metal" do
+    @metal_only_errors [
+      count_leading_zeros: 1,
+      population_count: 1,
+      # incorrect implementation in IREE
+      sort: 2,
+      # fails on nan comparison
+      all_close: 3,
+      mode: 2,
+      argmax: 2,
+      argmin: 2,
+      is_nan: 1,
+      # C-level abort
+      median: 2
+    ]
+  else
+    @metal_only_errors []
+  end
+
   doctest Nx,
-    except: @illegal_ops ++ @rounding_error ++ @partial_support ++ @errors_to_be_fixed
+    except: @illegal_ops ++ @rounding_error ++ @partial_support ++ @errors_to_be_fixed ++ @metal_only_errors
 end
