@@ -3,8 +3,9 @@ flags = [
   "--iree-execution-model=async-internal"
 ]
 
+driver = System.get_env("NX_IREE_DEFAULT_DRIVER") || "local-sync"
 # runtime_options = nil
-runtime_options = [device: "local-sync://"]
+runtime_options = [device: NxIREE.Device.find_default_device(driver)]
 
 Nx.Defn.global_default_options(
   compiler: NxIREE.Compiler,
