@@ -62,28 +62,30 @@ defmodule NxIREE.NxTest do
     window_mean: 3,
     window_sum: 3,
     window_min: 3,
-    window_max: 3,
+    window_max: 3
   ]
 
-  if Nx.Defn.default_options()[:iree_runtime_options][:device].driver_name == "metal" do
-    @metal_only_errors [
-      count_leading_zeros: 1,
-      population_count: 1,
-      # incorrect implementation in IREE
-      sort: 2,
-      # fails on nan comparison
-      all_close: 3,
-      mode: 2,
-      argmax: 2,
-      argmin: 2,
-      is_nan: 1,
-      # C-level abort
-      median: 2
-    ]
-  else
-    @metal_only_errors []
-  end
+  # if Nx.Defn.default_options()[:iree_runtime_options][:device].driver_name == "metal" do
+  #   @metal_only_errors [
+  #     count_leading_zeros: 1,
+  #     population_count: 1,
+  #     # incorrect implementation in IREE
+  #     sort: 2,
+  #     # fails on nan comparison
+  #     all_close: 3,
+  #     mode: 2,
+  #     argmax: 2,
+  #     argmin: 2,
+  #     is_nan: 1,
+  #     # C-level abort
+  #     median: 2
+  #   ]
+  # else
+  @metal_only_errors []
+  # end
 
   doctest Nx,
-    except: @illegal_ops ++ @rounding_error ++ @partial_support ++ @errors_to_be_fixed ++ @metal_only_errors
+    except:
+      @illegal_ops ++
+        @rounding_error ++ @partial_support ++ @errors_to_be_fixed ++ @metal_only_errors
 end

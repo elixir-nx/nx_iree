@@ -3,6 +3,8 @@ defmodule NxIREE.Compiler do
   Compiler for Nx defn
   """
 
+  alias NxIREE.Compiler.GraphSplitter
+
   def to_bytecode(fun, templates, opts \\ []) do
     opts = opts |> Keyword.put(:output_mode, :bytecode) |> Keyword.put(:compiler, __MODULE__)
 
@@ -27,25 +29,59 @@ defmodule NxIREE.Compiler do
     has_target_backend_flag? =
       Enum.any?(iree_compiler_flags, &String.starts_with?(&1, "--iree-hal-target-backends"))
 
-    iree_compiler_flags =
+    {iree_compiler_flags, backend} =
       cond do
         is_nil(iree_runtime_options[:device]) and not has_target_backend_flag? ->
           %{compiler_target_backend: backend} = NxIREE.Device.default_device()
           flag = "--iree-hal-target-backends=#{backend}"
-          [flag | iree_compiler_flags]
+          {[flag | iree_compiler_flags], backend}
 
         not has_target_backend_flag? ->
           {:ok, %{compiler_target_backend: backend}} =
             NxIREE.Device.get(iree_runtime_options[:device])
 
-          ["--iree-hal-target-backends=#{backend}" | iree_compiler_flags]
+          {["--iree-hal-target-backends=#{backend}" | iree_compiler_flags], backend}
 
         true ->
-          iree_compiler_flags
+          "--iree-hal-target-backends=" <> backend =
+            Enum.find(
+              iree_compiler_flags,
+              &String.starts_with?(&1, "--iree-hal-target-backends=")
+            )
+
+          {iree_compiler_flags, backend}
       end
 
     exla_opts = opts |> Keyword.put(:within_defn_compiler, true) |> Keyword.put(:client, :host)
 
+    if output_mode != :bytecode and backend == "metal-spirv" do
+      compile_with_graph_splitter(
+        fun,
+        vars,
+        exla_opts,
+        iree_compiler_flags,
+        iree_runtime_options
+      )
+    else
+      compile_without_graph_splitter(
+        fun,
+        vars,
+        exla_opts,
+        iree_compiler_flags,
+        iree_runtime_options,
+        output_mode
+      )
+    end
+  end
+
+  defp compile_without_graph_splitter(
+         fun,
+         vars,
+         exla_opts,
+         iree_compiler_flags,
+         iree_runtime_options,
+         output_mode
+       ) do
     %{mlir_module: mlir_module, output_container: output_container, used_inputs: used_inputs} =
       EXLA.to_mlir_module(fun, vars, exla_opts)
 
@@ -68,6 +104,128 @@ defmodule NxIREE.Compiler do
 
         [result]
       end
+    end
+  end
+
+  defp compile_with_graph_splitter(
+         fun,
+         vars,
+         exla_opts,
+         iree_compiler_flags,
+         iree_runtime_options
+       ) do
+    expr = fun.(vars)
+
+    {stages, _, _} = GraphSplitter.traverse(expr)
+
+    function_chain =
+      for {stage_id, tag, expr, arguments, argument_sources} <- stages do
+        fun = fn _ -> expr end
+
+        %{mlir_module: mlir_module, output_container: output_container, used_inputs: used_inputs} =
+          EXLA.to_mlir_module(fun, Map.values(arguments), exla_opts)
+
+        iree_compiler_flags =
+          if tag == :force_host do
+            Enum.map(iree_compiler_flags, fn
+              "--iree-hal-target-backends=metal-spirv" -> "--iree-hal-target-backends=llvm-cpu"
+              flag -> flag
+            end)
+          else
+            iree_compiler_flags
+          end
+
+        iree_runtime_options =
+          if tag == :force_host do
+            {:ok, device} = NxIREE.Device.get("local-sync://")
+            Keyword.put(iree_runtime_options, :device, device)
+          else
+            Keyword.put_new(
+              iree_runtime_options,
+              :device,
+              NxIREE.Device.find_default_device("metal")
+            )
+          end
+
+        nx_iree_module =
+          NxIREE.compile(mlir_module, iree_compiler_flags, output_container: output_container)
+
+        runtime_fun = fn [inputs] ->
+          filtered_inputs =
+            filter_inputs_by_indices(inputs, used_inputs)
+
+          {:ok, result} =
+            NxIREE.call(
+              nx_iree_module,
+              filtered_inputs,
+              iree_runtime_options
+            )
+
+          [result]
+        end
+
+        {stage_id, tag, iree_runtime_options[:device], runtime_fun, arguments, argument_sources}
+      end
+
+    fn [args] ->
+      input_sources =
+        args
+        |> Enum.with_index()
+        |> Map.new(fn {arg, idx} ->
+          {{nil, idx}, arg}
+        end)
+
+      {_input_sources, result} =
+        for {stage_id, _tag, device, runtime_fun, arguments, argument_sources} <- function_chain,
+            reduce: {input_sources, nil} do
+          {input_sources, _prev_result} ->
+            {args, input_sources} =
+              Enum.map_reduce(arguments, input_sources, fn {id, param}, input_sources ->
+                %Nx.Tensor{data: %Nx.Defn.Expr{op: :parameter, args: [idx]}} = param
+                source_key = argument_sources[id]
+
+                case input_sources[source_key] do
+                  input when is_function(input, 0) ->
+                    val = input.()
+
+                    val =
+                      Nx.Defn.Composite.traverse(val, fn
+                        %Nx.Tensor{data: %NxIREE.Backend{}} = t -> t
+                        t -> Nx.backend_transfer(t, {NxIREE.Backend, device: device})
+                      end)
+
+                    {{idx, val}, Map.put(input_sources, source_key, val)}
+
+                  val ->
+                    {{idx, val}, input_sources}
+                end
+              end)
+
+            args =
+              args
+              |> Enum.sort_by(&elem(&1, 0))
+              |> Enum.map(fn {_idx, arg} ->
+                {:ok, buffer_ref} = NxIREE.VM.allocate_buffer(arg, device.ref)
+                arg = put_in(arg.data.ref, buffer_ref)
+                put_in(arg.data.device, device.ref)
+                put_in(arg.data.device_uri, device.uri)
+                put_in(arg.data.driver, device.driver_name)
+              end)
+
+            [results] = runtime_fun.([args])
+
+            input_sources =
+              [results]
+              |> Nx.Defn.Composite.flatten_list()
+              |> Enum.with_index()
+              |> Enum.reduce(input_sources, fn {result, idx}, acc ->
+                Map.put(acc, {stage_id, idx}, result)
+              end)
+
+            {input_sources, [results]}
+        end
+
+      result
     end
   end
 
