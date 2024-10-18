@@ -210,6 +210,9 @@ defmodule NxIREE.Compiler.GraphSplitter do
       %T{} = arg, acc ->
         composite_rewrite_subtree(arg, state, acc)
 
+      arg, acc when is_list(arg) ->
+        composite_rewrite_subtree(arg, state, acc)
+
       arg, acc ->
         {arg, acc}
     end)
