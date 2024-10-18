@@ -4,7 +4,17 @@ defmodule NxIREE.Compiler.GraphSplitter do
   alias Nx.Tensor, as: T
   alias Nx.Defn.Expr
 
-  @non_metal_ops [:fft, :sort]
+  @non_metal_ops [
+    :count_leading_zeros,
+    :population_count,
+    :sort,
+    :all_close,
+    :mode,
+    :argmax,
+    :argmin,
+    :is_nan,
+    :median
+  ]
 
   def traverse(expr, expr_shards \\ %{}) do
     # expression_chain is going to be a reverse-accumulation of {category, subexpr}
@@ -42,6 +52,10 @@ defmodule NxIREE.Compiler.GraphSplitter do
               expr,
               %{state | nodes_to_replace: nodes_to_replace}
             )
+
+          # dbg(expr, structs: false)
+          # dbg(used_args)
+          # raise "asdf"
 
           arg_remapping =
             used_args
@@ -189,10 +203,10 @@ defmodule NxIREE.Compiler.GraphSplitter do
     {ans, {Map.put(cache, id, ans), state}}
   end
 
-  defp composite_rewrite_subtree(args, state, acc \\ %{used_args: %{}})
+  defp composite_rewrite_subtree(container, state, acc \\ %{used_args: %{}})
 
-  defp composite_rewrite_subtree(args, state, acc) when is_list(args) do
-    Enum.map_reduce(args, acc, fn
+  defp composite_rewrite_subtree(container, state, acc) when is_list(container) do
+    Enum.map_reduce(container, acc, fn
       %T{} = arg, acc ->
         composite_rewrite_subtree(arg, state, acc)
 
@@ -201,7 +215,11 @@ defmodule NxIREE.Compiler.GraphSplitter do
     end)
   end
 
-  defp composite_rewrite_subtree(%T{data: %Expr{id: id, op: :parameter}} = expr, state, acc) do
+  defp composite_rewrite_subtree(container, state, acc) do
+    Composite.traverse(container, acc, &rewrite_subtree(&1, state, &2))
+  end
+
+  defp rewrite_subtree(%T{data: %Expr{id: id, op: :parameter}} = expr, state, acc) do
     case state.nodes_to_replace do
       %{^id => res} ->
         {res, put_in(acc.used_args[id], {res, state.shards[id]})}
@@ -211,19 +229,30 @@ defmodule NxIREE.Compiler.GraphSplitter do
     end
   end
 
-  defp composite_rewrite_subtree(arg, state, acc) do
-    Composite.traverse(arg, acc, &rewrite_subtree(&1, state, &2))
+  defp rewrite_subtree(
+         %T{data: %Expr{op: :optional, id: id, args: [call, subexpr, fun]}} = expr,
+         state,
+         acc
+       ) do
+    case state.nodes_to_replace do
+      %{^id => res} ->
+        {res, put_in(acc.used_args[id], {res, state.shards[id]})}
+
+      _ ->
+        {call, acc} = rewrite_subtree(call, state, acc)
+        expr = put_in(expr.data.args, [call, subexpr, fun])
+        {expr, acc}
+    end
   end
 
   defp rewrite_subtree(%T{data: %Expr{id: id, args: args}} = expr, state, acc) do
     case state.nodes_to_replace do
       %{^id => res} ->
         # nodes_to_replace always contains a param
-        {res, put_in(acc.used_args[id], res)}
+        {res, put_in(acc.used_args[id], {res, state.shards[id]})}
 
       _ ->
         {args, acc} = composite_rewrite_subtree(args, state, acc)
-
         {put_in(expr.data.args, args), acc}
     end
   end

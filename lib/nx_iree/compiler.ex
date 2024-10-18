@@ -18,7 +18,7 @@ defmodule NxIREE.Compiler do
 
   @impl true
   def __compile__(_key, vars, fun, opts) do
-    {iree_compiler_flags, opts} = Keyword.pop(opts, :iree_compiler_flags, nil)
+    {iree_compiler_flags, opts} = Keyword.pop(opts, :iree_compiler_flags, [])
     {iree_runtime_options, opts} = Keyword.pop(opts, :iree_runtime_options, [])
     {output_mode, opts} = Keyword.pop(opts, :output_mode, nil)
 
