@@ -4,6 +4,8 @@ defmodule NxIREE.Compiler do
   """
 
   alias NxIREE.Compiler.GraphSplitter
+  alias Nx.Tensor, as: T
+  alias Nx.Defn.Expr
 
   def to_bytecode(fun, templates, opts \\ []) do
     opts = opts |> Keyword.put(:output_mode, :bytecode) |> Keyword.put(:compiler, __MODULE__)
@@ -122,8 +124,16 @@ defmodule NxIREE.Compiler do
       for {stage_id, tag, expr, arguments, argument_sources} <- stages do
         fun = fn _ -> expr end
 
+        mlir_args =
+          arguments
+          |> Map.values()
+          |> Enum.sort_by(fn
+            %T{data: %Expr{op: :parameter, args: [idx]}} -> idx
+            _ -> nil
+          end)
+
         %{mlir_module: mlir_module, output_container: output_container, used_inputs: used_inputs} =
-          EXLA.to_mlir_module(fun, Map.values(arguments), exla_opts)
+          EXLA.to_mlir_module(fun, mlir_args, exla_opts)
 
         iree_compiler_flags =
           if tag == :force_host do
@@ -153,8 +163,6 @@ defmodule NxIREE.Compiler do
         runtime_fun = fn [inputs] ->
           filtered_inputs =
             filter_inputs_by_indices(inputs, used_inputs)
-
-          dbg({mlir_module, iree_compiler_flags, filtered_inputs})
 
           {:ok, result} =
             NxIREE.call(
