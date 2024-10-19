@@ -228,7 +228,7 @@ defmodule NxIREE.Compiler.GraphSplitter do
   end
 
   defp rewrite_subtree(
-         %T{data: %Expr{op: :optional, id: id, args: [call, subexpr, fun]}} = expr,
+         %T{data: %Expr{op: :optional, id: id, args: [_call, subexpr, _fun]}},
          state,
          acc
        ) do
@@ -237,9 +237,9 @@ defmodule NxIREE.Compiler.GraphSplitter do
         {res, put_in(acc.used_args[id], {res, state.shards[id]})}
 
       _ ->
-        {call, acc} = rewrite_subtree(call, state, acc)
-        expr = put_in(expr.data.args, [call, subexpr, fun])
-        {expr, acc}
+        # TO-DO: allow for the optional node to go through the pipeline
+        # We're instead always relying on the default implementation here.
+        rewrite_subtree(subexpr, state, acc)
     end
   end
 

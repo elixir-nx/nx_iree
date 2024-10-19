@@ -154,6 +154,8 @@ defmodule NxIREE.Compiler do
           filtered_inputs =
             filter_inputs_by_indices(inputs, used_inputs)
 
+          dbg({mlir_module, iree_compiler_flags, filtered_inputs})
+
           {:ok, result} =
             NxIREE.call(
               nx_iree_module,
