@@ -8,7 +8,6 @@ defmodule NxIREE.Compiler.GraphSplitter do
     :count_leading_zeros,
     :population_count,
     :sort,
-    :all_close,
     :mode,
     :argmax,
     :argmin,
@@ -52,10 +51,6 @@ defmodule NxIREE.Compiler.GraphSplitter do
               expr,
               %{state | nodes_to_replace: nodes_to_replace}
             )
-
-          # dbg(expr, structs: false)
-          # dbg(used_args)
-          # raise "asdf"
 
           arg_remapping =
             used_args
